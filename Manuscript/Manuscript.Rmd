@@ -1,0 +1,211 @@
+---
+title: 'Parsing medial prefrontal cortex: A joint meta-analytic and graph-theoretic approach.'
+
+# Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
+author:
+  - name: Claudio A. Toro-Serey
+    affiliation: a,1,2
+  - name: Joseph T. McGuire
+    affiliation: a,1
+address:
+  - code: a
+    address: Boston University, Department of Psychological and Brain Sciences, 64 Commonwealth Ave., Boston, 02250  
+
+corresponding_author:
+  - code: 2
+    text: "To whom correspondence should be addressed. E-mail: ctoro@bu.edu"
+
+# For footer text
+lead_author_surname: Toro-Serey
+
+## Remove this if not required    
+equal_authors:
+  - code: 1
+    text: "A.O.(Author One) and A.T. (Author Two) contributed equally to this work (remove if not applicable)."
+
+
+author_contributions: |
+  Please provide details of author contributions here.
+
+## Remove this if not required
+conflict_of_interest: |
+  Please declare any conflict of interest here.
+
+abstract: |
+  (Current count: 153) Valuation effects are consistently observed in medial prefrontal and posterior cingulate cortex (mPFC and PCC). The spatial extent of these effects is mostly indistinguishable from the default mode network (DMN) in existing meta-analyses. However, little is known about how valuation effects fit within the broader functional architecture of mPFC and PCC, or whether that architecture is consistent or idiosyncratic across individuals. Here we complement a meta-analysis with fMRI-based graph theoretic approaches to subdivide mPFC and PCC at the single-subject level. Our results suggest the functional topography of mPFC has substantial variability across individuals. This highlights the potential usefulness of estimating brain effects at the individual level in this region, and points to limitations of aggregative methods such as coordinate-based meta-analysis in determining whether valuation and DMN effects emerge from common or separable brain systems. Our approach shows promise in addressing this issue through future manipulations of valuation.
+
+significance: |
+  Authors must submit a 120-word maximum statement about the significance of their research paper written at a level understandable to an undergraduate educated scientist outside their field of speciality. The primary goal of the Significance Statement is to explain the relevance of the work in broad context to a broad readership. The Significance Statement appears in the paper itself and is required for all research papers.
+
+acknowledgements: |
+  Please include your acknowledgments here, set in a single paragraph. Please do not include any acknowledgments in the Supporting Information, or anywhere else in the manuscript.
+
+keywords:
+  - Networks
+  - DMN
+  - Valuation
+
+## must be one of: pnasresearcharticle (usual two-column layout), pnasmathematics (one column layout), or pnasinvited (invited submissions only)
+pnas_type: pnasresearcharticle
+
+bibliography: pnas-sample.bib
+csl: pnas.csl
+
+## change to true to add optional line numbering
+lineno: false
+
+output: rticles::pnas_article
+---
+
+(current, 676 words. Aim for 650)
+
+The medial prefrontal cortex (mPFC) has been suggested to subserve many of the cognitive abilities that differentiate humans from other animals (Barbas & Garcia-Cabezas, 2016). Specifically, this region has been related to decision making (Bartra, McGuire, & Kable, 2013), memory encoding (Shacter, Addis, & Buckner, 2007), and default mode deactivation (DMN) (Yeo et al., 2011), among ohters. While much has been discovered about this area in primates (Barbas & Garcia-Cabezas, 2016), the lack of direct measurements of neuronal activity makes this a tough area to record in humans, one that nowadays relies mostly on functional MRI (fMRI). Unfortunately, the mPFC is especially challenging to image, as the oxygen-related signal recorded by fMRI is contaminated by the oxygen in the sinuses (Logothetis, 2008). In addition, this area is subject to more idiosyncratic cortical folding than any other region (Zilles, Palomero- Gallagher, & Amunts, 2013), thus adding a level of complexity to the generalizable dissection of topographic functional roles within mPFC.
+
+Previous meta analytic studies have provided important insights on the psychological phenomena attributed to mPFC subregions. For example, de la Vega et al. (2016) found subdivisions of mPFC and MCC that are significantly tied to decision making in the literature. In particular, they show that more ventral regions are more tightly associated with reward and fear. However, this pattern overlaps with their finding that vmPFC also coactivates with DMN regions, and find no topographical distinction between these phenomena. Similarly, the results from Bartra et al and Laird et al show that this region can't be subdivided into DMN vs subjective value (acikalin, chris, russ). However, meta analyses rely on peaks often derived from group-averaged data. Recent work has prescribed relevance to the analysis of single subjects in fMRI. Yeo et al (2018) propose the use of individualized topologies when identifying functional networks. Gordon et al identify important idiosincrasies in oversampled subjects. Similarly, Braga and Buckner show that finer subdivisions of the DMN are possible when looking at each subject independently. This opens up the possibility that distinctions between DMN and subjective value are possible at this finer level of resolution, but would otherwise be masked in meta analytic work.
+
+Braga & Buckner's work is particularly informative when it comes to subdividing DMN. However, the seed-based functional connectivity analysis is sensitive to the selection of the seed. A natural next step would be to recruit all possible patterns of covariation within this network. A popular alternative is to rely on graph theoretic methods, which provide a characterization of networks that organically fits brain dynamics (provides an organic avenue to understand brain dynamics?), and thus permits the consideration of the full covariance structure of brain networks. (ADV & Tal somewhere here).
+
+Given the shortcomings of study-specific and cross-study analyses mentioned above, there is potential value in combining complementary strengths from both approaches. Focusing on resting state data has been successful in determining a number of neural phenomena, including disentangling auditory and visual attention areas (Tobyne, Osher, Michalka, & Somers, 2017).
+
+One great advantage of network science is the ability to characterize connectivity in a way that allows for comparisons among individuals in a meaningful way (Garcia, Ashourvan, Muldoon, Vettel, & Bassett, 2018), thus letting us address the idiosyncrasies mentioned above. In this study, we aim to subdivide mPFC into subject-specific DMN and non-DMN areas, so that we can generate more informed topographic targets for future studies of decision making. We address this aim at 3 levels of granularity: 1) across the literature (meta-analysis), selecting a number of regions of interest (ROI) that show significant overlap and specificity between DMN and decision making; 2) full-brain connectivity of actual fMRI data, using a pre-specified brain atlas; and 3) characterizing the connectivity of surface vertices (small units of function that contain oxygen-dependent neural information across time) for the regions selected in step one. I performed the last two steps at an individual subject level for 3 subjects, hoping to find some commonalities among them. In this way, I attempted to extract functional topographical information from topological network features.
+
+
+
+Results {.unnumbered}
+========================================
+
+
+Discussion {.unnumbered}
+========================================
+
+(1500 words max)
+
+Methods {.unnumbered}
+========================================
+
+See http://www.jneurosci.org/content/preparing-manuscript
+
+References {.unnumbered}
+========================================
+
+
+
+Figures and Tables should be labelled and referenced in the standard way
+using the `\label{}` and `\ref{}` commands.
+
+Figure \[fig:frog\] shows an example of how to insert a column-wide
+figure. To insert a figure wider than one column, please use the
+`\begin{figure*}...\end{figure*}` environment. Figures wider than one
+column should be sized to 11.4 cm or 17.8 cm wide.
+
+Single column equations {#single-column-equations .unnumbered}
+-----------------------
+
+Authors may use 1- or 2-column equations in their article, according to
+their preference.
+
+To allow an equation to span both columns, options are to use the
+`\begin{figure*}...\end{figure*}` environment mentioned above for
+figures, or to use the `\begin{widetext}...\end{widetext}` environment
+as shown in equation \[eqn:example\] below.
+
+Please note that this option may run into problems with floats and
+footnotes, as mentioned in the [cuted package
+documentation](http://texdoc.net/pkg/cuted). In the case of problems
+with footnotes, it may be possible to correct the situation using
+commands `\footnotemark` and `\footnotetext`.
+
+$$\begin{aligned}
+(x+y)^3&=(x+y)(x+y)^2\\
+       &=(x+y)(x^2+2xy+y^2) \label{eqn:example} \\
+       &=x^3+3x^2y+3xy^3+x^3. 
+\end{aligned}$$
+
+
+
+<!-- pandoc writes all tables using longtable, which fails in 2-column mode
+
+  Species                    CBS     CV     G3
+  ----------------------- ------ ------ ------
+  1\. Acetaldehyde           0.0    0.0    0.0
+  2\. Vinyl alcohol          9.1    9.6   13.5
+  3\. Hydroxyethylidene     50.8   51.2   54.0
+
+  : Comparison of the fitted potential energy surfaces and ab initio
+  benchmark electronic energy calculations
+
+-->
+
+Supporting Information (SI) {#supporting-information-si .unnumbered}
+---------------------------
+
+
+The main text of the paper must stand on its own without the SI. Refer
+to SI in the manuscript at an appropriate point in the text. Number
+supporting figures and tables starting with S1, S2, etc. Authors are
+limited to no more than 10 SI files, not including movie files. Authors
+who place detailed materials and methods in SI must provide sufficient
+detail in the main text methods to enable a reader to follow the logic
+of the procedures and results and also must reference the online
+methods. If a paper is fundamentally a study of a new method or
+technique, then the methods must be described completely in the main
+text. Because PNAS edits SI and composes it into a single PDF, authors
+must provide the following file formats only.
+
+### SI Text {#si-text .unnumbered}
+
+Supply Word, RTF, or LaTeX files (LaTeX files must be accompanied by a
+PDF with the same file name for visual reference).
+
+### SI Figures {#si-figures .unnumbered}
+
+Provide a brief legend for each supporting figure after the supporting
+text. Provide figure images in TIFF, EPS, high-resolution PDF, JPEG, or
+GIF format; figures may not be embedded in manuscript text. When saving
+TIFF files, use only LZW compression; do not use JPEG compression. Do
+not save figure numbers, legends, or author names as part of the image.
+Composite figures must be pre-assembled.
+
+### 3D Figures {#d-figures .unnumbered}
+
+Supply a composable U3D or PRC file so that it may be edited and
+composed. Authors may submit a PDF file but please note it will be
+published in raw format and will not be edited or composed.
+
+### SI Tables {#si-tables .unnumbered}
+
+Supply Word, RTF, or LaTeX files (LaTeX files must be accompanied by a
+PDF with the same file name for visual reference); include only one
+table per file. Do not use tabs or spaces to separate columns in Word
+tables.
+
+### SI Datasets {#si-datasets .unnumbered}
+
+Supply Excel (.xls), RTF, or PDF files. This file type will be published
+in raw format and will not be edited or composed.
+
+### SI Movies {#si-movies .unnumbered}
+
+Supply Audio Video Interleave (avi), Quicktime (mov), Windows Media
+(wmv), animated GIF (gif), or MPEG files and submit a brief legend for
+each movie in a Word or RTF file. All movies should be submitted at the
+desired reproduction size and length. Movies should be no more than 10
+MB in size.
+
+### Still images {#still-images .unnumbered}
+
+Authors must provide a still image from each video file. Supply TIFF,
+EPS, high-resolution PDF, JPEG, or GIF files.
+
+### Appendices {#appendices .unnumbered}
+
+PNAS prefers that authors submit individual source files to ensure
+readability. If this is not possible, supply a single PDF file that
+contains all of the SI associated with the paper. This file type will be
+published in raw format and will not be edited or composed.
+
+
+<!-- Leave these lines as they are at the end of your .Rmd file to ensure placement of methods & acknowledgements sections before the references-->
+\showmatmethods
+\showacknow
+\pnasbreak
