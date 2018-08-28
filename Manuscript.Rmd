@@ -12,10 +12,11 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 ```
 
 ``` {r Libraries and functions, include = FALSE, fig.align="center", fig.width=6, fig.height=4, echo=FALSE}
+
 Cols <- c("aquamarine4","#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
 
 # In case I want to visualize stuff in the brain
-labelCoords_vertex <- read.csv2('labelCoords_vertex.csv', sep = ",")[,2:6]
+labelCoords_vertex <- read.csv2('labelCoords_vertex.csv')[,2:6]
 labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(x)), y = as.numeric(as.character(y)), z = as.numeric(as.character(z)))
 
 library(igraph)
@@ -1055,21 +1056,15 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
 ```
 
 ``` {r For HCP data, fig.align="center", echo=FALSE, message = FALSE}
-setwd('./For_HCP')
-temp <- list.files(pattern = '*Binary*')
-FB <- lapply(temp, read.table)
-Summed <- do.call(cbind, lapply(FB, "[[", 'V1')) - 1
-FB_Means <- rowMeans(Summed)
-
-write.table(file = 'propDMN_all.txt', FB_Means, row.names = F, col.names = F, dec = ".")
+# setwd('./For_HCP')
+# temp <- list.files(pattern = '*Binary*')
+# FB <- lapply(temp, read.table)
+# Summed <- do.call(cbind, lapply(FB, "[[", 'V1')) - 1
+# FB_Means <- rowMeans(Summed)
+# 
+# write.table(file = 'propDMN_all.txt', FB_Means, row.names = F, col.names = F, dec = ".")
 ```
 
-## Notes:
-
-  - The mixed effects GLM is not that well defined. Fix the dependent to include total possible and actuals.
-  - If we stick to the linear model, maybe plot the day and subject coefficients for PCC and PFC too (all in onw plot).
-  - The official manuscript will probably have to include things like community size, density of each subject's network (so far, ~0.65), and maybe clustering coefficient?
-  
   
 ## Abstract
 
@@ -1087,13 +1082,6 @@ write.table(file = 'propDMN_all.txt', FB_Means, row.names = F, col.names = F, de
   In this study, we aim to subsection regions commonly attributed to both DMN and subjective value into subject-specific DMN and non-DMN partitions, quantifying the degree of topographical heterogeneity present in this network within and across individuals. This description will allow researchers to generate more precise topographic targets for future studies of decision making. We do this by capitalizing on the respective strengths of meta-analytic and subject-specific analyses of brain data. First, we define regions of interest (ROI) by identifying overlapping activation throughout the literature projected to an established brain atlas (Glasser et al., 2013). We then produce a rsFC networks of all the surface vertices within these ROIs for each individual resting state dataset from the Human Connectome Project (HCP; citation), and estimate the extent of DMN coverage through spectral partitioning. The resulting patterns are then evaluated for consistency across methods, throughout each individual's time series, and across subjects. Finally, we show some interesting properties of SP related to the stability of brain networks.
 
 ## Methods
-Tentative outline:
-
-- Meta-analysis
-- fMRI data
-- Network definition
-- Community detection
-- Evaluation
 
 **Meta-analysis**
 We used data from metan-alyses that gathered peak brain coordinates of activity from studies of valuation (Bartra et al., 2010) (n = 27 studies) and DMN (Laird et al., 2009) (n = 77). These represent the surviving areas post-statistical thresholding from each study. For each peak volumetric coordinate, 10mm sphere masks were generated and then projected to a standard cortical mesh (fs_average, 32,000 vertices) using FreeSurfer. The sphere sections that overlapped with the cortex (should I add the details of the overlap?) were mapped to an atlas of the human cortical surface (Glasser et al., 2016). This produced a list of standardized parcels that were reported on each study. 
@@ -1114,10 +1102,13 @@ For the main goal of this section, I maximized the strength-based modularity met
 
 In order to evaluate the validity of the modularity-based communities, I also clustered the brain by means of spectral partitioning. Specifically, I took the Fiedler vector (eigenvector associated with the second lowest eigenvalue) from each participant’s normalized Laplacian matrix, and divided the brain by the sign of the eigenvector values. This analysis served the additional purpose of more strictly dividing the brain into DMN and non-DMN communities. Importantly, given the high density of these networks (see results), spectral partitioning was unlikely to face the issues associated with its use in sparse networks (Fortunato & Hric, 2016). Finally, to quantify the agreement of these community methods, I computed both the adjusted rand index and variation of information distance (normalized by the logarithm of the number of vertices, 360 in this case) between them per subject. The adjusted rand index denotes the proportion of vertices that coincide in affiliation across partitions, and compares this score to a baseline given by the expectation based on a random vertex assignment for an equal number of clusters across partitions. On the other hand, variation of information gives a general sense of the amount of information to be gained by the complementary community partitioning (Meila, 2007), measured by the addition of the conditional entropies per combination of clusters across partitions. While the rand index is more easily interpreted, it suffers from the assumption that the baseline should have an equal number of vertices per cluster across partitions, which is not necessarily the case. Therefore, I used variation of information as a more robust similarity metric (Fortunato & Hric, 2016). Importantly, due to having just 3 subjects, I abstained from performing formal statistics on the descriptive measures that I show.
 
-**Within-ROI Connectivity**
 For the third stage, I “zoomed in” each subject’s brain by computing the correlation among all of the surface-vertices contained within each ROI across all the ROIs, and applied the same correction as in step two. That means that the vertices became smaller functional brain units that are connected by the same type of edge (i.e. adjusted correlations) as in step two. This time, I only focused on partitioning the brain through modularity and spectral partitioning to see if the ROIs can be subdivided at this finer level of resolution. It is worth noting that while communities across subjects should be similar, the idiosyncrasies explained previously (i.e. cortical folding) should produce noticeable differences as well.
 
 This time I added two new areas to the ROIs: 7m, as this area had unique relevance in DMN when compared to valuation (evidenced by its connectivity strength in DMN and chi- squared permutation in the meta-analysis, see results), and V1, as this visual processing area should not be affiliated with DMN. These regions thus acted as dual reference points, such that the community affiliated with 7m should denote DMN, while V1 indicated non-DMN. As before, I tested the validity of the partitions using the adjusted rand index and normalized variation of information. However, this time I also used the rand index to quantify the community correspondence between subjects. Specifically, I divided each subject’s spectrally- partitioned brain into PCC and mPFC topographical zones (posterior and frontal brain, respectively), and computed the index of each region between subjects. The high cross-subject heterogeneity of cortical folding of mPFC should produce relatively low rand indices, while the more homogeneous PCC should display the opposite pattern. This analysis was meant to tackle the subject-specific limitations discussed above. The final patterns were inspected visually.
+
+**Community Detection**
+
+**Evaluation**
 
 ## Results
 ## Partition Comparison: Full Datasets
