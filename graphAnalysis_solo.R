@@ -203,7 +203,7 @@ fisherTanh <- function(Data = padjMatrix){
   
   transformed <- list()
   
-  # tanh (ones reduced to 0.999 to avoid Inf)
+  # tanh
   Data[Data == 1] <- 1 * 0.999
   transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
   
@@ -472,6 +472,7 @@ communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "v
       
       # for storing later
       corrMatrix <- corrMat
+      
       
       # transform to Fisher's (think of thresholding)
       transfMat <- fisherTanh(Data = corrMat)
@@ -1013,7 +1014,7 @@ Meta <- F # Run meta analysis?
 Parcellated <- F # Parcellated whole brain community detection
 Vertex <- T # ROI-based vertex analysis
 Plots <- F # If running on the SCC, plots might be unhelpful. Have a separate script for that instead
-Sliding <- F
+Sliding <- T
 
 # colors to differentiate other things
 #Cols <- c("aquamarine4","#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
@@ -1023,9 +1024,6 @@ Cols <- c("DMN" = "aquamarine4","Valuation" = "#D9541A",rgb(190,190,190,100, max
 # These come from an arbitrary division based on where Mackey & Petrides (2014) draw their line
 # This is computed below, but if we want to save time it can be loaded instead.
 bothLbls <- as.character(read.table('bothLbls.csv', header = F)$V2)
-# add Accumbens (in the future replace 7m with Accumbens (i.e. gsub("_7m_", "Accumbens", bothLbls)))
-bothLbls <- c(bothLbls, "Accumbens")
-#
 
 vmPFC_labels <- c("_10pp_",
                   "_10r_",
@@ -1089,7 +1087,7 @@ mPFC_only <- c("_a24_",
 
 # Cortical surface for plotting
 labelPerVertex <- read.table('labelPerVertex.csv', header = F)
-labelCoords_vertex <- read.csv2('labelCoords_vertex.csv')[,2:6]
+labelCoords_vertex <- read.csv2('labelCoords_vertex.csv', sep = ",")[,2:6]
 labelCoords_parcel <- read.csv2('labelCoords_parcel.csv', sep = ",")
 
 # Ensure that coordinates are numeric once loaded
@@ -1102,29 +1100,29 @@ labelCoords_vertex <- transform(labelCoords_vertex, z = as.numeric(as.character(
 
 
 ###------- Structural Data ---------------
-# write('Loading structural brain data from HCP subjects...', stdout())
-# 
-# #setwd('../../../restricted/projectnb/cd-lab/Claudio/Community/')
-# # Myelin density maps (all HCP subjects)
-# myelinData <- read.csv(paste(SubjID,'_myelin.txt', sep=""), header = F)
-# myelinData$Label <- labelCoords_vertex$Label
-# 
-# # Curvature (update to all HCP subjects)
-# curvatureData <- read.csv(paste(SubjID,'_curvature.txt', sep=""), header = F)
-# curvatureData$Label <- labelCoords_vertex$Label
-# 
-# # Cortical thickness, with curvature regressed out (update to all HCP subjects)
-# thicknessData <- read.csv(paste(SubjID,'_thickness.txt', sep=""), header = F)
-# thicknessData$Label <- labelCoords_vertex$Label
-# 
-# # Get myelin density for ROIs
-# myelinROI <- getCoords(Labels = c("_7m_", bothLbls), Coords = myelinData, TimeSeries = F)$Coords
-# 
-# # Get curvature for ROIs
-# curvatureROI <- getCoords(Labels = c("_7m_", bothLbls), Coords = curvatureData, TimeSeries = F)$Coords
-# 
-# # Get thickness for ROIs
-# thicknessROI <- getCoords(Labels = c("_7m_", bothLbls), Coords = thicknessData, TimeSeries = F)$Coords
+write('Loading structural brain data from HCP subjects...', stdout())
+
+#setwd('../../../restricted/projectnb/cd-lab/Claudio/Community/')
+# Myelin density maps (all HCP subjects)
+myelinData <- read.csv(paste(SubjID,'_myelin.txt', sep=""), header = F)
+myelinData$Label <- labelCoords_vertex$Label
+
+# Curvature (update to all HCP subjects)
+curvatureData <- read.csv(paste(SubjID,'_curvature.txt', sep=""), header = F)
+curvatureData$Label <- labelCoords_vertex$Label
+
+# Cortical thickness, with curvature regressed out (update to all HCP subjects)
+thicknessData <- read.csv(paste(SubjID,'_thickness.txt', sep=""), header = F)
+thicknessData$Label <- labelCoords_vertex$Label
+
+# Get myelin density for ROIs
+myelinROI <- getCoords(Labels = c("_7m_", bothLbls), Coords = myelinData, TimeSeries = F)$Coords
+
+# Get curvature for ROIs
+curvatureROI <- getCoords(Labels = c("_7m_", bothLbls), Coords = curvatureData, TimeSeries = F)$Coords
+
+# Get thickness for ROIs
+thicknessROI <- getCoords(Labels = c("_7m_", bothLbls), Coords = thicknessData, TimeSeries = F)$Coords
 
 ###------- Meta-analysis: Load ---------------
 if (Meta == T) {
@@ -1318,6 +1316,47 @@ if (Meta == T) {
   valROI <- metaStuff$Label[which(metaStuff$valStr==max(metaStuff$valStr))]
   dmnROI <- metaStuff$Label[which(metaStuff$dmnStr==max(metaStuff$dmnStr))]
 
+  
+  
+  ## ALTERNATIVE AND MORE PARSIMONIOUS WAY TO GET MOST OF THE WAY THERE
+  # First, load the raw count csv files
+  
+  # Then, get the means of the counts per domain
+  BV <- round(mean(boostrap(valCounts$Counts)))
+  BD <- round(mean(bootstrap(dmnCounts$Counts)))
+  
+  # Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
+  # than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
+  valTest <- numeric()
+  for (i in seq(valCounts$Counts)) {
+    indx <- valCounts$Counts[i]
+    valTest[i] <- prop.test(indx, 27, alternative = "greater", p = BV/27)$p.value
+  }
+  
+  dmnTest <- numeric()
+  for (i in seq(dmnCounts$Counts)) {
+    indx <- dmnCounts$Counts[i]
+    dmnTest[i] <- prop.test(indx, 77, alternative = "greater", p = BD/77)$p.value
+  }
+  
+  # Retain only the significant parcels
+  t1 <- valCounts$Label[valTest < 0.05]
+  t2 <- dmnCounts$Label[dmnTest < 0.05]
+  
+  # Remove hemispheric references 
+  t1 <- unique(substring(t1,2))
+  t2 <- unique(substring(t2,2))
+  
+  # And get the set of overlapping areas between literatures
+  # This is missing some cingulate and PFC areas, and adds V2.
+  # However, we can say that we are filling in the gap for completeness,
+  # and removing V2 because it's demonstrably irrelevant.
+  bothLbls_alt <- unique(c(t1[t1 %in% t2], t2[t2 %in% t1]))
+  
+  # You could also try to permute the allocation of reports per literature,
+  # and then perform a chi-squared per parcel. Get the max stat per iteration.
+  # Now you have your null distribution.
+  
 }
 ###------- Meta-analysis: Plots ---------------
 if (Meta == T) {
@@ -1507,14 +1546,14 @@ if (Vertex) {
   # And ensure that DMN is assciated with the positive values of the eigenvector
   dmnval7mCommunities <- evenSpectral(dmnval7mCommunities)
   
-  # # Myelin
-  # dmnval7mCommunities$Myelin <- myelinROI[ , 1]
-  # 
-  # # Curvature
-  # dmnval7mCommunities$Curvature <- curvatureROI[ , 1]
-  # 
-  # # Thickness
-  # dmnval7mCommunities$Thickness <- thicknessROI[ , 1]
+  # Myelin
+  dmnval7mCommunities$Myelin <- myelinROI[ , 1]
+  
+  # Curvature
+  dmnval7mCommunities$Curvature <- curvatureROI[ , 1]
+  
+  # Thickness
+  dmnval7mCommunities$Thickness <- thicknessROI[ , 1]
   
   rm(tempGraph)
   
