@@ -1,10 +1,10 @@
 ---
-title: "Parsing mPFC: Community analysis"
+title: "Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach"
 author: "Claudio Toro-Serey & Joseph T. McGuire"
 #date: "7/2/2018"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -1070,7 +1070,9 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
 
   Valuation effects are consistently observed in medial prefrontal and posterior cingulate cortex (mPFC and PCC). The spatial extent of these effects is mostly indistinguishable from the default mode network (DMN) in existing meta-analyses. However, little is known about how valuation effects fit within the broader functional architecture of mPFC and PCC, or whether that architecture is consistent or idiosyncratic across individuals. Here we complement a meta-analysis with fMRI-based graph theoretic approaches to subdivide mPFC and PCC at the single-subject level. Our results suggest the functional topography of mPFC has substantial variability across individuals. This highlights the potential usefulness of estimating brain effects at the individual level in this region, and points to limitations of aggregative methods such as coordinate-based meta-analysis in determining whether valuation and DMN effects emerge from common or separable brain systems. Our approach shows promise in addressing this issue through future manipulations of valuation.
 
+
 ## Introduction
+
   Studies of decision making have consistently associated activity in ventromedial prefrontal cortex (vmPFC) with the subjective value assigned to decision outcomes (Bartra, McGuire, & Kable, 2010; Clithero & Rangel, 20??; Hiser & Koenigs, 2017; Kable & Glimcher, 2007; Levy et al., 2011). However, the distributed cortical valuation system also includes posterior cingulate and more extended mPFC regions, which collectively show significant spatial overlap with the default mode network (DMN) along the medial wall (Fox et al., 2005; Laird et al., 2009; Yeo et al., 2011). This shared neural coverage has prompted the question of whether (and to what extent) these two systems can be dissociated.
 
   Previous meta-analytic work has provided important insights on the psychological phenomena attributed to mPFC subregions. Independent coordinate-based meta-analyses have found mirroring spatial coverage in mPFC for valuation (Bartra et al., 2010) and DMN (Laird et al., 2009). Whole brain analyses have shown that while more ventral mPFC regions are increasingly associated with reward-related elements of decision making, vmPFC strongly coactivates with DMN regions across the literature, with no clear topographical distinction between these phenomena (de la Vega et al., 2016). More focused meta-analytic work aimed at disentangling DMN from subjective value has determined that these systems are inseparable within mPFC (Acikalin, Gorgolewski, & Poldrack, 2017). These findings highlight the multifaceted embedding of psychological constructs in subregions of mPFC, and suggest that DMN and valuation might indeed be subserved by the same system. However, recent activation-based meta-analytic work has demonstrated considerable domain specificity in this area (Kragel et al., 2018). While informative, a key limitation in distinguishing constructs through this approach is that meta-analyses often rely on information derived from group-averaged data. Averaging has traditionally been beneficial in identifying tendencies in brain function and organization when faced with short scanning sessions per subject. However, it has been shown that mPFC is subject to considerable idiosyncratic cortical folding (Zilles, Palomero- Gallagher, & Amunts, 2013) and inter-subject functional variability (Mueller et al., 2013) compared to the rest of the brain, thus making group-averaging studies difficult to interpret. 
@@ -1081,10 +1083,11 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
 
   In this study, we aim to subsection regions commonly attributed to both DMN and subjective value into subject-specific DMN and non-DMN partitions, quantifying the degree of topographical heterogeneity present in this network within and across individuals. This description will allow researchers to generate more precise topographic targets for future studies of decision making. We do this by capitalizing on the respective strengths of meta-analytic and subject-specific analyses of brain data. First, we define regions of interest (ROI) by identifying overlapping activation throughout the literature projected to an established brain atlas (Glasser et al., 2013). We then produce a rsFC networks of all the surface vertices within these ROIs for each individual resting state dataset from the Human Connectome Project (HCP; citation), and estimate the extent of DMN coverage through spectral partitioning. The resulting patterns are then evaluated for consistency across methods, throughout each individual's time series, and across subjects. Finally, we show some interesting properties of SP related to the stability of brain networks.
 
+
 ## Methods
 
 **Meta-analysis**
-We used data from metan-alyses that gathered peak brain coordinates of activity from studies of valuation (Bartra et al., 2010) (n = 27 studies) and DMN (Laird et al., 2009) (n = 77). These represent the surviving areas post-statistical thresholding from each study. For each peak volumetric coordinate, 10mm sphere masks were generated and then projected to a standard cortical mesh (fs_average, 32,000 vertices) using FreeSurfer. The sphere sections that overlapped with the cortex (should I add the details of the overlap?) were mapped to an atlas of the human cortical surface (Glasser et al., 2016). This produced a list of standardized parcels that were reported on each study. 
+We used data from metan-alyses that gathered peak brain coordinates of activity from studies of valuation (Bartra et al., 2010) (n = 27 studies) and DMN (Laird et al., 2009) (n = 77). These represent the surviving areas post-statistical thresholding from each study. For each peak volumetric coordinate, 10 mm sphere masks were generated and then projected to a standard cortical mesh (fs_average, 32,000 vertices) using FreeSurfer. The sphere sections that overlapped with the cortex (should I add the details of the overlap?) were mapped to an atlas of the human cortical surface (Glasser et al., 2016). This produced a list of standardized parcels that were reported on each study. 
 
 With these lists, we identified the areas that were more consistently shared between DMN and valuation. For each literature, we summed the number of times each parcel was reported across studies, and performed a one-way chi-squared test of proportions on each parcel with a null probability equivalent to the bootstrapped (5000 iterations) mean of each literature's report counts. In other words, we checked which regions were significantly (p < 0.05) more reported in their respective literatures than their counterparts. Regions of interest were then determined based on which of the remaining regions were common across literatures.
 
@@ -1093,43 +1096,51 @@ Next, we identified areas that were solely related to either literature. We limi
 **fMRI Data**
 In order to quantify the intrinsic connectivity of these ROIs in the brain, we acquired resting-state fMRI data from the Human Connectome Project (HCP; Van Essen et al., 2013; www.humanconnectome.org) Q6 release (n = 80, randomly sampled from the total pool of 469 available subjects). Each subject's data was acquired over two days at Washington University in St. Louis on a Siemens CONNECTOM Skyra MRI scanner (Siemens, Erlangen, Germany). Four resting state sessions (TR = 0.720 s, TE = 33.1 ms, FA = 52°, multiband factor = 8, 72 slices, 2 mm isotropic voxels) were each comprised of 1200 TRs for a total scan time of 14 min 33 s, with left-right and left-right phase encoding implemented on each day. We used this scanning structure to estimate each subject's topology based on session, day, and overall data (4800 TRs). 
 
-Beyond the in-house minimally preprocessed pipeline from HCP (Glasser et al., 2013), which include considerable motion correction, temporal denoising, highpass filtering (0.0005 Hz threshold), and MNI152 normalization, all scans went through a number of additional refinements (Tobyne et al., 2017). Only subjects with both left-right and right-left phase encoding were included. In addition, only datasets with either low motion levels (under 1.5mm) or 0.5mm mean framewise displacement (FD) were used. Volumes that displayed an FD of over 0.5 mm were considered as spikes and removed from the subject's dataset, and subjects whose spike counts were above 5% of their total data were excluded from analyses. Briefly, each dataset was bandpass filtered (DEETS HERE), and had the mean greyordinate signal regressed from every vertex time series (MGSR). Each subject's brain was comprised of 32k vertices per hemisphere. We retained only the cortical surfaces, which resulted in 59,412 total surface vertices per subject. Resting state data was acquired over four scanning sessions that occurred over the course of two days (two sessions per day). 
+Beyond the in-house minimally preprocessed pipeline from HCP (Glasser et al., 2013), which includes considerable motion correction, temporal denoising, highpass filtering (0.0005 Hz threshold), and MNI152-based normalization, all scans went through a number of additional refinements (Tobyne et al., 2017). These included band-pass filtering (allowed frequencies ranged from 0.009 and 0.08 Hz), as well as mean greyordinate signal regression (MGSR; Burgess et al., 2016). Only subjects with both left-right and right-left phase encoding were included (i.e. subjects with four rsfMRI sessions). In addition, only datasets with either low motion levels (under 1.5mm) or under 0.5 mm mean framewise displacement (FD) were used. Volumes that displayed an FD of over 0.5 mm were considered as spikes and removed from the subject's dataset, and subjects whose spike counts were above 5% of their total data were excluded from analyses. Finally, data acquired on the same day (i.e. left-right and right-left phase encoding session) were temporally demeaned. Each subject's brain was comprised of 32k vertices per hemisphere. We retained only the cortical surfaces, which resulted in 59,412 total surface vertices per subject. 
 
-**Within-ROI Connectivity**
-To establish each subject's network, we selected all the vertices contained within the ROIs (n = 5,942 per subject) and computed the Pearson correlation of the time series of every pair of vertices. This produced a weighted network for each subject, where surface vertices were the nodes, and edges the correlations among all of them. Next, we took the exponential of the correlations, Fisher transformed them (i.e. tanh) so that all weights were positive while maintaining the shape of the original correlation distribution, and retained the edges whose adjusted p-values remained significant after correction for multiple tests (FDR < 0.05). 
-
-For the main goal of this section, I maximized the strength-based modularity metric as a community detection method (fast-greedy algorithm), so that I could check if all the DMN ROIs from the previous section were affiliated with the same community. While this measure has resolution problems at large and low scales (Fortunato & Hric, 2016), if it does extract a close match to standard DMN networks, it could act as a good method for the final stage of the project (but see Peel, Larremore, and Clauset 2017 for issues with ground-truth). Even though this analysis is mainly geared to confirm that these ROIs are jointly captured, this step also let me examine whether some of the ROIs could be subdivided into DMN and non-DMN regions at this level of granularity.
-
-In order to evaluate the validity of the modularity-based communities, I also clustered the brain by means of spectral partitioning. Specifically, I took the Fiedler vector (eigenvector associated with the second lowest eigenvalue) from each participant’s normalized Laplacian matrix, and divided the brain by the sign of the eigenvector values. This analysis served the additional purpose of more strictly dividing the brain into DMN and non-DMN communities. Importantly, given the high density of these networks (see results), spectral partitioning was unlikely to face the issues associated with its use in sparse networks (Fortunato & Hric, 2016). Finally, to quantify the agreement of these community methods, I computed both the adjusted rand index and variation of information distance (normalized by the logarithm of the number of vertices, 360 in this case) between them per subject. The adjusted rand index denotes the proportion of vertices that coincide in affiliation across partitions, and compares this score to a baseline given by the expectation based on a random vertex assignment for an equal number of clusters across partitions. On the other hand, variation of information gives a general sense of the amount of information to be gained by the complementary community partitioning (Meila, 2007), measured by the addition of the conditional entropies per combination of clusters across partitions. While the rand index is more easily interpreted, it suffers from the assumption that the baseline should have an equal number of vertices per cluster across partitions, which is not necessarily the case. Therefore, I used variation of information as a more robust similarity metric (Fortunato & Hric, 2016). Importantly, due to having just 3 subjects, I abstained from performing formal statistics on the descriptive measures that I show.
-
-For the third stage, I “zoomed in” each subject’s brain by computing the correlation among all of the surface-vertices contained within each ROI across all the ROIs, and applied the same correction as in step two. That means that the vertices became smaller functional brain units that are connected by the same type of edge (i.e. adjusted correlations) as in step two. This time, I only focused on partitioning the brain through modularity and spectral partitioning to see if the ROIs can be subdivided at this finer level of resolution. It is worth noting that while communities across subjects should be similar, the idiosyncrasies explained previously (i.e. cortical folding) should produce noticeable differences as well.
-
-This time I added two new areas to the ROIs: 7m, as this area had unique relevance in DMN when compared to valuation (evidenced by its connectivity strength in DMN and chi- squared permutation in the meta-analysis, see results), and V1, as this visual processing area should not be affiliated with DMN. These regions thus acted as dual reference points, such that the community affiliated with 7m should denote DMN, while V1 indicated non-DMN. As before, I tested the validity of the partitions using the adjusted rand index and normalized variation of information. However, this time I also used the rand index to quantify the community correspondence between subjects. Specifically, I divided each subject’s spectrally- partitioned brain into PCC and mPFC topographical zones (posterior and frontal brain, respectively), and computed the index of each region between subjects. The high cross-subject heterogeneity of cortical folding of mPFC should produce relatively low rand indices, while the more homogeneous PCC should display the opposite pattern. This analysis was meant to tackle the subject-specific limitations discussed above. The final patterns were inspected visually.
+**Within-ROI Network Definition**
+To establish each subject's network, we selected all the vertices contained within the ROIs (n = 5,564 per subject) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, where surface vertices were the nodes, and edges the correlations among all of them. Next, we took the exponential of the correlations, Fisher transformed them (i.e. tanh) so that all weights were positive while maintaining the shape of the original correlation distribution, and retained the edges whose adjusted p-values remained significant after correction for multiple tests (FDR < 0.05). As part of the evaluation step, this procedure (and the community detection outlined below) was applied at four levels: 1) each session separately; 2) the concatenated timeseries from each pair of daily sessions; 3) each subject's dataset; and 4) on each step of a sliding window analysis (see Evaluation for more details).
 
 **Community Detection**
 
-**Evaluation**
+Communities (i.e. clusters) were identified by means of spectral partitioning (SP; Fiedler, 1975). First, each adjusted network was represented as an $n$ x $n$ correlation matrix (where $n$ = number of vertices within the ROIs, 5,564). This matrix was then transformed into its normalized Laplacian form
+
+$$\begin{aligned}
+L = I - D^{-\frac{1}{2}}AD^{-\frac{1}{2}}
+\end{aligned}$$
+
+Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlations with every other vertex), and $A$ is the correlation matrix. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler Vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected (Fiedler, 1975). Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community as the one containing the one DMN-specific area from the meta-analysis. Importantly, given the high density of these networks (**Add to results**), spectral partitioning was unlikely to face the issues associated with its use in sparse networks (Fortunato & Hric, 2016).
+
+In order to evaluate the validity of the resulting partitions, we also estimated these communities using the more traditional approach of modularity maximization (using the algorithm from Clauset et al., XXXX). This method maximizes a quality function that compares the strength of the connection between any two vertices against a null model of their probability of being randomly connected to any other vertex in the network. The method heuristically iterates through many possible combination of vertices, and selects the clustering that maximizes the network's modularity. Thus, unlike SP, modularity can subdivide a network into many functional groups. If the partitions from the bounded and unbounded methods show high level of agreement, we can gain confidence in that we are indeed fractioning the ROIs into those belonging to DMN and not.
+
+**Partition Evaluation**
+To quantify the agreement between partitions, we computed both the adjusted rand index and variation of information distance. The adjusted rand index denotes the proportion of vertices that coincide in affiliation across partitions, and compares this score to a baseline given by the expectation based on a random vertex assignment for an equal number of clusters across partitions. On the other hand, variation of information gives a general sense of the amount of information to be gained by the complementary community partitioning (Meila, 2007), measured by the addition of the conditional entropies per combination of clusters across partitions. While the rand index is more easily interpreted, it suffers from the assumption that the baseline should have an equal number of vertices per cluster across partitions, which is not necessarily the case. Therefore, I used variation of information as a more robust similarity metric (Fortunato & Hric, 2016).
+
+ However, this time I also used the rand index to quantify the community correspondence between subjects. Specifically, I divided each subject’s spectrally- partitioned brain into PCC and mPFC topographical zones (posterior and frontal brain, respectively), and computed the index of each region between subjects. The high cross-subject heterogeneity of cortical folding of mPFC should produce relatively low rand indices, while the more homogeneous PCC should display the opposite pattern. This analysis was meant to tackle the subject-specific limitations discussed above. The final patterns were inspected visually.
+
+
+
 
 ## Results
+## Meta-analysis
+
+Figure 1 shows the resulting ROIs from the meta-analysis. Areas in blue denote the 17 overlapping ROIs, which landed mostly on the medial wall, as well as a region in IPL and TPJ. Area 7m (in red) was the only one to show unique affiliation, which was significant for DMN. 
+
+```{r Meta-analysis ROIs, out.width="60%", out.height="40%", fig.align = "center"}
+include_graphics("ROIS.png")
+```
+
 ## Partition Comparison: Full Datasets
 
-Just as reference, the following shows a stereotypical subdivision of the ROIs for a single subject (100307) using spectral partitioning.
+The following shows a stereotypical subdivision of the ROIs for a single subject (100307) using spectral partitioning.
 
-``` {r Partition comparison: all brain example, fig.align="center", fig.width=5, fig.height=4, echo=FALSE, message = FALSE}
-# Load data
-setwd('./Summary/')
-temp <- list.files()
-subjList <- sapply(temp, substring, first=1, last=6)
-Summaries <- lapply(temp, read.csv)
-nSubj <- length(Summaries)
-
-plotCommunities(Summaries[[1]], Hemi = "L", Legends = F, type = "FiedlerBinary")
-
+```{r Template partition, out.width="60%", out.height="40%", fig.align = "center"}
+include_graphics("template.png")
 ```
 
 This first step just gives an idea of the level of agreement within and between subjects. As a first measure, we use the adjusted rand index (RI) to estimate the level of agreement between partitions. RI measures the proportion of pairs of nodes in a network that were either clustered together or separately in both partitions, over all possible affiliation changes (e.g. clustered together in partition 1, but separately in 2). It is worth noting that the adjusted rand index has well known limitations (Fortunato & Hric, 2016). To compensate for this, we also performed all the upcoming analyses with the variation of information index (VI). This distance measure denotes how much information is gained by adding the second partition (thus, lower values are better), and is known for its robustness. Both RI and VI analyses agreed in the results they yielded, but we only report RI due to its easier interpretability. This first plot shows the distribution of RI values between modularity and spectral partitioning for each subject.
 
-``` {r Partition comparison: all cross-method agreement, fig.align="center", fig.width=4, fig.height=4, echo=FALSE, message = FALSE}
+``` {r Partition comparison: all cross-method agreement, fig.align="center", fig.width=4, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 # Cross-method
 # Don't worry about plotting, since that's mainly for a general visualization
 RI_all_within <- comparePartitions(Data = Summaries, Index = "RI", MOI = c("FiedlerBinary","Membership"), nSubjects = length(Summaries), subjNames = subjList)
@@ -1148,7 +1159,7 @@ Next, we examine how similar the partitions for PCC and mPFC are across subjects
  
 \bigskip
 
-``` {r Partition comparison: all 2, fig.align="center", echo=FALSE, message = FALSE}
+``` {r Partition comparison: all 2, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 # Across subjects
 # Note: the upper and lower triangles can totally be combined before plotting, instead of adding one corrplot over another. Might work on that eventually.
 RI_all_between <- comparePartitions(Data = Summaries, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
@@ -1203,7 +1214,7 @@ The results match the qualitative observations mentioned above, with overall hig
 
 HCP resting state data is separated into 4 runs (2 per day of scanning). This section explores how much agreement there is between partitions computed on each day. The similarity matrix on the left shows the pairwise level of agreement for the overall data among the example subjects, while the right one divides this data into PCC and mPFC.
 
-``` {r Partition comparison: halves, fig.align="center", echo=FALSE, message = FALSE}
+``` {r Partition comparison: halves, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 # Select 10 subjects from the sample to display
 selectSubj <- seq(1,20)
 
@@ -1261,7 +1272,7 @@ corrplot(RI_PFC_halves,
 
 So far both visualizations show considerable subject specificity, and the regional division agrees with the whole-data similarity matrix. Importantly, this indicates that both PCC and mPFC partitions were more similar within- than between-subjects (e.g. RI values higher for each 2x2 diagonal submatrix than the off-diagonals). Now, how do we check whether the within subject consistency is significantly higher than across subjects? One way is to divide each subject's RI-agreement between days by the RI values with the days from the other subjects. This gives an RI ratio per subject that denotes the relative specificity of their partition. That means, partitions that align well across subjects should yield ratios close to 1, while subject-consistent and unique partitions would produce high ratios. 
 
-``` {r Partition comparison: halves ratios, fig.align="center", fig.width = 4, fig.height = 4, echo=FALSE, message = FALSE}
+``` {r Partition comparison: halves ratios, fig.align="center", fig.width = 4, fig.height = 4, echo=FALSE, message = FALSE, cache = TRUE}
 # Now compare all possible pairs of subjects
 # Compare all halves with RI
 RI_all_between_halves <- comparePartitions(Data = Summaries_halves, Index = "RI", nSubjects = length(Summaries_halves), subjNames = subjList_halves)
@@ -1337,7 +1348,7 @@ As expected, we see that while both regions had good specificity (ratios > 1, de
 
 Next, each session is evaluated independently. The similarity matrix on the left shows how each session's data corresponded within and between subjects for all ROIs combined, while the one on the right shows PCC and mPFC separately. It is worth noting that each session is ~14 mins long, which is below the stability threshold for fMRI based modularity (Gordon et al., 2017). However, we also perform a sliding window analysis below that encompasses 20 mins of data per window.
 
-``` {r Partition comparison: session similarity matrices, fig.align="center", echo=FALSE, message = FALSE}
+``` {r Partition comparison: session similarity matrices, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 # Select 10 subjects from the sample to display
 selectSubj <- seq(1,40)
 
@@ -1432,7 +1443,7 @@ Sess_PFCComparison[[4]] <- cohenD(Sess_PFCComparison[[1]], Sess_PFCComparison[[2
 
 As before, we see higher agreement levels within subjects (with some exceptions). Simple permutation comparisons confirmed this intuition for the all-ROI (p = `r Sess_overallComparison[[3]]$Pval`; Cohen's D `r round(Sess_overallComparison[[4]], digits = 2)`), PCC (p = `r Sess_PCCComparison[[3]]$Pval`; Cohen's D = `r round(Sess_PCCComparison[[4]], digits = 2)`), and mPFC (p = `r Sess_PFCComparison[[3]]$Pval`; Cohen's D = `r round(Sess_PFCComparison[[4]], digits = 2)`) divisions. In order to quantify the consistency and specificity of these partitions, we again applied the RI ratio index, but this time using the mean RI among all of a subject's sessions in the denominator. The following plot shows the results for PCC and mPFC separately.
 
-``` {r Partition comparison: session ratios, fig.align="center", fig.width = 4, fig.height = 4, echo=FALSE, message = FALSE}
+``` {r Partition comparison: session ratios, fig.align="center", fig.width = 4, fig.height = 4, echo=FALSE, message = FALSE, cache = TRUE}
 ## Brain storming:
 ## Within-subject comparisons would be more interesting? Like, comparing the mean RI within-between per subject
 ## Perhaps a more interresting idea would be to generate an index of variance within/between subject
@@ -1491,7 +1502,7 @@ We can see again that the ratios for mPFC were higher than those of PCC (permuta
 
 Another way to determine the heterogeneity of these results is based on Kragel et al. (2018), who quantified the dissimilarity of brain patterns for behavioral domain, subdomain, and study (or how generalizeable the patterns are at each hierarchical level). In our case, for `r nSubj` subjects `r nSubj*3` matrices are created (`r nSubj*2` for daily comparisons, `r nSubj` for within subject comparisons). Each matrix is binarized to compare a subject's level of similarity within their daily data vs across every other subject's sessions. The `r nSubj*3` matrices are vectorized and used as predictors in a GLM with a quasibinomial distribution, where the dependent data is the full vectorized RI similarity matrix. This is a simplified version of a fully-dimensional model that considers all possible comparisons at the session level, which would otherwise have S + (S x (S-1)/2) parameters (with S = session). For this model, a significantly negative subject predictor implies that the odds of the partitions being similar across subjects are much lower than those within each subject (across sessions). Thus, subject specificity would dictate that all subject-level coefficients should be significant and negative. 
 
-``` {r Partition comparison: session linear model, fig.align="center", fig.width = 4, fig.height = 4, echo=FALSE, message = FALSE}
+``` {r Partition comparison: session linear model, fig.align="center", fig.width = 4, fig.height = 4, echo=FALSE, message = FALSE, cache = TRUE}
 # 2) Based on Kragel et al, 2018
 # First, create a disimilarity matrix
 dissimMatrix_all <- RI_all_between_sess
@@ -1562,7 +1573,7 @@ It is also worth considering how stable these measures are, so we performed a sl
 
 \bigskip
 
-``` {r Stability per subject: Overall, fig.align="center", fig.width=8, fig.height=4, echo=FALSE, message = FALSE}
+``` {r Stability per subject: Overall, fig.align="center", fig.width=8, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 # Load files
 setwd('./Sliding_window/')
 temp <- list.files(pattern = '*Comparisons.csv')
@@ -1630,7 +1641,7 @@ With the exception of some noisy subjects, the sigmoidal functions show a tight 
 
 While these results show promise, so far we have only looked at stability for all the ROIs. The next three plots show similar data, but for PCC and mPFC separately. The middle plot compares the subject-wise mean RI for PCC and mPFC. While mPFC shows an overall significantly lower level of agreement with the overall partition, the variance throughout the time series is small.
 
-``` {r Stability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE}
+``` {r Stability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 ## Check stability for PCC and mPFC separately
 # Get the sliding values for PCC and PFC separately
 tempSW_PCC <- lapply(SVals, "[", i = posteriorIndx, j =)
@@ -1708,7 +1719,7 @@ This suggests that, while the agreement of each window with the overall time ser
 
 \bigskip
 
-``` {r Stability per subject: SNR Comparison, fig.align="center", fig.width=4, fig.height=4, echo=FALSE, message = FALSE}
+``` {r Stability per subject: SNR Comparison, fig.align="center", fig.width=4, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 ## Putative steps to analyze the SNR of the full time series (PCC vs mPFC)
 # Flexibility vs SNR
 # Are vertices with lower SNR switching communities more often?
@@ -1744,7 +1755,7 @@ To further quantify the potential effect of noise in our results, we computed th
 
 \bigskip
 
-``` {r Stability per subject 4, fig.align="center", fig.width=5, fig.height=4, echo=FALSE, message = FALSE}
+``` {r Stability per subject 4, fig.align="center", fig.width=5, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 setwd('./Variance/')
 temp <- list.files()
 Variance <- lapply(temp, read.csv)
@@ -1835,7 +1846,7 @@ This begs the question of whether there is a "gradient of noise" along the z-axi
 
 \bigskip
 
-``` {r Stability per subject 6, fig.align="center", fig.width=8, fig.height=4, echo=FALSE, message = FALSE}
+``` {r Stability per subject 6, fig.align="center", fig.width=8, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 # grid.arrange(v6, v7, ncol = 2)
 par(mfrow = c(1,2))
 smoothScatter(allVariance[allVariance$Region == "mPFC",]$Rsquared, allVariance[allVariance$Region == "mPFC",]$tempZ,
@@ -1855,7 +1866,7 @@ smoothScatter(allVariance[allVariance$Region == "mPFC",]$varCoeff, allVariance[a
 
 Next, it is worth examining what we gain from using graph theoretic approaches over a simple seed-based functional connectivity analysis from PCC. For this purpose, we computed the mean time series of all the vertices contained in the DMN PCC ROI from Yeo et al. (2011) parcellation, and correlated it with the activity of every mPFC vertex from our ROIs. The similarity matrix below shows Day 1 vs Day 2 comparisons for mPFC partitions generated with seed-based correlations (top-left quadrant) vs community detection (bottom-right) across all participants, as well as how much did these methods agree with each other (not much, but enough, which is good). The important features here are that both approaches are very consistent, but community detection seems slightly more stable across days (quantified in the next section). Also, the cross-method agreement is fair, meaning that both approaches are showing similar topological features, but that these are more stable using graph theoretic approaches.
 
-``` {r Correlation vs community detection: plot, fig.align="center", echo=FALSE, message = FALSE}
+``` {r Correlation vs community detection: plot, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 ## Between halves analysis for correlation and communities (mPFC only)
 tempComm_PFC_halves_plot <- lapply(seq_along(tempComm_PFC_halves_plot), function(x) cbind(tempComm_PFC_halves_plot[[x]], Correlation_halves_plot[[x]]))
 D1 <- tempComm_PFC_halves_plot
@@ -1878,7 +1889,7 @@ segments(20.5,0.5,20.5,40.5, lwd = 2)
 
 ```
 
-``` {r Correlation vs community detection: comparison, fig.align="center", echo=FALSE, message = FALSE}
+``` {r Correlation vs community detection: comparison, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 # Compare correlation with community approach on mPFC
 # tempComm_PFC_halves <- lapply(seq_along(tempComm_PFC_halves), function(x) cbind(tempComm_PFC_halves[[x]], Correlation_halves[[x]]))
 # tempComm <- sapply(seq(1, 20, by = 2), function(x) cor(tempComm_PFC_halves[[x]]$FiedlerVec, tempComm_PFC_halves[[x+1]]$FiedlerVec))
@@ -1993,7 +2004,11 @@ sdThick <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Thickn
 ```
 
 Finally, we examined whether these topological features were defined by the structure of the brain by correlating each subject's Fiedler vector with their structural MRI data. We found that the Fiedler vector is uncorrelated with myelin density (mean correlation = `r round(meanMyelin, digits = 2)`; SD = `r round(sdMyelin, digits = 2)`), cortical folding (mean correlation = `r round(meanCurv, digits = 2)`; SD = `r round(sdCurv, digits = 2)`), and surface thickness (mean correlation = `r round(meanThick, digits = 2)`; SD = `r round(sdThick, digits = 2)`). While these results suggest that each subject's functional topology is mostly independent of brain structure, we will perform more detailed analyses of this in the future (i.e. are there any outstanding structural features in a subject that match their unique topology?).  
+
+
 ## Discussion
+
 For clinical implications, see Hiser & Koenigs 2018. In short, being able to identify functional idiosyncrasies without much data can yield important insights in diagnosis (meh, we always say that..) of a variety of psychological diseases associated with mPFC. It would be more interesting to identify the repercussions to damage in mPFC per individual. They mention that subgenual vmPFC is a common target for deep brain stimulation (or TMS) as a depression treatment. The refinement of the technique is thus coupled to being able to identify personalized functional topologies. They list a number of results related to mPFC functional connectivity too. In the end, their suggestions for clinical implications of mPFC studies rely on the individual measure of functional expanse. (note that social-relevant areas in their meta analysis look similar to our patterns, and the emotion part to Barbas latest)
+
 
 ## References
