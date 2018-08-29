@@ -31,6 +31,7 @@ library(lme4)
 library(parallel)
 library(corrplot)
 library(DescTools)
+library(knitr)
 
 
 ## Cohen's D for 2 groups
@@ -1103,13 +1104,13 @@ To establish each subject's network, we selected all the vertices contained with
 
 **Community Detection**
 
-Communities (i.e. clusters) were identified by means of spectral partitioning (SP; Fiedler, 1975). First, each adjusted network was represented as an $n$ x $n$ correlation matrix (where $n$ = number of vertices within the ROIs, 5,564). This matrix was then transformed into its normalized Laplacian form
+Communities (i.e. clusters) were identified by means of spectral partitioning (SP; Fiedler, 1975). First, each adjusted network was represented as an n x n correlation matrix (where n = number of vertices within the ROIs, 5,564). This matrix was then transformed into its normalized Laplacian form
 
 $$\begin{aligned}
 L = I - D^{-\frac{1}{2}}AD^{-\frac{1}{2}}
 \end{aligned}$$
 
-Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlations with every other vertex), and $A$ is the correlation matrix. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler Vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected (Fiedler, 1975). Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community as the one containing the one DMN-specific area from the meta-analysis. Importantly, given the high density of these networks (**Add to results**), spectral partitioning was unlikely to face the issues associated with its use in sparse networks (Fortunato & Hric, 2016).
+Where I is the identity matrix, D is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlations with every other vertex), and A is the correlation matrix. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler Vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected (Fiedler, 1975). Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community as the one containing the one DMN-specific area from the meta-analysis. Importantly, given the high density of these networks (**Add to results**), spectral partitioning was unlikely to face the issues associated with its use in sparse networks (Fortunato & Hric, 2016).
 
 In order to evaluate the validity of the resulting partitions, we also estimated these communities using the more traditional approach of modularity maximization (using the algorithm from Clauset et al., XXXX). This method maximizes a quality function that compares the strength of the connection between any two vertices against a null model of their probability of being randomly connected to any other vertex in the network. The method heuristically iterates through many possible combination of vertices, and selects the clustering that maximizes the network's modularity. Thus, unlike SP, modularity can subdivide a network into many functional groups. If the partitions from the bounded and unbounded methods show high level of agreement, we can gain confidence in that we are indeed fractioning the ROIs into those belonging to DMN and not.
 
@@ -1127,15 +1128,22 @@ To quantify the agreement between partitions, we computed both the adjusted rand
 Figure 1 shows the resulting ROIs from the meta-analysis. Areas in blue denote the 17 overlapping ROIs, which landed mostly on the medial wall, as well as a region in IPL and TPJ. Area 7m (in red) was the only one to show unique affiliation, which was significant for DMN. 
 
 ```{r Meta-analysis ROIs, out.width="60%", out.height="40%", fig.align = "center"}
-include_graphics("ROIS.png")
+# include_graphics("./Images/ROIS.png")
 ```
 
 ## Partition Comparison: Full Datasets
 
 The following shows a stereotypical subdivision of the ROIs for a single subject (100307) using spectral partitioning.
 
-```{r Template partition, out.width="60%", out.height="40%", fig.align = "center"}
-include_graphics("template.png")
+```{r Template partition, out.width="50%", out.height="30%", fig.align = "center"}
+# Load data
+setwd('./Summary/')
+temp <- list.files()
+subjList <- sapply(temp, substring, first=1, last=6)
+Summaries <- lapply(temp, read.csv)
+nSubj <- length(Summaries)
+
+#include_graphics("./Images/template.png")
 ```
 
 This first step just gives an idea of the level of agreement within and between subjects. As a first measure, we use the adjusted rand index (RI) to estimate the level of agreement between partitions. RI measures the proportion of pairs of nodes in a network that were either clustered together or separately in both partitions, over all possible affiliation changes (e.g. clustered together in partition 1, but separately in 2). It is worth noting that the adjusted rand index has well known limitations (Fortunato & Hric, 2016). To compensate for this, we also performed all the upcoming analyses with the variation of information index (VI). This distance measure denotes how much information is gained by adding the second partition (thus, lower values are better), and is known for its robustness. Both RI and VI analyses agreed in the results they yielded, but we only report RI due to its easier interpretability. This first plot shows the distribution of RI values between modularity and spectral partitioning for each subject.
