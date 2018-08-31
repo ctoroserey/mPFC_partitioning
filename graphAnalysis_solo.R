@@ -458,14 +458,14 @@ communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "v
       
       # Check for outliers. 
       # If found, remove vertices from indx, coords, and data, and recompute
-      tempStr <- colSums(corrMat)
-      outliers <- boxplot.stats(tempStr)$out
-      if (length(outliers) > 0) {
-        outIndx <- which(tempStr %in% outliers)
-        indx <- indx[! outIndx]
-        ROI_tseries <- Data[indx, ]
-        corrMat <- cor(t(ROI_tseries))
-      }
+      # tempStr <- colSums(corrMat)
+      # outliers <- boxplot.stats(tempStr)$out
+      # if (length(outliers) > 0) {
+      #   outIndx <- which(tempStr %in% outliers)
+      #   indx <- indx[! outIndx]
+      #   ROI_tseries <- Data[indx, ]
+      #   corrMat <- cor(t(ROI_tseries))
+      # }
       
       # name the dimensions of the matrix according to the surface vertex index
       rownames(corrMat) <- indx
@@ -1095,7 +1095,10 @@ labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(
 labelCoords_vertex <- transform(labelCoords_vertex, y = as.numeric(as.character(y)))
 labelCoords_vertex <- transform(labelCoords_vertex, z = as.numeric(as.character(z)))
 
-
+# Data frame to store the graph densities of each network
+densities <- data.frame(SubjID = rep(SubjID, 7),
+                        Type = c("Overall", "Day 1", "Day 2", "Session 1", "Session 2", "Session 3", "Session 4"),
+                        Density = rep(NA, 7))
 
 
 
@@ -1528,6 +1531,9 @@ if (Vertex) {
                                                 mode = "undirected",
                                                 weighted = T)
   
+  # Store the graph density
+  densities$Density[grep("Overall", densities$Type)] <- graph.density(tempGraph)
+  
   # Descriptives (Betweenness takes a long time, disregard)
   dmnval7mCommunities$Summary$Strength <- strength(tempGraph)
   
@@ -1641,7 +1647,6 @@ if (Vertex) {
     dmnval7mCommunities_halves[[i]]$Summary$FiedlerBinary <- tempEigen_halves[[i]]$binarized
     
     # Descriptives
-    # For MA703 I won't worry about this, since I'm not using it. 
     # It takes too long to compute for the extended analyses.
     tempGraph[[i]] <- graph_from_adjacency_matrix(dmnval7mCommunities_halves[[i]]$TransfMatrix$tanhZ,
                                                   mode = "undirected",
@@ -1649,7 +1654,11 @@ if (Vertex) {
     
   }
   
+  # Density
+  densities$Density[grep("Day", densities$Type)] <- sapply(tempGraph, graph.density)
+  
   # Descriptives (Betweenness takes a long time, disregard)
+  # This code is horrible. Optimize with apply/do.call, etc.
   tempStrength <- mclapply(tempGraph, strength)
   
   for (i in seq(length(tempEigen_halves))) {
@@ -1698,6 +1707,9 @@ if (Vertex == T) {
                                                   weighted = T)
     
   }
+  
+  # Density
+  densities$Density[grep("Session", densities$Type)] <- sapply(tempGraph, graph.density)
   
   # Descriptives (Betweenness takes a long time, disregard)
   tempStrength <- mclapply(tempGraph, strength)
@@ -1858,6 +1870,13 @@ if (Vertex) {
   
     # Write the actual sliding affiliations 
     write.csv2(slidingVals, file = paste(SubjID, "_slideWindowValues.csv", sep=""), row.names = F)
+  }
+  
+  # Densities
+  if (NA %in% densities$Density) {
+    warning('Some densities not stored properly')
+  } else {
+    write.csv(densities, paste(SubjID, "_Densities.csv", sep=""), row.names = F)
   }
   
   # Write files for HCP
