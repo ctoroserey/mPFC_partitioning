@@ -2,9 +2,9 @@
 title: 'Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach'
 author: "Claudio Toro-Serey & Joseph T. McGuire"
 output:
+  html_document: default
   word_document: default
   pdf_document: default
-  html_document: default
 bibliography: mPFC_paper.bib
 ---
 
@@ -1056,17 +1056,6 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
 
 
 ```
-
-``` {r For HCP data, fig.align="center", echo=FALSE, message = FALSE}
-# setwd('./For_HCP')
-# temp <- list.files(pattern = '*Binary*')
-# FB <- lapply(temp, read.table)
-# Summed <- do.call(cbind, lapply(FB, "[[", 'V1')) - 1
-# FB_Means <- rowMeans(Summed)
-# 
-# write.table(file = 'propDMN_all.txt', FB_Means, row.names = F, col.names = F, dec = ".")
-```
-
   
 ## Abstract
 
@@ -1120,9 +1109,9 @@ In order to evaluate the validity of the resulting partitions, we also estimated
 
 ### *Partition Evaluation*
 
-In order to evaluate the stability and topographical heterogeneity of the partitions within and across subjects, we chose the adjusted rand index (RI; Rand, 2012) as the reference metric of agreement between two clusterings. The adjusted rand index estimates the rate at which every pair of nodes in partition A were equally assigned to the same/different parcels on partition B, over all possible changes (e.g. clustered together on A, but separately on B). The resulting ratio is compared to a baseline given by the expectation based on a random vertex assignment for an equal number of clusters across partitions. Because of this, the adjusted rand index is a simple metric that determines the percentage of agreement between any two partitions that is agnostic to the labeling scheme. *(SHOULD WE INCLUDE THIS?) On the other hand, variation of information gives a general sense of the amount of information to be gained by the complementary community partitioning (Meila, 2007), measured by the addition of the conditional entropies per combination of clusters across partitions. While the rand index is more easily interpreted, it suffers from the assumption that the baseline should have an equal number of vertices per cluster across partitions, which is not necessarily the case. Therefore, I used variation of information as a more robust similarity metric (Fortunato & Hric, 2016).*
+In order to evaluate the stability and topographical heterogeneity of the partitions within and across subjects, we chose the adjusted rand index (RI; Rand, 2012) as the reference metric of agreement between two clusterings. The adjusted rand index estimates the rate at which every pair of nodes in partition A were equally assigned to the same/different parcels on partition B, over all possible changes (e.g. clustered together on A, but separately on B). The resulting ratio is compared to a baseline given by the expectation based on a random vertex assignment for an equal number of clusters across partitions. Because of this, the adjusted rand index is a simple metric that determines the percentage of agreement between any two partitions that is agnostic to the labeling scheme. *(SHOULD WE INCLUDE THIS? The mutual information results would probably need to go in the supplemental materials) On the other hand, variation of information gives a general sense of the amount of information to be gained by the complementary community partitioning (Meila, 2007), measured by the addition of the conditional entropies per combination of clusters across partitions. While the rand index is more easily interpreted, it suffers from the assumption that the baseline should have an equal number of vertices per cluster across partitions, which is not necessarily the case. Therefore, I used variation of information as a more robust similarity metric (Fortunato & Hric, 2016).*
 
-The topographies were compared: 1) Across community detection methods; 2) Overall data across individuals (ADD); 3) Overall data across participants, PCC and mPFC separately; 4) Day 1 vs Day 2 overall; 5) Day 1 vs Day 2 PCC vs mPFC; 6) Across sessions overall; 7) Across sessions PCC vs mPFC; 8) Sliding windowper subject overall; 9) Sliding window PCC vs mPFC. We compared the agreement within subjects against across subjects by computing the ratio of the mean RI within and between subjects. Ratios close to one denote good alignment across subjects, while ratios over one mean that partitions per subject were more stable than what you would expect against every other subject.
+We performed a number of comparisons among partitions. First, we computed the degree of agreement between SP and modularity per subject to validate the resulting functional patterns. Modularity and SP show overfitting and underfitting tendencies, respectively, in their community detection performance in a diverse number of network types [@Ghasemian2018]. Their alignment would thus give us confidence in the validity of the resulting topologies. Next, we compared the functional organization derived from the whole time series among all subjects, and report the mean RI for the group (ADD TO CODE). We then estimate the level of agreement between scans taken across days (i.e. pairs of daily left-right and right-left phase encoding sessions). If the functional organization estimated by SP is indeed subject-specific, we should see higher agreement for the same subject across days than either day compared to every other subject. We then extend this idea by computing the overall agreement across all sessions. Similarly, we expect that sessions within subject will show higher agreement than between subjects. Finally, we perform a sliding window analysis (20 min windows, 1 min increments, mean number of windows per subject = 37) 8) comparing each window's functional pattern against the clustering derived from the whole subject's data. This approach should give us a sense of the dynamics of the functional organization of mPFC during rest. We complement this analysis by calculating the proportion of times each surface vertex was affiliated with the DMN community across time, as well as computing the flexibility of each node (i.e. the number of times each vertex changed affiliation across time). Given that the functional heterogeneity of brain areas is unevenly distributed across the brain [@Mueller2013], we also performed these comparisons for PCC and mPFC separately. Given what we know about these general regions, we expected PCC to be well aligned across participants, and stable within subjects. On the other hand, we hypothesized low agreement of mPFC partitions across participants, but with considerable stability across days and sessions within subject. We compared the agreement within subjects against across subjects by computing the ratio of the mean RI within and between subjects. Ratios close to one denote good alignment across subjects, while ratios significantly higher than one suggest that partitions per subject were more stable than what you would expect against every other subject.
 
 
 
@@ -1130,13 +1119,17 @@ The topographies were compared: 1) Across community detection methods; 2) Overal
 \newpage
 
 
+### *Estimation of Noise Effects*
+### *Seed-based FC vs Community Detection*
+### *Structural Characteristics*
+
 ## Results
 
 ### *Meta-analysis*
 
 Figure 1 shows the resulting ROIs from the meta-analysis. Areas in blue denote the 17 overlapping ROIs, which landed mostly on the medial wall, as well as a region in IPL and TPJ. Area 7m (in red) was the only one to show unique affiliation, which was significant for DMN. 
 
-```{r Meta-analysis ROIs, out.width="60%", fig.align = "center"}
+```{r Meta-analysis ROIs, out.width="60%", fig.align = "center", fig.cap= "**Figure 1.** Template atlas from [-@Glasser2013] (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
 include_graphics("./Images/ROIS.png")
 ```
 
@@ -1732,7 +1725,7 @@ grid.arrange(SC_PCCPFC_plot, SC_PCCPFC_mean_plot, SC_PCCPFC_sd_plot, ncol = 3)
 
 \bigskip
 
-This suggests that, while the agreement of each window with the overall time series was stable for both PCC and mPFC (low SD, right plot), the overall agreement of mPFC is lower (paired permutation, p = `r SW_PCCvPFC_permuteTest$Pval`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). This result could be due to signal degeneration in mPFC (that said, it is worth noting that the topological patterns remain mostly the same for both PCC and mPFC throughout the SW analysis). To account for this, we computed the coefficient of variation for each vertex in each subject's minimally preprocessed fMRI data (i.e. mean of each vertex's time points over their standard deviation). The next plot shows the pooled subject-wise mean SNR for PCC and mPFC vertices, and indicates that the SNR is lower for mPFC than PCC, which could negatively affect our results.
+This suggests that, while the agreement of each window with the overall time series was stable for both PCC and mPFC (low SD, right plot), the overall agreement of mPFC is lower (paired permutation, p = `r SW_PCCvPFC_permuteTest$Pval`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). This result could be due to signal degeneration in mPFC (that said, it is worth noting that the topological patterns remain mostly the same for both PCC and mPFC throughout the SW analysis). To account for this, we computed the temporal signal to noise ratio (tSNR) for each vertex in each subject's minimally preprocessed fMRI data (i.e. mean of each vertex's time points over their standard deviation). The next plot shows the pooled subject-wise mean tSNR for PCC and mPFC vertices, and indicates that the tSNR is lower for mPFC than PCC, which could negatively affect our results.
 
 \bigskip
 
@@ -1766,7 +1759,7 @@ snrmeanComp_plot
 
 \bigskip
 
-To formally examine this, for each subject we compared the SNR values of all vertices between PCC and mPFC (`r nSubj` permutation tests). About `r round(prcntSig, digits = 2)` percent of the comparisons proved significant at alpha = 0.05 (FDR corrected; mean Cohen's D = `r mean(SNR_PCCvsPFC_ES)`). In addition, we found that the degree of signal to noise for each vertex showed significant negative correlations with flexibility, a graph-theoretic index that measures the proportion of times a node in a network changed affiliation across partitions (mean correlation across subjects = `r round(mean(SNR_vs_Flex), digits = 2)`). This suggests that, for any given subject, vertices with low SNR resulted in variable participation between the communities, and could explain why mPFC had lower stability levels.
+To formally examine this, for each subject we compared the tSNR values of all vertices between PCC and mPFC (`r nSubj` permutation tests, 5000 iterations). About `r round(prcntSig, digits = 2)` percent of the comparisons proved significant at alpha = 0.05 (FDR corrected; mean Cohen's D = `r round(mean(SNR_PCCvsPFC_ES), digits = 2)`). In addition, we found that the degree of signal to noise for each vertex showed significant negative correlations with flexibility, a graph-theoretic index that measures the proportion of times a node in a network changed affiliation across partitions (mean correlation across subjects = `r round(mean(SNR_vs_Flex), digits = 2)`). This suggests that, for any given subject, vertices with low SNR resulted in variable participation between the communities, and could explain why mPFC had lower stability levels.
 
 To further quantify the potential effect of noise in our results, we computed the variance explained by the mean time series of the DMN community on each DMN vertex separately through a simple linear model. Interestingly, there is a strong linear relationship between the Fiedler vector (the divisive vector from spectral partitioning) and the R-squared values (these match perfectly on the brain when inspected qualitatively). The following plot shows this relationship, with each line denoting a subject.
 
@@ -2026,6 +2019,8 @@ Finally, we examined whether these topological features were defined by the stru
 ## Discussion
 
 For clinical implications, see Hiser & Koenigs 2018. In short, being able to identify functional idiosyncrasies without much data can yield important insights in diagnosis (meh, we always say that..) of a variety of psychological diseases associated with mPFC. It would be more interesting to identify the repercussions to damage in mPFC per individual. They mention that subgenual vmPFC is a common target for deep brain stimulation (or TMS) as a depression treatment. The refinement of the technique is thus coupled to being able to identify personalized functional topologies. They list a number of results related to mPFC functional connectivity too. In the end, their suggestions for clinical implications of mPFC studies rely on the individual measure of functional expanse. (note that social-relevant areas in their meta analysis look similar to our patterns, and the emotion part to Barbas latest)
+
+It will also be good to note that there is concurrent debate on the ground truth of community detection. In other fields, identifying a community structure is not necessarily associated with the true organization of the network. What happens is that you might find a tangential grouping that gives you information different from your original goal [@Clauset2004]
 
 
 ## References
