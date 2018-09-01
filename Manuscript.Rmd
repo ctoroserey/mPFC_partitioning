@@ -2,9 +2,9 @@
 title: 'Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach'
 author: "Claudio Toro-Serey & Joseph T. McGuire"
 output:
-  html_document: default
-  word_document: default
   pdf_document: default
+  word_document: default
+  html_document: default
 bibliography: mPFC_paper.bib
 ---
 
@@ -1072,7 +1072,7 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
 
   A persistent issue in analyzing mPFC in individuals is the various factors inducing signal dropout in its more ventral segments (Logothetis, 2008). As such, there is value in examining all possible sources of covariation that compose DMN, instead of estimating topologies one seed at a time. Connectome-based analyses of resting state functional connectivity (rsFC) have been fruitful in characterizing individualized functional topologies that match task-induced activity (Gordon et al., 2017; Laumann et al., 2015; Tobyne et al., 2018). A popular approach to analyze these connectomes is to rely on graph theoretic methods, which provide an organic avenue to understand brain network dynamics (Bassett, Zurn, & Gold, 2018). From these, community detection algorithms have been successfully utilized to section brain networks into cohesive substructures (Garcia, Ashourvan, Muldoon, Vettel, & Bassett, 2018). Such communities represent clusters of network nodes that are more connected with each other than with the rest of the network (Fortunato & Hric, 2016). Among the algorithms used to estimate these communities, modularity has been widely effective in subsectioning brain networks into multiple groups (Garcia et al., 2018). However, in attempting to refine the DMN topology at the individual level, dividing these regions into what belongs and does not belong to DMN makes dissection through spectral partitioning (SP) a more valuable option. In short, spectral partitioning performs eigenvalue decompositon on an adjusted form of a correlation matrix (Laplacian matrix). The resulting eigenvector corresponding to the second-to-last eigenvalue (i.e. the Fiedler vector) provides values to divide the network into a positive and a negative community (Fiedler, 1975). SP has recently been used to characterize the posterior-anterior functional gradient of the insula using rsfMRI data (BLAH.) This method can thus capture a refined group of brain regions that more cohesively share activation patterns during rest.
 
-  In this study, we aim to subsection regions commonly attributed to both DMN and subjective value into subject-specific DMN and non-DMN partitions, quantifying the degree of topographical heterogeneity present in this network within and across individuals. This description will allow researchers to generate more precise topographic targets for future studies of decision making. We do this by capitalizing on the respective strengths of meta-analytic and subject-specific analyses of brain data. First, we define regions of interest (ROI) by identifying overlapping activation throughout the literature projected to an established brain atlas (Glasser et al., 2013). We then produce a rsFC networks of all the surface vertices within these ROIs for each individual resting state dataset from the Human Connectome Project (HCP; citation), and estimate the extent of DMN coverage through spectral partitioning. The resulting patterns are then evaluated for consistency across methods, throughout each individual's time series, and across subjects. Finally, we show some interesting properties of SP related to the stability of brain networks.
+  In this study, we aim to subsection regions commonly attributed to both DMN and subjective value into subject-specific DMN and non-DMN partitions, quantifying the degree of topographical heterogeneity present in this network within and across individuals. This description will allow researchers to generate more precise topographic targets for future studies of decision making. We do this by capitalizing on the respective strengths of meta-analytic and subject-specific analyses of brain data. First, we define regions of interest (ROI) by identifying overlapping activation throughout the literature projected to an established brain atlas (Glasser et al., 2016). We then produce a rsFC networks of all the surface vertices within these ROIs for each individual resting state dataset from the Human Connectome Project (HCP; citation), and estimate the extent of DMN coverage through spectral partitioning. The resulting patterns are then evaluated for consistency across methods, throughout each individual's time series, and across subjects. Finally, we show some interesting properties of SP related to the stability of brain networks.
 
 
 ## Methods
@@ -1114,14 +1114,12 @@ In order to evaluate the stability and topographical heterogeneity of the partit
 We performed a number of comparisons among partitions. First, we computed the degree of agreement between SP and modularity per subject to validate the resulting functional patterns. Modularity and SP show overfitting and underfitting tendencies, respectively, in their community detection performance in a diverse number of network types [@Ghasemian2018]. Their alignment would thus give us confidence in the validity of the resulting topologies. Next, we compared the functional organization derived from the whole time series among all subjects, and report the mean RI for the group (ADD TO CODE). We then estimate the level of agreement between scans taken across days (i.e. pairs of daily left-right and right-left phase encoding sessions). If the functional organization estimated by SP is indeed subject-specific, we should see higher agreement for the same subject across days than either day compared to every other subject. We then extend this idea by computing the overall agreement across all sessions. Similarly, we expect that sessions within subject will show higher agreement than between subjects. Finally, we perform a sliding window analysis (20 min windows, 1 min increments, mean number of windows per subject = 37) 8) comparing each window's functional pattern against the clustering derived from the whole subject's data. This approach should give us a sense of the dynamics of the functional organization of mPFC during rest. We complement this analysis by calculating the proportion of times each surface vertex was affiliated with the DMN community across time, as well as computing the flexibility of each node (i.e. the number of times each vertex changed affiliation across time). Given that the functional heterogeneity of brain areas is unevenly distributed across the brain [@Mueller2013], we also performed these comparisons for PCC and mPFC separately. Given what we know about these general regions, we expected PCC to be well aligned across participants, and stable within subjects. On the other hand, we hypothesized low agreement of mPFC partitions across participants, but with considerable stability across days and sessions within subject. We compared the agreement within subjects against across subjects by computing the ratio of the mean RI within and between subjects. Ratios close to one denote good alignment across subjects, while ratios significantly higher than one suggest that partitions per subject were more stable than what you would expect against every other subject.
 
 
-
-
-\newpage
-
-
 ### *Estimation of Noise Effects*
 ### *Seed-based FC vs Community Detection*
 ### *Structural Characteristics*
+
+
+\newpage
 
 ## Results
 
@@ -1129,15 +1127,15 @@ We performed a number of comparisons among partitions. First, we computed the de
 
 Figure 1 shows the resulting ROIs from the meta-analysis. Areas in blue denote the 17 overlapping ROIs, which landed mostly on the medial wall, as well as a region in IPL and TPJ. Area 7m (in red) was the only one to show unique affiliation, which was significant for DMN. 
 
-```{r Meta-analysis ROIs, out.width="60%", fig.align = "center", fig.cap= "**Figure 1.** Template atlas from [-@Glasser2013] (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
-include_graphics("./Images/ROIS.png")
+```{r Meta-analysis ROIs, out.width="60%", fig.align = "center", fig.cap= "Figure 1. Template atlas from Glasser et al. [-@Glasser2016] (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
+include_graphics("./Images/ROIS2.png")
 ```
 
 ### *Partition Comparison: Full Datasets*
 
 The following shows a stereotypical subdivision of the ROIs for a single subject (100307) using spectral partitioning.
 
-```{r Template partition, out.width="50%", fig.align = "center"}
+```{r Template partition, out.width="60%", fig.align = "center", fig.cap = "Figure 2. Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."}
 # Load data
 setwd('./Summary/')
 temp <- list.files()
@@ -1145,7 +1143,11 @@ subjList <- sapply(temp, substring, first=1, last=6)
 Summaries <- lapply(temp, read.csv)
 nSubj <- length(Summaries)
 
-include_graphics("./Images/template.png")
+# fig caption
+# "Figure 2. Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."
+
+#include_graphics(c("./Images/newPattern.png", "./Images/newPattern_binary.png"))
+include_graphics("./Images/newPattern_both.png")
 ```
 
 This first step just gives an idea of the level of agreement within and between subjects. As a first measure, we use the adjusted rand index (RI) to estimate the level of agreement between spectral partitioning and modularity. RI measures the proportion of pairs of nodes in a network that were either clustered together or separately in both partitions, over all possible affiliation changes (e.g. clustered together in partition 1, but separately in 2). It is worth noting that the adjusted rand index has well known limitations (Fortunato & Hric, 2016). To compensate for this, we also performed all the upcoming analyses with the variation of information index (VI). This distance measure denotes how much information is gained by adding the second partition (thus, lower values are better), and is known for its robustness. Both RI and VI analyses agreed in the results they yielded, but we only report RI due to its easier interpretability. This first plot shows the distribution of RI values between modularity and spectral partitioning for each subject.
