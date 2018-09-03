@@ -2,9 +2,10 @@
 title: 'Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach'
 author: "Claudio Toro-Serey & Joseph T. McGuire"
 output:
-  html_document: default
-  word_document: default
+  word_document: 
+    reference_docx: Style_reference.docx
   pdf_document: default
+  html_document: default
 bibliography: mPFC_paper.bib
 ---
 
@@ -1122,8 +1123,13 @@ In order to evaluate the stability and topographical heterogeneity of the partit
 
 We performed a number of comparisons among partitions. First, we computed the degree of agreement between SP and modularity per subject to validate the resulting functional patterns. Modularity and SP show overfitting and underfitting tendencies, respectively, in their community detection performance in a diverse number of network types [@Ghasemian2018]. Their alignment would thus give us confidence in the validity of the resulting topologies. Next, we compared the functional organization derived from the whole time series among all subjects, and report the mean RI for the group (ADD TO CODE). We then estimate the level of agreement between scans taken across days (i.e. pairs of daily left-right and right-left phase encoding sessions). If the functional organization estimated by SP is indeed subject-specific, we should see higher agreement for the same subject across days than either day compared to every other subject. We then extend this idea by computing the overall agreement across all sessions. Similarly, we expect that sessions within subject will show higher agreement than between subjects. Finally, we perform a sliding window analysis (20 min windows, 1 min increments, mean number of windows per subject = 37) 8) comparing each window's functional pattern against the clustering derived from the whole subject's data. This approach should give us a sense of the dynamics of the functional organization of mPFC during rest. We complement this analysis by calculating the proportion of times each surface vertex was affiliated with the DMN community across time, as well as computing the flexibility of each node (i.e. the number of times each vertex changed affiliation across time). Given that the functional heterogeneity of brain areas is unevenly distributed across the brain [@Mueller2013], we also performed these comparisons for PCC and mPFC separately. Given what we know about these general regions, we expected PCC to be well aligned across participants, and stable within subjects. On the other hand, we hypothesized low agreement of mPFC partitions across participants, but with considerable stability across days and sessions within subject. We compared the agreement within subjects against across subjects by computing the ratio of the mean RI within and between subjects. Ratios close to one denote good alignment across subjects, while ratios significantly higher than one suggest that partitions per subject were more stable than what you would expect against every other subject.
 
+Given the descriptive relevance of Fiedler eigenvector values in previous fMRI research [@Tian2018], we tested the association of their absolute magnitude with the proportion of times a vertex was part of the DMN community during the sliding window analysis. To do this, we performed a mixed effects logistic regression model in which each subject's eigenmap values were used as random predictors of the proportion of times they participated in the DMN community.  
+
 
 ### *Estimation of Noise Effects*
+
+BOLD signal recording through fMRI in mPFC in general, and vmPFC in particular, suffers from technical issues that promote signal dropout [@Logothetis2008]. It was thus important to quantify the potential influence of noise in our findings. We examined this through two complementary steps. First, we computed the temporal signal-to-noise ratio (tSNR) of all the vertices in the ROIs from HCP minimally preprocessed data (i.e. prior to the complementary denoising described in the "fMRI Data" section). For each subject, we compared the mean tSNR between mPFC and PCC through a permutation analysis (5000 iterations), and report the percentage of subjects who had a significantly lower mean tSNR in mPFC. Next, we estimated which vertices within mPFC had a stronger relationship to the overall dynamics of DMN. To do this, we computed the mean time series of each subject's DMN map, which was then predicted by the time series each mPFC vertex in a mass univariate model. The resulting $R^2$ values from each model were extracted to determine the total variance of the mean DMN time series explained by each individual vertex. If high noise in more ventral mPFC areas is affecting our results, we should see a gradient of $R^2$ values that decreases ventrally across subjects. We then compare this dorsal-to-ventral gradient to one displaying tSNR values, as the latter should convey a linear relationship between noise and dorsal-to-ventral topographical placement. 
+
 ### *Seed-based FC vs Community Detection*
 ### *Structural Characteristics*
 

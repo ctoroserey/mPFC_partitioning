@@ -1084,6 +1084,11 @@ mPFC_only <- c("_a24_",
                "_s32_",
                "_p24_")
 
+# Little test to ensure that the ROIs match before running the whole thing
+if (FALSE %in% (mPFC_only %in% c(mPFC_only, "Blah"))) {
+  stop("mPFC-only and Overlapping ROIs don't match")
+}
+
 # Cortical surface for plotting
 labelPerVertex <- read.table('labelPerVertex.csv', header = F)
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv', sep = ",")[,2:6]
