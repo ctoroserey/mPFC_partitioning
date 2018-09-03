@@ -1082,8 +1082,7 @@ mPFC_only <- c("_a24_",
                "_10v_",
                "_OFC_",
                "_s32_",
-               "_p24_",
-               "_10d_")
+               "_p24_")
 
 # Cortical surface for plotting
 labelPerVertex <- read.table('labelPerVertex.csv', header = F)

@@ -2,9 +2,9 @@
 title: 'Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach'
 author: "Claudio Toro-Serey & Joseph T. McGuire"
 output:
-  pdf_document: default
-  word_document: default
   html_document: default
+  word_document: default
+  pdf_document: default
 bibliography: mPFC_paper.bib
 ---
 
@@ -1057,6 +1057,15 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
 
 ```
   
+``` {r For HCP data, fig.align="center", echo=FALSE, message = FALSE}
+setwd('./For_HCP')
+temp <- list.files(pattern = '*Binary*')
+FB <- lapply(temp, read.table)
+Summed <- do.call(cbind, lapply(FB, "[[", 'V1')) - 1
+FB_Means <- rowMeans(Summed)
+
+```
+
 ## Abstract
 
   Valuation effects are consistently observed in medial prefrontal and posterior cingulate cortex (mPFC and PCC). The spatial extent of these effects is mostly indistinguishable from the default mode network (DMN) in existing meta-analyses. However, little is known about how valuation effects fit within the broader functional architecture of mPFC and PCC, or whether that architecture is consistent or idiosyncratic across individuals. Here we complement a meta-analysis with fMRI-based graph theoretic approaches to subdivide mPFC and PCC at the single-subject level. Our results suggest the functional topography of mPFC has substantial variability across individuals. This highlights the potential usefulness of estimating brain effects at the individual level in this region, and points to limitations of aggregative methods such as coordinate-based meta-analysis in determining whether valuation and DMN effects emerge from common or separable brain systems. Our approach shows promise in addressing this issue through future manipulations of valuation.
@@ -1093,7 +1102,7 @@ Beyond the in-house minimally preprocessed pipeline from HCP (Glasser et al., 20
 
 ### *Within-ROI Network Definition*
 
-To establish each subject's network, we selected all the vertices contained within the ROIs (n = 5,564 per subject) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, where surface vertices were the nodes, and edges the correlations among all of them. Next, we applied Fisher's r to z transformation, and took the exponential of the correlations so that all weights were positive while maintaining the shape of the original correlation distribution, and retained the edges whose adjusted p-values remained significant after correction for multiple tests (FDR < 0.05). As part of the evaluation step, this procedure (and the community detection outlined below) was applied at four levels: 1) each session separately; 2) the concatenated timeseries from each pair of daily sessions; 3) each subject's dataset; and 4) on each step of a sliding window analysis (see Evaluation for more details).
+To establish each subject's network, we selected all the vertices contained within the ROIs (n = **5,564 (UPDATE)** per subject) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, where surface vertices were the nodes, and edges the correlations among all of them. Next, we applied Fisher's r to z transformation, and took the exponential of the correlations so that all weights were positive while maintaining the shape of the original correlation distribution, and retained the edges whose adjusted p-values remained significant after correction for multiple tests (FDR < 0.05). As part of the evaluation step, this procedure (and the community detection outlined below) was applied at four levels: 1) each session separately; 2) the concatenated timeseries from each pair of daily sessions; 3) each subject's dataset; and 4) on each step of a sliding window analysis (see Evaluation for more details).
 
 ### *Community Detection*
 
@@ -1103,7 +1112,7 @@ $$\begin{aligned}
 L = I - D^{-\frac{1}{2}}WD^{-\frac{1}{2}}
 \end{aligned}$$
 
-Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlations with every other vertex), and $W$ is the correlation matrix. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler Vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected (Fiedler, 1975). Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community as the one containing the one DMN-specific area from the meta-analysis (ensuring that the labeling of the DMN community was consistent across subjects). Importantly, given the high density of these networks (**Add to results**), spectral partitioning was unlikely to face the issues associated with its use in sparse networks (Fortunato & Hric, 2016).
+Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlations with every other vertex), and $W$ is the correlation matrix. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler Vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected (Fiedler, 1975). Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community as the one containing the one DMN-specific area from the meta-analysis (ensuring that the labeling of the DMN community was consistent across subjects). Importantly, given the high density of these networks (see results), spectral partitioning was unlikely to face the issues associated with its use in sparse networks (Fortunato & Hric, 2016).
 
 In order to evaluate the validity of the resulting partitions, we also estimated these communities using the more traditional approach of modularity maximization (using the algorithm from Clauset et al., XXXX). This method maximizes a quality function that compares the strength of the connection between any two vertices against a null model of their probability of being randomly connected to any other vertex in the network. The method heuristically iterates through many possible combination of vertices, and selects the clustering that maximizes the network's modularity. Thus, unlike SP, modularity can fractionate a network into many functional groups. If the partitions from the bounded and unbounded methods show high level of agreement, we can gain confidence in that we are indeed fractioning the ROIs into those belonging to DMN and not.
 
@@ -1133,9 +1142,23 @@ include_graphics("./Images/ROIS2.png")
 
 ### *Partition Comparison: Full Datasets*
 
-The following shows a stereotypical subdivision of the ROIs for a single subject (100307) using spectral partitioning.
+```{r Density calculation, out.width="60%", fig.align = "center"}
+# Load density data
+setwd('./Densities/')
+temp <- list.files()
+Densities <- do.call(rbind, lapply(temp, read.csv))
 
-```{r Template partition, out.width="60%", fig.align = "center", fig.cap = "Figure 2. Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."}
+# Get the mean density for all data, daily scans, and sessions
+# Check distributions, since median might be better
+mdAll <- mean(Densities$Density[grep("Overall", Densities$Type)])
+sddAll <- sd(Densities$Density[grep("Overall", Densities$Type)])
+mdDay <- mean(Densities$Density[grep("Day", Densities$Type)])
+mdSess <- mean(Densities$Density[grep("Session", Densities$Type)])
+```
+
+First, we estimated each individual's DMN coverage using the whole time series (4800 TRs). On average, networks had high densities (i.e. highly connected) regardless of the amount of data to produce them (mean = `r round(mdAll, digits = 2)`, SD = `r sddAll`). Figure 2 shows a stereotypical subdivision of the ROIs for a single subject (100307) using spectral partitioning.
+
+```{r Template partition, out.width="60%", fig.align = "center", fig.cap = "Figure 2. Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."}
 # Load data
 setwd('./Summary/')
 temp <- list.files()
