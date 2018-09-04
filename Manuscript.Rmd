@@ -1144,7 +1144,9 @@ Finally, we examined whether each idiosyncrasies in functional topology correspo
 
 ### *Meta-analysis*
 
-Figure 1 shows the resulting ROIs from the meta-analysis. Areas in blue denote the 17 overlapping ROIs, which landed mostly on the medial wall, as well as a region in IPL and TPJ. Area 7m (in red) was the only one to show unique affiliation, which was significant for DMN. 
+We performed a coordinate-based meta-analysis to limit the network search space to a set of overlapping and unique standard regions [@Glasser2016] across DMN and SV literatures. Using each literature's mean number of reports per area as the null probability, one-way chi-squared tests of proportions were used to identify regions that were significantly present in their respective literatures. The resulting lists were used to identify the set of overlapping brain areas. Unique areas were then determined by permuting the affiliation of each study (i.e. DMN or SV) to create a null distribution of chi-squared statistics, which as used to identify regions more often reported in either literature. 
+
+Figure 1 shows the resulting ROIs from these analyses. As expected, overlapping areas included 15 bilateral regions in PCC (**Probably need to add their respective stats here** 31a, 31pv, RSC, d23ab) and mPFC (9m, 10r, 10v, OFC, a24, d32, p24, p32, s32), as well as a region in IPL (PF) and TPJ (PGi). Area 7m was the only one to show unique affiliation, which was significant for DMN ($\chi^2$ = 9.12, p < 0.001). 
 
 ```{r Meta-analysis ROIs, out.width="60%", fig.align = "center", fig.cap= "Figure 1. Template atlas from Glasser et al. [-@Glasser2016] (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
 include_graphics("./Images/ROIS2.png")
