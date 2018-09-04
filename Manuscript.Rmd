@@ -2,10 +2,10 @@
 title: 'Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach'
 author: "Claudio Toro-Serey & Joseph T. McGuire"
 output:
-  word_document: 
-    reference_docx: Style_reference.docx
   pdf_document: default
   html_document: default
+  word_document: 
+    reference_docx: Style_reference.docx
 bibliography: mPFC_paper.bib
 ---
 
@@ -1132,12 +1132,13 @@ BOLD signal recording through fMRI in mPFC in general, and vmPFC in particular, 
 
 ### *Seed-based FC vs Community Detection*
 
-A potential downfall of the present approach is that it can be computationally demanding, while more direct seed-based functional connectivity methods could provide sufficient approximations of an individual's DMN orgnization. We examined this issue by estimating mPFC functional maps from its vertex-wise functional coupling with the mean PCC activation. For each subject, we computed the mean time series of all vertices contained within the PCC region of a standard DMN arrangement [@Yeo2011], and correlated it (Pearons) with the time series of every mPFC vertex from our ROIs. 
+A potential downfall of the present approach is that it can be computationally demanding, while more direct seed-based functional connectivity methods could provide sufficient approximations of an individual's DMN orgnization. We examined this issue by estimating mPFC functional maps from its vertex-wise functional coupling with the mean PCC activation. For each subject's concatenated day 1 and day 2 scans, we computed the mean time series of all vertices contained within the PCC region of a standard DMN arrangement [@Yeo2011], and correlated it (Pearons) with the time series of every mPFC vertex from our ROIs. The resulting day 1 and day 2 mPFC maps were then correlated within and between subjects in three ways: 1) between correlation-based maps; 2) between community-based maps; and 3) between correlation- and community-based maps. These spatial correlations are aimed to determine the day-to-day stability of each approach, as well as their level of agreement. These methods should produce somewhat similar arrangements, but the one displaying the highest within-subject agreement across days should be preferred (for example, see [-@Kon2018] [-@Mueller2013]). We thus compared the mean within-subject inter-day correlation coefficients of each method through a paired permutation analysis (5000 iterations).   
 
-### *Structural Characteristics*
+### *Anatomical Correspondence*
 
+Finally, we examined whether each idiosyncrasies in functional topology corresponded to outstanding anatomical features. To do this, we correlated each subject's Fiedler vector values with their respective cortical thickness, cortical folding, and myelin density (quantified as the ratio of T1 to T2 magnitudes at every given vertex). These simple correlations are aimed to provide a sense of this possible relationship, which can be studied in depth in the future.  
 
-\newpage
+\bigskip
 
 ## Results
 
