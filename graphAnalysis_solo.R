@@ -1327,28 +1327,32 @@ if (Meta == T) {
   
   ## ALTERNATIVE AND MORE PARSIMONIOUS WAY TO GET MOST OF THE WAY THERE
   # First, load the raw count csv files
+  valCounts <- read.csv2('decCounts.csv', sep = ",")
+  dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
   
   # Then, get the means of the counts per domain
-  BV <- round(mean(boostrap(valCounts$Counts)))
+  BV <- round(mean(bootstrap(valCounts$Counts)))
   BD <- round(mean(bootstrap(dmnCounts$Counts)))
   
   # Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
   # than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
-  valTest <- numeric()
   for (i in seq(valCounts$Counts)) {
     indx <- valCounts$Counts[i]
-    valTest[i] <- prop.test(indx, 27, alternative = "greater", p = BV/27)$p.value
+    tempTest <- prop.test(indx, 27, alternative = "greater", p = BV/27)
+    valCounts$Chi[i] <- tempTest$statistic
+    valCounts$pVal[i] <- tempTest$p.value
   }
   
-  dmnTest <- numeric()
   for (i in seq(dmnCounts$Counts)) {
     indx <- dmnCounts$Counts[i]
-    dmnTest[i] <- prop.test(indx, 77, alternative = "greater", p = BD/77)$p.value
+    tempTest <- prop.test(indx, 77, alternative = "greater", p = BD/77)
+    dmnCounts$Chi[i] <- tempTest$statistic
+    dmnCounts$pVal[i] <- tempTest$p.value
   }
   
   # Retain only the significant parcels
-  t1 <- valCounts$Label[valTest < 0.05]
-  t2 <- dmnCounts$Label[dmnTest < 0.05]
+  t1 <- valCounts$Label[valCounts$pVal < 0.05]
+  t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
   
   # Remove hemispheric references 
   t1 <- unique(substring(t1,2))
