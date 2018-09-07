@@ -4,8 +4,8 @@ author: "Claudio Toro-Serey & Joseph T. McGuire"
 output:
   word_document: 
     reference_docx: Style_reference.docx
-  pdf_document: default
   html_document: default
+  pdf_document: default
 bibliography: mPFC_paper.bib
 header-includes:
     - \usepackage{setspace}\doublespacing
@@ -1178,29 +1178,36 @@ Finally, we examined whether each idiosyncrasies in functional topology correspo
     dmnCounts$pVal[i] <- tempTest$p.value
   }
   
+  # Retain only the significant parcels
+  t1 <- valCounts$Label[valCounts$pVal < 0.05]
+  t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
+
+  # Remove hemispheric references
+  t1 <- unique(substring(t1,2))
+  t2 <- unique(substring(t2,2))
+  
+  # Labels to put in text
+  dmnLbls <- gsub("ROI","", t2) 
+  dmnLbls <- gsub("_","", dmnLbls)
+  valLbls <- gsub("ROI","", t1) 
+  valLbls <- gsub("_","", valLbls)
+  
   # This part is just for reference, as the labels are loaded from a file
-  # # Retain only the significant parcels
-  # t1 <- valCounts$Label[valCounts$pVal < 0.05]
-  # t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
-  # 
-  # # Remove hemispheric references 
-  # t1 <- unique(substring(t1,2))
-  # t2 <- unique(substring(t2,2))
-  # 
   # # And get the set of overlapping areas between literatures
   # # This is missing some cingulate and PFC areas, and adds V2.
   # # However, we can say that we are filling in the gap for completeness,
   # # and removing V2 because it's demonstrably irrelevant.
-  # bothLbls_alt <- unique(c(t1[t1 %in% t2], t2[t2 %in% t1]))
+  # bothLbls <- unique(c(t1[t1 %in% t2], t2[t2 %in% t1]))
   # 
   # # You could also try to permute the allocation of reports per literature,
   # # and then perform a chi-squared per parcel. Get the max stat per iteration.
   # # Now you have your null distribution.
+
 ```
 
 We performed a coordinate-based meta-analysis to limit the network search space to a set of overlapping and unique standard regions across DMN and SV literatures (see Methods). Volumetric coordinates from a set of DMN and SV studies were projected onto a cortical surface, and mapped to a multimodal cortical parcellation [@Glasser2016] to produce a list of brain areas reported per study. Using each literature's mean number of reports per area as the null probability (DMN = `r BD`, 95% CI [`r BDquant`]; SV = `r BV`, 95% CI [`r BVquant`]), one-way chi-squared tests of proportions were performed to identify regions that were significantly present in their respective literatures. The resulting lists were used to identify the set of common brain areas. Unique areas were then determined by permuting the affiliation of each study (i.e. DMN or SV) to create a null distribution of chi-squared statistics, which as used to identify regions more often reported in either literature. Importantly, we chose to examine these areas bilaterally, even if their significance was present in only one hemisphere.
 
-Figure 1 shows the resulting ROIs from these analyses. As expected, overlapping areas included 15 bilateral regions in PCC (31a, 31pv, RSC, d23ab) and mPFC (9m, 10r, 10v, OFC, a24, d32, p24, p32, s32), as well as a region in IPL (PF) and TPJ (PGi) (all p < 0.05). A region in visual cortex (V2) was also significant, but was removed due to its know unrelated function. Area 7m was the only one to show unique affiliation, which was significant for DMN ($\chi^2$ = 9.12, p < 0.001). 
+Figure 1 shows the resulting ROIs from these analyses. DMN included `r length(t2)` significant regions, while SV was comprised of `r length(t1)` (see Supplemental Table 1). As expected, overlapping areas included 15 bilateral regions in PCC (31a, 31pv, RSC, d23ab) and mPFC (9m, 10r, 10v, OFC, a24, d32, p24, p32, s32), as well as a region in IPL (PF) and TPJ (PGi) (all p < 0.05). A region in visual cortex (V2) was also significant, but was removed due to its know unrelated function. Area 7m was the only one to show unique affiliation, which was significant for DMN ($\chi^2$ = 9.12, p < 0.001). 
 
 ```{r Meta-analysis ROIs, out.width="60%", fig.align = "center", fig.cap= "Figure 1. Template atlas from Glasser et al. (2016) (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
 include_graphics("./Images/ROIS2.png")
@@ -1668,9 +1675,6 @@ The plot above shows the estimated coefficients from the linear model for day an
 
 In order to diagnose the model, we checked the independency of observations through the rank of the design matrix, which was `r specificityModel_diagnostics$Rank[1]` (full rank for `r nSubj` subjects should be `r ncol(coeffList)`) for the present analysis. Further diagnostics included a qqnorm check on the model residuals (result: mostly normal), and variance inflation factors (VIF, also used by Kragel et al., 2018). The VIF is a measure of colinearity of the regressors, and it "shows the degree to which variance in each parameter estimate is increased due to partial colinearity with linear combinations of other regressors". While low (<2) VIF values are preferable, shared variance is unavoidable given the hierarchical structure of the model. Regardless, Kragel et al. take it as a good sign that their VIF are finite (?), which is also the case here (mean = `r mean(specificityModel_diagnostics$Vif)`). That said, these are above 10, which is a standard upper threshold (potential downside). *We will have to reconsider this portion.*
 
-\bigskip
-\bigskip
-
 ### *Stability per subject*
 
 It is also worth considering how stable these measures are, so we performed a sliding window analysis  per subject (20 min windows shifting at ~1 min throughout the whole ~ 1hr time series). The first two plots show how well each window's clustering agreed with the partition derived from the whole data (in RIs, left), as well as how variable (in standard deviations) this index was throughout each time series (right).  
@@ -2128,5 +2132,13 @@ Add a portion showing that summing up the binarized maps produces a map similar 
 
 ## Acknowledgements
 Data were provided [in part] by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
+
+## Supplemental Materials
+
+### *Table 1. Significant brain regions per literature*
+| Literature                     | Significant Brain Regions      |
+| :----------------------------- | -----------------------------: |
+| Default Mode Network           | `r paste(dmnLbls)`             |
+| Subjective Value               | `r paste(valLbls)`             |
 
 ## References
