@@ -2,10 +2,10 @@
 title: 'Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach'
 author: "Claudio Toro-Serey^1^ & Joseph T. McGuire^1^"
 output:
-  pdf_document: default
+  html_document: default
   word_document: 
     reference_docx: Style_reference.docx
-  html_document: default
+  pdf_document: default
 bibliography: mPFC_paper.bib
 header-includes:
     - \usepackage{setspace}\doublespacing
@@ -1140,7 +1140,7 @@ Given the descriptive relevance of Fiedler eigenvector values in previous fMRI r
 
 ### *Estimation of Noise Effects*
 
-BOLD signal recording through fMRI in mPFC in general, and vmPFC in particular, suffers from technical issues that promote signal dropout [@Logothetis]. It was thus important to quantify the potential influence of noise in our findings. We examined this through two complementary steps. First, we computed the temporal signal-to-noise ratio (tSNR) of all the vertices in the ROIs from HCP minimally preprocessed data (i.e. prior to the complementary denoising described in the "fMRI Data" section). For each subject, we compared the mean tSNR between mPFC and PCC through a permutation analysis (5000 iterations), and report the percentage of subjects who had a significantly lower mean tSNR in mPFC. Next, we estimated which vertices within mPFC had a stronger relationship to the overall dynamics of DMN. To do this, we computed the mean time series of each subject's DMN map, which was then predicted by the time series each mPFC vertex in a mass univariate model. The resulting $R^2$ values from each model were extracted to determine the total variance of the mean DMN time series explained by each individual vertex. If high noise in more ventral mPFC areas is affecting our results, we should see a gradient of $R^2$ values that decreases ventrally across subjects. We then compare this dorsal-to-ventral gradient to one displaying tSNR values, as the latter should convey a linear relationship between noise and dorsal-to-ventral topographical placement. 
+BOLD signal recording through fMRI in mPFC in general, and vmPFC in particular, suffers from technical issues that promote signal dropout [@Logothetis]. It was thus important to quantify the potential influence of noise in our findings. We examined this through two complementary steps. First, we computed the temporal signal-to-noise ratio (tSNR) of all the vertices in the ROIs from HCP minimally preprocessed data (i.e. prior to the complementary denoising described in the "fMRI Data" section). We compared the mean tSNR for each region across subjects through a permutation analysis (all permutation analyses involved 5000 iterations). In addition, we compared the mean tSNR between mPFC and PCC through a permutation analysis for each separate subject, and report the percentage of subjects who had a significantly lower mean tSNR in mPFC after FDR correction for multiple testing [@Benjamini2001]. Next, we estimated which vertices within mPFC had a stronger relationship to the overall dynamics of DMN. To do this, we computed the mean time series of each subject's estimated DMN map, which was then predicted by the time series each mPFC vertex in a mass univariate analysis. The resulting $R^2$ values from each model were extracted to determine the total variance of the mean DMN time series explained by each individual vertex. If high noise in more ventral mPFC areas is affecting our results, we should see a gradient of $R^2$ values that decreases ventrally across subjects. We then spatially correlated (Pearson) the $R^2$ and tSNR values to determine whether low tSNR negatively impacted the individual contribution among vertices. *(PERONSAL NOTE: THIS IS NOW DONE BY CONCATENATING ALL SUBJECTS. IT WOULD PERHAPS BE BETTER TO DO A MIXED EFFECTS MODEL WITH SUBJECTS AS RANDOM EFFECTS, AND TSNR AS A FIXED ONE)*
 
 ### *Seed-based FC vs Community Detection*
 
@@ -1217,7 +1217,7 @@ Finally, we examined whether each idiosyncrasies in functional topology correspo
 
 We performed a coordinate-based meta-analysis to limit the network search space to a set of overlapping and unique standard regions across DMN and SV literatures (see Methods). Volumetric coordinates from a set of DMN and SV studies were projected onto a cortical surface, and mapped to a multimodal cortical parcellation [@Glasser2016] to produce a list of brain areas reported per study. Using each literature's mean number of reports per area as the null probability (DMN = `r BD`, 95% CI [`r BDquant`]; SV = `r BV`, 95% CI [`r BVquant`]), one-way chi-squared tests of proportions were performed to identify regions that were significantly present in their respective literatures. The resulting lists were used to identify the set of common brain areas. Unique areas were then determined by permuting the affiliation of each study (i.e. DMN or SV) to create a null distribution of chi-squared statistics, which as used to identify regions more often reported in either literature. Importantly, we chose to examine these areas bilaterally, even if their significance was present in only one hemisphere.
 
-Figure 1 shows the resulting ROIs from these analyses. DMN included `r length(t2)` significant regions, while SV was comprised of `r length(t1)` (see Supplemental Table 1). As expected, overlapping areas included 15 bilateral regions in PCC (31a, 31pv, RSC, d23ab) and mPFC (9m, 10r, 10v, OFC, a24, d32, p24, p32, s32), as well as a region in IPL (PF) and TPJ (PGi) (all p < 0.05). A region in visual cortex (V2) was also significant, but was removed due to its know unrelated function. Area 7m was the only one to show unique affiliation, which was significant for DMN ($\chi^2$ = 9.12, p < 0.001). 
+Figure 1 shows the resulting ROIs from these analyses. DMN included `r length(t2)` significant regions, while SV was comprised of `r length(t1)` (see Supplemental Table 1). As expected, overlapping areas included 15 bilateral regions in PCC (31a, 31pv, RSC, d23ab) and mPFC (9m, 10r, 10v, OFC, a24, d32, p24, p32, s32), as well as a region in IPL (PF) and TPJ (PGi) (all*p*< 0.05). A region in visual cortex (V2) was also significant, but was removed due to its know unrelated function. Area 7m was the only one to show unique affiliation, which was significant for DMN ($\chi^2$ = 9.12, *p* < 0.001). 
 
 ```{r Meta-analysis ROIs, out.width = "60%", fig.align = "center", fig.cap= "Figure 1. Template atlas from Glasser et al. (2016) (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
 
@@ -1295,7 +1295,7 @@ Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) # caveat: maybe not ideal for bo
 
 The distribution suggests that both clustering methods were in high agreement across subjects (mean = `r round(mean(RI_all_within$Index), digits = 2)` sd = `r round(sd(RI_all_within$Index), digits = 2)`). The importance of this result lies in that while spectral partitioning forces a bipartition of the network, modularity does not. This adds evidence to the division of these areas into DMN and non-DMN during rest. 
 
-Next, we examined how similar the partitions were across subjects by computing the ARI between every pair of subjects, and found that there was considerable agreement overall (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). However, qualitative inspection of the brain community topologies shows good alignment for PCC, with a topologically similar mPFC pattern that shifts topographically across subjects. To quantify this heterogeneity in mPFC, we performed the same analysis for each region separately (Figure 4). Indeed, this analysis showed that the functional topology of PCC is well maintained across subjects (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`), while mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) showed significantly lower levels of agreement (paired permutation, p = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`).
+Next, we examined how similar the partitions were across subjects by computing the ARI between every pair of subjects, and found that there was considerable agreement overall (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). However, qualitative inspection of the brain community topologies shows good alignment for PCC, with a topologically similar mPFC pattern that shifts topographically across subjects. To quantify this heterogeneity in mPFC, we performed the same analysis for each region separately (Figure 4). Indeed, this analysis showed that the functional topology of PCC is well maintained across subjects (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`), while mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) showed significantly lower levels of agreement (paired permutation, *p* = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`).
 
 ``` {r Partition comparison: all 2 (Fig. 4), fig.align="center", out.width = "40%", fig.cap = "Figure 4. Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. PCC is well aligned across individuals, while mPFC shows clear topographical heterogeneity.", echo=FALSE, message = FALSE, cache = TRUE}
 
@@ -1517,7 +1517,7 @@ ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) +
 
 ```
 
-Once again we found greater alignment across subjects for PCC (mean = `r round(mean(Halves_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[2]]), digits = 2)`) than mPFC (mean = `r round(mean(Halves_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[2]]), digits = 2)`), but both areas showed higher levels of agreement within subjects (PCC: mean = `r round(mean(Halves_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[1]]), digits = 2)`; mPFC: mean = `r round(mean(Halves_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[1]]), digits = 2)`). However, a coarse comparison of mean ARIs neglects the degree to which subject-wise partitions were indeed idiosyncratic. Therefore, we divided each subject's ARI between days by the ARI values with the days from the other subjects. This ratio denotes the relative specificity of their partition. That means, partitions that align well across subjects should yield ratios close to 1, while subject-consistent and unique partitions would produce high ratios. Figure 6 shows the ratios for PCC and mPFC for all subjects. As expected, we found that while both regions had good specificity (i.e. ratios > 1), the ratios for PCC were significantly lower than mPFC (paired permutation, p = `r Halves_mPFCvPCC_permTest$Pval`; Cohen's D = `r Halves_mPFCvPCC_ES`). These test/retest results suggest that the topographic varability seen in mPFC is rooted in subject-specific organization, and not an inability to capture its topology.
+Once again we found greater alignment across subjects for PCC (mean = `r round(mean(Halves_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[2]]), digits = 2)`) than mPFC (mean = `r round(mean(Halves_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[2]]), digits = 2)`), but both areas showed higher levels of agreement within subjects (PCC: mean = `r round(mean(Halves_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[1]]), digits = 2)`; mPFC: mean = `r round(mean(Halves_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[1]]), digits = 2)`). However, a coarse comparison of mean ARIs neglects the degree to which subject-wise partitions were indeed idiosyncratic. Therefore, we divided each subject's ARI between days by the ARI values with the days from the other subjects. This ratio denotes the relative specificity of their partition. That means, partitions that align well across subjects should yield ratios close to 1, while subject-consistent and unique partitions would produce high ratios. Figure 6 shows the ratios for PCC and mPFC for all subjects. As expected, we found that while both regions had good specificity (i.e. ratios > 1), the ratios for PCC were significantly lower than mPFC (paired permutation,*p*= `r Halves_mPFCvPCC_permTest$Pval`; Cohen's D = `r Halves_mPFCvPCC_ES`). These test/retest results suggest that the topographic varability seen in mPFC is reliably rooted in subject-specific organization, and not an inability to capture its topology.
 
 \bigskip
 
@@ -1697,75 +1697,9 @@ ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) +
   theme_classic(base_size = 14)
 ```
 
-We can see again that the ratios for mPFC were higher than those of PCC (permutation, p = `r Sess_mPFCvPCC_permTest$Pval`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1. This further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that such patterns can be identified with relatively small amounts of data in spite of a reduction in the estimates. 
+We can see again that the ratios for mPFC were higher than those of PCC (permutation,*p*= `r Sess_mPFCvPCC_permTest$Pval`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1. This further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that such patterns can be identified with relatively small amounts of data in spite of a reduction in the estimates. 
 
-**Another way to determine the heterogeneity of these results is based on Kragel et al. (2018), who quantified the dissimilarity of brain patterns for behavioral domain, subdomain, and study (or how generalizeable the patterns are at each hierarchical level). In our case, for `r nSubj` subjects `r nSubj*3` matrices are created (`r nSubj*2` for daily comparisons, `r nSubj` for within subject comparisons). Each matrix is binarized to compare a subject's level of similarity within their daily data vs across every other subject's sessions. The `r nSubj*3` matrices are vectorized and used as predictors in a GLM with a quasibinomial distribution, where the dependent data is the full vectorized RI similarity matrix. This is a simplified version of a fully-dimensional model that considers all possible comparisons at the session level, which would otherwise have S + (S x (S-1)/2) parameters (with S = session). For this model, a significantly negative subject predictor implies that the odds of the partitions being similar across subjects are much lower than those within each subject (across sessions). Thus, subject specificity would dictate that all subject-level coefficients should be significant and negative. **
-
-``` {r Partition comparison: session linear model, fig.align="center", fig.width = 4, fig.height = 4, echo=FALSE, message = FALSE, cache = TRUE}
-# 2) Based on Kragel et al, 2018
-# First, create a disimilarity matrix
-dissimMatrix_all <- RI_all_between_sess
-dissimMatrix_lower <- dissimMatrix_all[lower.tri(dissimMatrix_all)]
-
-# Create selection matrices for half- and subject-level comparisons
-coeffList <- list()
-i <- 1
-for (j in c(2,4)) {
-  for (x in seq(1, ncol(dissimMatrix_all), by = j)) {
-    tempMatrix <- matrix(0, ncol(dissimMatrix_all), nrow(dissimMatrix_all))
-    tempMatrix[-(x:(x+(j-1))), (x:(x+(j-1)))] <- 1
-    tempMatrix[(x:(x+(j-1))), -(x:(x+(j-1)))] <- 1
-    coeffList[[i]] <- tempMatrix
-    i <- i + 1
-  }
-}
-
-# Turn into a vector based on the lower triangle
-coeffList_lower <- lapply(coeffList, function(data) {as.factor(data[lower.tri(data)])})
-coeffList <- as.data.frame(do.call(cbind, coeffList_lower))
-colnames(coeffList) <- c(subjList_halves, subjList)
-
-# Do a linear model with each 
-#testModel <- lm(dissimMatrix_lower ~ ., coeffList)
-
-# Logistic maybe better, given the RI bounds
-# That said, the adjusted RI can sometimes be negative by a small margin (< 0.01), so we take the absolute values
-tempY <- abs(RI_all_between_sess)
-tempY <- tempY[lower.tri(tempY)]
-specificityModel <- glm(tempY ~ ., coeffList, family = "quasibinomial")
-tempSummary <- summary(specificityModel)
-
-# Diagnostics: rank (full rank = nSubj * 3) and VIF (< 10 = better)
-specificityModel_diagnostics <- list(Rank = rankMatrix(coeffList),
-                                     Vif = VIF(specificityModel),
-                                     Rsquared = 1 - tempSummary$deviance/tempSummary$null.deviance)
-
-# Create a summary dataframe 
-specificityModel_summary <- data.frame(Type = c(rep("Day", nSubj*2), rep("Subject", nSubj)),
-                                       Coefficient = coef(specificityModel)[2:(nSubj*3+1)],
-                                       Pvals = tempSummary$coefficients[2:(nSubj*3+1), 4])
-
-# adjust pvals and get a percentage of significant coefficients for day and subject
-specificityModel_summary$Pvals <- p.adjust(specificityModel_summary$Pvals, method = "BY")
-prcntDay <- sum(specificityModel_summary$Pvals[specificityModel_summary$Type == "Day"] < 0.05) / (nSubj*2)
-prcntSubj <- sum(specificityModel_summary$Pvals[specificityModel_summary$Type == "Subject"] < 0.05) / (nSubj)
-
-# plot
-specificityModel_plot <- ggplot(data = specificityModel_summary, aes(Type, Coefficient, fill = Type)) + 
-  geom_hline(yintercept = 0, alpha = 0.7) + 
-  geom_boxplot(show.legend = F) +
-  theme_classic()
-specificityModel_plot
-
-```
-
-The plot above shows the estimated coefficients from the linear model for day and subjects (R-squared for the model = `r round(specificityModel_diagnostics$Rsquared, digits = 2)`). As we would expect given the subject specificity of these partitions, `r round(prcntSubj, digits = 2)` percent of the subject coefficients were significant (a one sample t-test confirmed this notion). Conversely, `r round(prcntDay, digits = 2)` of the coefficients for daily comparisons were significant (non-significant t-test). These results suggest that the partitions were better explained as being subject-specific. That said, the current version of the model is fit with the data from all ROIs, and running it separately for PCC and mPFC might be fruitful in the future.
-
-In order to diagnose the model, we checked the independency of observations through the rank of the design matrix, which was `r specificityModel_diagnostics$Rank[1]` (full rank for `r nSubj` subjects should be `r ncol(coeffList)`) for the present analysis. Further diagnostics included a qqnorm check on the model residuals (result: mostly normal), and variance inflation factors (VIF, also used by Kragel et al., 2018). The VIF is a measure of colinearity of the regressors, and it "shows the degree to which variance in each parameter estimate is increased due to partial colinearity with linear combinations of other regressors". While low (<2) VIF values are preferable, shared variance is unavoidable given the hierarchical structure of the model. Regardless, Kragel et al. take it as a good sign that their VIF are finite (?), which is also the case here (mean = `r mean(specificityModel_diagnostics$Vif)`). That said, these are above 10, which is a standard upper threshold (potential downside). *We will have to reconsider this portion.*
-
-### *Stability per subject (sliding window)*
-
-While the distinction of DMN and non-DMN is consistent across session and days, it is possible that the decrease in global ARI values going from full to session-specific data could be due to a dynamic shift in organization. In order to address this possibility, we performed a sliding window analysis on each subject's full time series (20 min windows shifting at 1 min), comparing the community arrangement derived on each window with the original pattern estimated using the whole time series. The first two plots show how well each window's clustering agreed with the partition derived from the whole data (in RIs, left), as well as how variable (in standard deviations) this index was throughout each time series (right).  
+### *Pattern stability over time*
 
 
 ``` {r Stability per subject: Overall (Fig. 9), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 9. ARI between communities computed at each sliding epoch and the original partition for all subjects (left), as well as the distribution of ARI standard deviations per subject (right).", echo=FALSE, message = FALSE, cache = TRUE}
@@ -1793,7 +1727,7 @@ SC_plot <- SC_plot + geom_line(aes(x = Window, y = Index, group = as.factor(Subj
               geom_smooth(aes(x = Window, y = Index), color = Cols[2], fill = Cols[2]) +
               ylim(0,1) + 
               theme(text = element_text(size=35)) +
-              labs(y = "Adj. Rand Index") +
+              labs(y = "ARI") +
               theme_classic()
 
 
@@ -1871,28 +1805,9 @@ grid.arrange(SC_plot, SC_sd_plot, ncol = 2)
 # corrplot(meanMatrices, method = "color", is.corr = F, cl.lim = c(0,1))
 ```
 
+While the distinction of DMN and non-DMN is consistent across session and days, it is possible that the decrease in global ARI values going from full to session-specific data could be due to a dynamic shift in DMN organization. In order to address this possibility, we performed a sliding window analysis on each subject's full time series (20 min windows shifting at 1 min), comparing the community arrangement derived from each window with the original pattern estimated using the whole time series (Figure 9). Note that the length of the windows is well equipped to find stable community features in brain networks [@Gordon2017]. This analysis revealed persistently high levels of agreement for most subjects, with overall low variability (overall mean of each subject's average ARI = `r round(mean(SC_summary$RI), digits = 2)`; SD = `r round(mean(SC_summary$SD), digits = 2)`). 
 
-While some subjects show considerable variability, the overall trend is of fair stability. An interesting feature of spectral partitioning is that the Fiedler vector was tightly related to the proportion of times any given cortical vertex was affiliated with the DMN throughout the sliding windows. Meaning, the higher the absolute value in the Fiedler vector for a given vertex, the more persistent its relationship was with its corresponding community in time. The following plot shows this relationship for each subject (gray smoothed lines), as well as the fitted values from a logistic mixed effects model (black line; model: prop. DMN ~ Fiedler vector, subjects as random intercepts; beta = `r round(SC_FVvPDMN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDMN_modelSummary$coefficients[2,2], digits = 2)`, p < 0.001).
-
-
-``` {r Stability per subject: Fiedler vector vs prop. DMN plot, fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 10. Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines denote each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
-# Fiedler Vector x proportion of times a vertex was affiliated with DMN
-SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
-  geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
-  #geom_point(aes(FiedlerVec, slidePropDMN, fill = SubjID), show.legend = F, alpha = 0.05, pch = 21, color = "black") + 
-  geom_line(aes(FiedlerVec, FittedVals), alpha = 1, size = 3) +
-  labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
-  theme_classic()
-
-SC_FVvPDMN_plot
-```
-
-
-With the exception of some noisy subjects, the sigmoidal functions show a tight relationship between the two. This brings attention to the possibility of using the Fiedler vector as a surrogate for stability, thus reducing the computational needs for future analyses. 
-
-While these results show promise, so far we have only looked at stability for all the ROIs. The next three plots show similar data, but for PCC and mPFC separately. The middle plot compares the subject-wise mean RI for PCC and mPFC. While mPFC shows an overall significantly lower level of agreement with the overall partition, the variance throughout the time series is small.
-
-``` {r Stability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, fig.cap = "Figure 11. ARI between each window and the original pattern for PCC and mPFC separately (left), and the mean per-subject ARI for the whole group (middle). Regardless of the mean ARI, standard deviation remained low for both regions (right).", echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Stability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 ## Check stability for PCC and mPFC separately
 # Get the sliding values for PCC and PFC separately
 tempSW_PCC <- lapply(SVals, "[", i = posteriorIndx, j =)
@@ -1929,12 +1844,22 @@ SC_PCCPFC_summary <- rbind(SC_PFC_summary, SC_PCC_summary)
 colnames(SC_PCCPFC_summary) <- list("SubjID", "Index", "SD", "Region")
 rm(SC_PCC_summary, SC_PFC_summary)
 
+# Compare mean ARI of sliding windows between regions
+SW_PCCvPFC_permuteTest <- permute(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"], paired = T)
+SW_PCCvPFC_ES <- cohenD(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"])
+
+```
+
+We additionally performed this analysis on mPFC and PCC separately to determine whether these results were region-specific (Figure 10). Even though the within-subject variance remained low for both regions, we found that the average agreement per subject was significantly higher for PCC (paired permutation,*p*= `r SW_PCCvPFC_permuteTest$Pval`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). Nonetheless, the mean ARI across each subject's time series was still relatively high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), thus suggesting that the each individual's DMN distribution is cosiderably stable in time.
+
+``` {r Stability per subject: PCC vs mPFC (Fig 10), fig.align="center", fig.width=10, fig.height=4, fig.cap = "Figure 10. ARI between each window and the original pattern for PCC and mPFC separately (left), and the mean per-subject ARI for the whole group (middle). Regardless of the mean ARI, standard deviation remained low for both regions (right).", echo=FALSE, message = FALSE, cache = TRUE}
+
 # plots
 SC_PCCPFC_plot <- ggplot(data = SC_PCC)
 SC_PCCPFC_plot <- SC_PCCPFC_plot + geom_line(aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[2], alpha = 0.3, show.legend = F) +
   geom_smooth(aes(x = Window, y = Index), color = Cols[2], fill = Cols[2]) +
   ylim(0,1) + 
-  labs(y = "Adj. Rand Index") +
+  labs(y = "ARI") +
   theme(text = element_text(size=35)) +
   geom_line(data = SC_PFC, aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[1], alpha = 0.3, show.legend = F) +
   geom_smooth(data = SC_PFC, aes(x = Window, y = Index), color = Cols[1], fill = Cols[1]) +
@@ -1958,20 +1883,27 @@ SC_PCCPFC_sd_plot <- ggplot(data = SC_PCCPFC_summary, aes(x=SD, fill = as.factor
   theme(text = element_text(size=35)) +
   theme_classic() 
 
-SW_PCCvPFC_permuteTest <- permute(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"], paired = T)
-SW_PCCvPFC_ES <- cohenD(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"])
-
 grid.arrange(SC_PCCPFC_plot, SC_PCCPFC_mean_plot, SC_PCCPFC_sd_plot, ncol = 3)
 ```
 
-This suggests that, while the agreement of each window with the overall time series was stable for both PCC and mPFC (low SD, right plot), the overall agreement of mPFC is lower (paired permutation, p = `r SW_PCCvPFC_permuteTest$Pval`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). 
+We complemented these analyses by asking whether the magnitude of values in the Fiedler vector was associated with the stability of nodes throughout a subject's time series (*PERSONAL NOTE: It might be better to justify this from the use of this vector in statistical mechanics rather than mere curiosity, i.e. extreme FV values are given to elements at the peaks of the wave. Find a simple citation for this.*). Specifically, we examined whether Fiedler vector values could predict the proportion of DMN affiliations per node by performing a logistic mixed effects model, with subject acting as a random effect (Figure 11). The model yielded a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDMN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDMN_modelSummary$coefficients[2,2], digits = 2)`,*p*< 0.001), meaning that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community in time. These analysis show that the original pattern identified with the full dataset is temporally stable in time, and that there is potential value in thresholding the Fiedler vector as a means to capture idiosyncratic and reliable DMN vertices in relatively short fMRI sessions (i.e. less than 20 mins).
+
+
+``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 11), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 11. Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines denote each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
+# Fiedler Vector x proportion of times a vertex was affiliated with DMN
+SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
+  geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
+  #geom_point(aes(FiedlerVec, slidePropDMN, fill = SubjID), show.legend = F, alpha = 0.05, pch = 21, color = "black") + 
+  geom_line(aes(FiedlerVec, FittedVals), alpha = 1, size = 3) +
+  labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
+  theme_classic()
+
+SC_FVvPDMN_plot
+```
 
 \bigskip
 
 ### *Potential Noise Effects*
-
-This result could be due to signal degeneration in mPFC (that said, it is worth noting that the topological patterns remain mostly the same for both PCC and mPFC throughout the SW analysis). To account for this, we computed the temporal signal to noise ratio (tSNR) for each vertex in each subject's minimally preprocessed fMRI data (i.e. mean of each vertex's time points over their standard deviation). The next plot shows the pooled subject-wise mean tSNR for PCC and mPFC vertices, and indicates that the tSNR is lower for mPFC than PCC, which could negatively affect our results.
-
 
 ``` {r Noise Effects: tSNR Comparison (Fig. 12), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 12. Mean tSNR for mPFC and PCC across participants. This measure was derived from the minimally preprocessed fMRI data from the HCP, and thus shows the base level of reltive noise in each region.", echo=FALSE, message = FALSE, cache = TRUE}
 ## Putative steps to analyze the SNR of the full time series (PCC vs mPFC)
@@ -1985,14 +1917,16 @@ SNR_PCCvsPFC_perm <- p.adjust(SNR_PCCvsPFC_perm, method = "BY")
 SNR_PCCvsPFC_ES <- sapply(seq_along(tempComm_PCC), function(x) cohenD(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff))
 prcntSig <- (sum(SNR_PCCvsPFC_perm < 0.05) / nSubj) * 100
 
-# Get the mean SNR for each region and the effect size for the comparison 
+# Get the mean SNR for each region and compare overall levels 
 SNR_meanPCC <- sapply(tempComm_PCC, function(data) mean(data$varCoeff))
 SNR_meanPFC <- sapply(tempComm_PFC, function(data) mean(data$varCoeff))
-SNR_meanComp <- data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nSubj)),
-                           SNR = c(SNR_meanPCC, SNR_meanPFC))
+SNR_meanComp <- list(Values = data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nSubj)), SNR = c(SNR_meanPCC, SNR_meanPFC)),
+                     Comparison = permute(SNR_meanPCC, SNR_meanPFC)$Pval,
+                     ES = cohenD(SNR_meanPCC, SNR_meanPFC))
+rm(SNR_meanPCC, SNR_meanPFC)
 
 # Plot the mPFC SNR vs PCC SNR for each subject (one figure containing all subjects)
-snrmeanComp_plot <- ggplot(data = SNR_meanComp, aes(Region, SNR, fill = Region)) +
+snrmeanComp_plot <- ggplot(data = SNR_meanComp$Values, aes(Region, SNR, fill = Region)) +
   geom_boxplot(show.legend = F) +
   scale_fill_manual(values = Cols[seq(2)]) +
   labs(x = "", y = "tSNR") +
@@ -2001,11 +1935,7 @@ snrmeanComp_plot <- ggplot(data = SNR_meanComp, aes(Region, SNR, fill = Region))
 snrmeanComp_plot
 ```
 
-To formally examine this, for each subject we compared the tSNR values of all vertices between PCC and mPFC (`r nSubj` permutation tests, 5000 iterations). About `r round(prcntSig, digits = 2)` percent of the comparisons proved significant at alpha = 0.05 (FDR corrected; mean Cohen's D = `r round(mean(SNR_PCCvsPFC_ES), digits = 2)`). In addition, we found that the degree of signal to noise for each vertex showed significant negative correlations with flexibility, a graph-theoretic index that measures the proportion of times a node in a network changed affiliation across partitions (mean correlation across subjects = `r round(mean(SNR_vs_Flex), digits = 2)`). This suggests that, for any given subject, vertices with low SNR resulted in variable participation between the communities, and could explain why mPFC had lower stability levels.
-
-To further quantify the potential effect of noise in our results, we computed the variance explained by the mean time series of the DMN community on each DMN vertex separately through a simple linear model. Interestingly, there is a strong linear relationship between the Fiedler vector (the divisive vector from spectral partitioning) and the R-squared values (these match perfectly on the brain when inspected qualitatively). The following plot shows this relationship, with each line denoting a subject.
-
-\bigskip
+Even though our findings point to a stable representation of each subject's unique DMN organization, it is still possible that our results were affected by considerable levels of signal noise often found in mPFC (its ventral segment in particular). As a first step to account for this, we computed the temporal signal to noise ratio (tSNR) for each vertex in each subject's minimally preprocessed fMRI data (i.e. mean of each vertex's time points over their standard deviation). The tSNR of all vertices were averaged per region and subject (Figure 12), which showed that indeed mPFC (mean = `r round(mean(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="mPFC"]), digits = 2)`) was overall noisier than PCC (mean = `r round(mean(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="PCC"]), digits = 2)`) across subjects (permutation, *p* = `r SNR_meanComp$Comparison`, Cohen's D = `r round(SNR_meanComp$ES, digits = 2)`). To more precisely examine this difference, we performed subject-wise comparisons of the tSNR values of all vertices between PCC and mPFC (total `r nSubj` permutation tests, 5000 iterations each). About `r round(prcntSig, digits = 2)` percent of the comparisons proved significant at alpha = 0.05 (FDR corrected; mean Cohen's D = `r round(mean(SNR_PCCvsPFC_ES), digits = 2)`). In addition, we found that the levels of tSNR for each vertex showed significant negative correlations with flexibility, a graph-theoretic index that measures the proportion of times a node in a network changed affiliation across partitions (mean *r* = `r round(mean(SNR_vs_Flex), digits = 2)`). These findings indicate that, for any given subject, vertices with low SNR resulted in more variable participation between the communities, and these vertices were more common in mPFC. This could explain why mPFC previously showed lower stability levels.
 
 ``` {r Noise Effects: Per-subject Fiedler by R-sqd (Fig. 13), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 13. Fiedler vector values are linearly related to the total variance explained by each vertex with respect to the mean DMN time series.", echo=FALSE, message = FALSE, cache = TRUE}
 setwd('./Variance/')
@@ -2077,21 +2007,20 @@ Rsq_PCCvsPFC_ES <- sapply(Variance, function(data) {cohenD(data$Rsquared[data$Re
 #         scale_fill_manual(values = Cols[seq(2)]) +
 #         theme_classic()
 
-v1
+#v1
 
 
 
 ```
 
-
-Next, we compared the R-squared values for PCC and mPFC separately per subject. The following plot shows that for each subject, R-squared values tend to be higher for PCC (`r prcntSig` percent of Wilcoxon ranksum tests across subjects had p values < 0.001). This is also true for Fiedler vector values, but to a lesser extent. These differences had moderately high effect sizes (mean Cohen's D = `r round(mean(Rsq_PCCvsPFC_ES), digits = 2)`). These results suggest that overall, vertices belonging to the mPFC DMN community are less in synchrony with the activity of the community as a whole than those in PCC.
+To further interrogate the potential effect of noise in our results, we computed the variance explained by activity from each DMN vertex on the mean time series of the DMN community. If the signal quality issues persisted after preprocessing the data, we expected that noisy vertices would have the least explicative power on the activity of the DMN community as a whole. This also implied lower $R^2$ values for mPFC. Indeed, we found that for each subject, $R^2$ values tended to be higher for PCC (`r prcntSig` percent of Wilcoxon ranksum tests across subjects had *p* values < 0.001) (Figure 14). These differences had moderately high effect sizes (mean Cohen's D = `r round(mean(Rsq_PCCvsPFC_ES), digits = 2)`). These results suggest that, overall, vertices in mPFC tended to be less in synchrony with the activity of the DMN community as a whole.
 
 
 ``` {r Noise Effects: Mean R-sqd mPFC and PCC, fig.align="center", fig.width=6, fig.height=4, fig.cap = "Figure 14. Differences in mean R-squared values for each region per participant. The figure shows that PCC vertices tend to be more coupled with the overall dynamics of DMN across subjects.", echo=FALSE, message = FALSE}
 v4
 ```
 
-This begs the question of whether there is a "gradient of noise" along the z-axis on mPFC (vmPFC explaining less variance?). The plots below show the density of R-squared (left) and SNR (right) values for every mPFC vertices across all participants. The R-squared values have no clear relationship with the ventral-dorsal axis (with some low values grouped in vmPFC). However, the coefficient of variation derived from minimally preprocessed data does show a trend (namely, the more ventral, the lower the SNR). This is notable because the R-squared values are estimated from data with added noise reduction steps. These results contextualize the degree of synchrony of mPFC vertices in terms of potential noise. While still an important factor, it is unlikely that our stability results could be due mostly to highly structured mPFC noise.
+Given this trend, we asked whether there is a "gradient of noise" along the z-axis of mPFC, such that more ventral vertices would both be noisier and explain the least amount of DMN variance. Here we found that while the highest $R^2$ values are indeed placed dorsally, there is no clear relationship with the ventral-dorsal axis. However, the coefficient of variation derived from minimally preprocessed data does show a trend (namely, the more ventral, the lower the SNR). This is notable because the R-squared values are estimated from data with added noise reduction steps. These results contextualize the degree of synchrony of mPFC vertices in terms of potential noise. While still an important factor, it is unlikely that our stability results could be due mostly to highly structured mPFC noise.
 
 \bigskip
 
@@ -2206,47 +2135,6 @@ prepostComp_plot <- ggplot(data = prepostComp, aes(Approach, Correlation, fill =
   theme_classic()
 prepostComp_plot
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
