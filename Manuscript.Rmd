@@ -1903,7 +1903,7 @@ SC_FVvPDMN_plot
 
 \bigskip
 
-### *Potential Noise Effects*
+### *Potential Noise Effects (this part is challenging)*
 
 ``` {r Noise Effects: tSNR Comparison (Fig. 12), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 12. Mean tSNR for mPFC and PCC across participants. This measure was derived from the minimally preprocessed fMRI data from the HCP, and thus shows the base level of reltive noise in each region.", echo=FALSE, message = FALSE, cache = TRUE}
 ## Putative steps to analyze the SNR of the full time series (PCC vs mPFC)
@@ -1953,7 +1953,7 @@ for (i in seq(nSubj)) {
   Variance[[i]]$Region <- ifelse(Variance[[i]]$tempY < 0, "PCC", "mPFC")
 }
 
-# plot
+
 # let's put everyone's data together first
 allVariance <- do.call(rbind, Variance)
 
@@ -1962,6 +1962,18 @@ allVariance_sumarized <- aggregate(allVariance$Rsquared ~ allVariance$SubjID + a
 colnames(allVariance_sumarized) <- list("SubjID", "Region", "meanRsquared")
 allVariance_sumarized$SEM <- aggregate(allVariance$Rsquared ~ allVariance$SubjID + allVariance$Region, FUN = function(data) {sd(data)/sqrt(length(data))})[ , 3]
 
+# Create a new data frame with values restricted to mPFC (for plotting and further stats)
+mPFCVariance <- allVariance[allVariance$Region == "mPFC", ]
+
+# Get the correlations between Z-axis, R2, and tSNR for every subject (to take mean and SD in text)
+# I just came up with this, so the code should be made more parsimonious in the future (like, why bind and then split...?)
+tempSubj <- split(mPFCVariance, f = mPFCVariance$SubjID)
+noiseCors <- data.frame(R2vtSNR = sapply(tempSubj, function(data) {cor(data$Rsquared, data$varCoeff)}),
+                        ZvtSNR = sapply(tempSubj, function(data) {cor(data$tempZ, data$varCoeff)}),
+                        ZvR2 = sapply(tempSubj, function(data) {cor(data$tempZ, data$Rsquared)}))
+rm(tempSubj)
+
+# plot
 # There is a strong linear relationship between the Fiedler vector and the R-squared values
 # These match perfectly on the brain when inspected qualitatively
 v1 <- ggplot(data = allVariance) + 
@@ -2013,18 +2025,15 @@ Rsq_PCCvsPFC_ES <- sapply(Variance, function(data) {cohenD(data$Rsquared[data$Re
 
 ```
 
-To further interrogate the potential effect of noise in our results, we computed the variance explained by activity from each DMN vertex on the mean time series of the DMN community. If the signal quality issues persisted after preprocessing the data, we expected that noisy vertices would have the least explicative power on the activity of the DMN community as a whole. This also implied lower $R^2$ values for mPFC. Indeed, we found that for each subject, $R^2$ values tended to be higher for PCC (`r prcntSig` percent of Wilcoxon ranksum tests across subjects had *p* values < 0.001) (Figure 14). These differences had moderately high effect sizes (mean Cohen's D = `r round(mean(Rsq_PCCvsPFC_ES), digits = 2)`). These results suggest that, overall, vertices in mPFC tended to be less in synchrony with the activity of the DMN community as a whole.
-
-
 ``` {r Noise Effects: Mean R-sqd mPFC and PCC, fig.align="center", fig.width=6, fig.height=4, fig.cap = "Figure 14. Differences in mean R-squared values for each region per participant. The figure shows that PCC vertices tend to be more coupled with the overall dynamics of DMN across subjects.", echo=FALSE, message = FALSE}
 v4
 ```
 
-Given this trend, we asked whether there is a "gradient of noise" along the z-axis of mPFC, such that more ventral vertices would both be noisier and explain the least amount of DMN variance. Here we found that while the highest $R^2$ values are indeed placed dorsally, there is no clear relationship with the ventral-dorsal axis. However, the coefficient of variation derived from minimally preprocessed data does show a trend (namely, the more ventral, the lower the SNR). This is notable because the R-squared values are estimated from data with added noise reduction steps. These results contextualize the degree of synchrony of mPFC vertices in terms of potential noise. While still an important factor, it is unlikely that our stability results could be due mostly to highly structured mPFC noise.
+To further interrogate the potential effect of noise in our results, we computed the variance explained by activity from each DMN vertex on the mean time series of the DMN community. If the signal quality issues persisted after preprocessing the data, we expected that noisy vertices would have the least explicative power on the activity of the DMN community as a whole. This also implied lower $R^2$ values for mPFC. Indeed, we found that for each subject, $R^2$ values tended to be higher for PCC (`r prcntSig` percent of Wilcoxon ranksum tests across subjects had *p* values < 0.001) (Figure 14). These differences had moderately high effect sizes (mean Cohen's D = `r round(mean(Rsq_PCCvsPFC_ES), digits = 2)`). These results suggest that, overall, vertices in mPFC tended to be less in synchrony with the activity of the DMN community as a whole. Furthermore, the degree tSNR showed a moderate correlation with $R^2$ values across participants (mean *r* = `r round(mean(noiseCors$R2vtSNR), digits = 2)`; SD = `r round(sd(noiseCors$R2vtSNR), digits = 2)`), meaning that noisier vertices were less in synchrony with the general activity of the DMN.
 
-\bigskip
+Given this trend, we asked whether there is a "gradient of noise" along the z-axis of mPFC, such that more ventral vertices would both be noisier and explain the least amount of DMN variance. Here we found that while $R^2$ are somewhat correlated with dorsal-ventral placement across subjects (mean *r* = `r round(mean(noiseCors$ZvR2), digits = 2)`; SD = `r round(sd(noiseCors$ZvR2), digits = 2)`), there is no clear relationship with the z-axis across subjects (Figure 15). Specifically, low $R^2$ are distributed evenly along this axis, denoting a degree of orthogonality between these features. Conversely, tSNR showed a strong linear relationship with the position of the vertex along this axis (mean *r* = `r round(mean(noiseCors$ZvtSNR), digits = 2)`; SD = `r round(sd(noiseCors$ZvtSNR), digits = 2)`). These results contextualize the degree of synchrony of mPFC vertices in terms of potential noise. While still an important factor, it is unlikely that the degree of within-subject pattern stability observed here could be due mostly to highly structured mPFC noise.
 
-``` {r Noise Effects: R-sqd vs tSNR (Fig. 15), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 15. Vertex tSNR values across all subjects are correlated with their position along the z-axis in mPFC, with vmPFC showing the least tSNR (left). However, R-square values do not show this strong relationship (right), suggesting that the coupling of each vertex is not necessarily influenced by signal noise.", echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Noise Effects: R-sqd vs tSNR (Fig. 15), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 15. Vertex tSNR values across all subjects are correlated with their position along the z-axis in mPFC, with vmPFC showing the lowest tSNR (left). However, R-square values do not show this strong relationship (right), suggesting that the coupling of each vertex is not necessarily influenced by signal noise.", echo=FALSE, message = FALSE, cache = TRUE}
 # grid.arrange(v6, v7, ncol = 2)
 # par(mfrow = c(1,2))
 # smoothScatter(allVariance[allVariance$Region == "mPFC",]$Rsquared, allVariance[allVariance$Region == "mPFC",]$tempZ,
@@ -2035,15 +2044,15 @@ Given this trend, we asked whether there is a "gradient of noise" along the z-ax
 #               xlab = "Coefficient of Variation (SNR)",
 #               ylab = "")
 
-tempVariance <- allVariance[allVariance$Region == "mPFC", ]
-s1 <- ggplot(data = allVariance, aes(Rsquared, tempZ)) +
+# ALTERNATIVE IDEA FOR A FIGURE: BRAIN MAPS WITH THESE VALUES. THAT SAID, R2 MAPS LOOK THE SAME AS FV ONES, SO...
+s1 <- ggplot(data = mPFCVariance, aes(Rsquared, tempZ)) +
   geom_bin2d(bins = 250) +
   scale_fill_continuous(low = "grey30", high = "grey70") +
   geom_density2d(color = Cols[2]) +
   labs(x = "R-squared value", y = "Z-Coordinate") +
   theme_classic()
 
-s2 <- ggplot(data = allVariance, aes(varCoeff, tempZ)) +
+s2 <- ggplot(data = mPFCVariance, aes(varCoeff, tempZ)) +
   geom_bin2d(bins = 250) +
   scale_fill_continuous(low = "grey30", high = "grey70") +
   geom_density2d(color = Cols[2]) +
@@ -2173,7 +2182,7 @@ It will also be good to note that there is concurrent debate on the ground truth
 
 Mention the lack of interhemispheric distinction, citing Mackey and Petrides in regards to L-R diffs. 
 
-It's also worth mentioning that PCC is largely covered by DMN. Then why does this area overlap with SV? I think the Mueller paper mentions that PCC is an important hub of the brain, and perhaps subserves many cognitive functions. 
+It's also worth mentioning that PCC is largely covered by DMN. Then why does this area overlap with SV? I think the Mueller paper mentions that PCC is an important hub of the brain, and perhaps subserves many cognitive functions (recent Wash U paper on this too). 
 
 And write a portion on the lack of subcortical reward-related regions (i.e. striatum). Say something like 'incorporating the ventral striatum did notrefine these partitions through either method. This could be due to the lack of signal modulation of this area at rest, and should be examined through behavioral manipulations of value in the future. Instead, here we focus on capturing the intrinsic functional heterogeneity of mPFC as a way to pave the path to refined analyses aimed at disentangling DMN and SV'.
 
@@ -2182,6 +2191,8 @@ Talk about how there are other community detection algorithms, and that modulari
 Add a portion showing that summing up the binarized maps produces a map similar to the one produced by Margulies et al. and others.
 
 It might also be worth mentioning that previous work has established the shift in network types during rest through hidden Markov models (Vidaurre et al., 2016?). While this suggests that we should see fluctuations in affiliation, and not stability, Vidaurre's work establishes the dynamics of prevalent function among networks, and not their topologies. Our work focuses on the topographical arrangement of the DMN network, which can be active or not while maintaining its form. So, the two works are compatible. Note, I played a bit with AR and MA processes per subject to try to understand the autocorrelation in the sliding window. First, both acf/pacf and arima (order = n,0,n) R functions suggested that the data was better fit by AR. Moreover, ARs from 1 to 10 had neglegible differences, so I stuck with 1 results for simplicity. As expected the data is significantly autocorrelated, and when I checked plotted the residuals they were mostly within the 0.15 bound (normally distributed). Coefficients ranged from 0.6 to 1. So, there is clear rythmicity in the agreement between each window and the overall pattern. However, the intercepts from the ARn processes gave more or less the same estimates as the mean rand index over all the windows. This is mostly expected, as we saw that the standard deviation of the rand index was low across participants. I am currently interpreting this as a signal that there is clear periodicity that is otherwise harmless for our results: in the end, the agreement remains stable throughout the 4800 TRs.
+
+In terms of noise, there are a handful of things to keep in mind. First is that yes, mPFC is noisier overall, but that did not preclude the relatively high levels of agreement across days and sessions per subject, even though ARI heavily penalizes discrepancies (less than linearly). Second, low $R^2$ values were found all throughout the z-axis, meaning that variance explained is not strictly determined by the cardinal position of the vertex (and while the correlation was significant due to the sheer number of items, the coefficient was relatively low). Right now this might be ok as a way to bypass noise comments, but it would also be interesting to take advantage of the Fiedler vector here. Since it's linearly related to $R^2$ per subject, perhaps finding a way to threshold these values would provide cleaner and even more consistent maps. 
 
 ## Acknowledgements
 
