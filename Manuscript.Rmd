@@ -2,10 +2,10 @@
 title: 'Parsing mPFC: A Joint Meta-Analytic and Graph Theoretic Approach'
 author: "Claudio Toro-Serey^1^ & Joseph T. McGuire^1^"
 output:
-  pdf_document: default
-  html_document: default
   word_document: 
     reference_docx: Style_reference.docx
+  pdf_document: default
+  html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
     - \usepackage{setspace}\doublespacing
@@ -1270,6 +1270,19 @@ testPCC <- RI_PCC[lower.tri(RI_PCC)]
 testPFC <- RI_PFC[lower.tri(RI_PFC)]
 Overall_PCCvsPFC_permTest <- permute(testPCC, testPFC, statType = mean, paired = T)
 Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) # caveat: maybe not ideal for bounded values, like RI. BUT VI yields similar results.
+
+# To get the rate of stability per vertex across subjects
+FB <- do.call(cbind, lapply(Summaries, "[[", "FiedlerBinary"))
+FBS <- rowMeans(FB)
+FBS[FBS < 0.5] <- 1 - FBS[FBS < 0.5]
+
+# Now let's test something: 
+# Traditionally, a vertex-wise test would be carried across subjects.
+# If these traditional analyses miss out on these idiosyncrasies, you should get unsignificant results.
+# So we did a prop.test per vertex, and corrected with FDR to mimic this situation.
+All_proptests <- apply(FB, 1, function(x) {prop.test(sum(x), nSubj)})
+Pvals_corrected <- p.adjust(sapply(All_proptests, "[[", "p.value"), method = "BY")
+Chisquares <- sapply(All_proptests, "[[", "statistic")
 ```
 
 The distribution suggests that both clustering methods were in high agreement across subjects (mean = `r round(mean(RI_all_within$Index), digits = 2)` sd = `r round(sd(RI_all_within$Index), digits = 2)`). The importance of this result lies in that while spectral partitioning forces a bipartition of the network, modularity does not. This adds evidence to the division of these areas into DMN and non-DMN during rest. 
@@ -1281,33 +1294,34 @@ Next, we examined how similar the partitions were across subjects by computing t
 In order to determine whether the low agreement shown in mPFC across subjects was a function of intrinsic variability or a subject-specific pattern, we compared the agreement among communities estimated with data from each separate day. If the latter were true, within-subject ARI values should be consistently higher than across subjects. Since SP and modularity showed converging estimates, from here on we focus on results computed with spectral partitioning to ensure bipartitions. Communities were estimated on concatenated pairs of daily left-right and right-left phase encoded sessions (see Methods for details), and once again compared using ARI. Figure 5 shows pairwise comparisons among ten example subjects for PCC and mPFC separately. 
 
 ``` {r Partition comparison: halves, echo=FALSE, message = FALSE, cache = TRUE}
-# Select 10 subjects from the sample to display
-selectSubj <- seq(1,20)
-
-# Load
+# Load data
 setwd('./Summary_halves/')
 temp <- list.files(pattern = "*_finalSummary.csv")
 subjList_halves <- sapply(temp, substring, first=1, last=9)
 Summaries_halves <- lapply(temp, read.csv)
+
+# Select subsection of subjects for plotting the similarity matrices
+selectSubj <- seq(1,20)
 Summaries_halves_plot <- Summaries_halves[selectSubj]
 subjList_halves_plot <- subjList_halves[selectSubj]
 
+# Load the correlation-based maps (this might be ok to move to the cor vs comm chunk)
 temp <- list.files(pattern = "*_corHalves.csv")
 Correlation_halves <- lapply(temp, read.csv, header = F)
 Correlation_halves_plot <- Correlation_halves[selectSubj]
 
-# Compare all halves with RI
-RI_all_between_halves <- comparePartitions(Data = Summaries_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
+# Compare all halves with RI (plot only)
+RI_all_between_halves_plot <- comparePartitions(Data = Summaries_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
 
-# Compare PCC and PFC among all subjects
+# Compare PCC and PFC among all subjects (plot only)
 tempComm_PCC_halves_plot <- lapply(Summaries_halves_plot, "[", i = posteriorIndx, j =)
 tempComm_PFC_halves_plot <- lapply(Summaries_halves_plot, "[", i = !posteriorIndx, j =)
-RI_PFC_halves <- comparePartitions(Data = tempComm_PFC_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
-RI_PCC_halves <- comparePartitions(Data = tempComm_PCC_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
+RI_PFC_halves_plot <- comparePartitions(Data = tempComm_PFC_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
+RI_PCC_halves_plot <- comparePartitions(Data = tempComm_PCC_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
 ```
 
 ``` {r Partition comparison: halves ratios, echo=FALSE, message = FALSE, cache = TRUE}
-## Now compare all possible pairs of subjects
+## Now compare all possible pairs of subjects (for actual reporting)
 # Compare all halves with RI
 RI_all_between_halves <- comparePartitions(Data = Summaries_halves, Index = "RI", nSubjects = length(Summaries_halves), subjNames = subjList_halves)
 
@@ -1401,27 +1415,28 @@ Once again we found greater alignment across subjects for PCC (mean = `r round(m
 We extended the analysis of daily data by examining whether the organization of the DMN could be extracted using session data only. It is worth noting that the length of each session (approx. 14 mins long) falls below the stability threshold for fMRI-based modularity estimations [@Gordon2017]. Nonetheless, high ARI ratios with reduced data could signify the ability to localize a subject's DMN organization with fMRI sessions that are easier to fit along with other study sessions of interest.
 
 ``` {r Partition comparison: session similarity matrices, echo=FALSE, message = FALSE, cache = TRUE}
-# Select 10 subjects from the sample to display
-selectSubj <- seq(1,40)
-
+# Load data
 setwd('./Summary_sess/')
 temp <- list.files()
 subjList_sess <- sapply(temp, substring, first=1, last=9)
 Summaries_sess <- lapply(temp, read.csv)
+
+# Select 10 subjects from the sample to plot
+selectSubj <- seq(1,40)
 subjList_sess_plot <- subjList_sess[selectSubj]
 Summaries_sess_plot <- Summaries_sess[selectSubj]
 
 
 # Across subjects (just for plotting)
-RI_all_between_sess <- comparePartitions(Data = Summaries_sess_plot, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
+RI_all_between_sess_plot <- comparePartitions(Data = Summaries_sess_plot, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
 tempComm_PCC_sess <- lapply(Summaries_sess_plot, "[", i = posteriorIndx, j =)
 tempComm_PFC_sess <- lapply(Summaries_sess_plot, "[", i = !posteriorIndx, j =)
-RI_PFC_sess <- comparePartitions(Data = tempComm_PFC_sess, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
-RI_PCC_sess <- comparePartitions(Data = tempComm_PCC_sess, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
+RI_PFC_sess_plot <- comparePartitions(Data = tempComm_PFC_sess, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
+RI_PCC_sess_plot <- comparePartitions(Data = tempComm_PCC_sess, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
 ```
 
 ``` {r Partition comparison: session compare all, echo=FALSE, message = FALSE, cache = TRUE}
-# Now run comparisons among all subjects
+# Now run comparisons among all subjects (for actual reporting)
 RI_all_between_sess <- comparePartitions(Data = Summaries_sess, Index = "RI", nSubjects = length(Summaries_sess), subjNames = subjList_sess)
 tempComm_PCC_sess <- lapply(Summaries_sess, "[", i = posteriorIndx, j =)
 tempComm_PFC_sess <- lapply(Summaries_sess, "[", i = !posteriorIndx, j =)
@@ -1857,7 +1872,7 @@ Finally, we coarsely examined whether these idiosyncratic topographical arrangem
 
 For clinical implications, see Hiser & Koenigs 2018. In short, being able to identify functional idiosyncrasies without much data can yield important insights in diagnosis (meh, we always say that..) of a variety of psychological diseases associated with mPFC. It would be more interesting to identify the repercussions to damage in mPFC per individual. They mention that subgenual vmPFC is a common target for deep brain stimulation (or TMS) as a depression treatment. The refinement of the technique is thus coupled to being able to identify personalized functional topologies. They list a number of results related to mPFC functional connectivity too. In the end, their suggestions for clinical implications of mPFC studies rely on the individual measure of functional expanse. (note that social-relevant areas in their meta analysis look similar to our patterns, and the emotion part to Barbas latest)
 
-It will also be good to note that there is concurrent debate on the ground truth of community detection. In other fields, identifying a community structure is not necessarily associated with the true organization of the network. What happens is that you might find a tangential grouping that gives you information different from your original goal [@Clauset2004]
+It will also be good to note that there is concurrent debate on the ground truth of community detection. In other fields, identifying a community structure is not necessarily associated with the true organization of the network. What happens is that you might find a tangential grouping that gives you information different from your original goal [@Clauset2004]. In our case, however, averaging everyone's partitions produces organizational maps that resemble those from previous work (e.g. Margulies).
 
 Mention the lack of interhemispheric distinction, citing Mackey and Petrides in regards to L-R diffs. 
 
@@ -1867,11 +1882,11 @@ And write a portion on the lack of subcortical reward-related regions (i.e. stri
 
 Talk about how there are other community detection algorithms, and that modularity and SP over and underfit, respectively. However, SP eigenmaps have been found to provide relevant functional information. In addition, both modularity and SP rely on connectivity strength, and thus is amenable to the correlative nature of functional connectivity.
 
-Add a portion showing that summing up the binarized maps produces a map similar to the one produced by Margulies et al. and others.
-
 It might also be worth mentioning that previous work has established the shift in network types during rest through hidden Markov models (Vidaurre et al., 2016?). While this suggests that we should see fluctuations in affiliation, and not stability, Vidaurre's work establishes the dynamics of prevalent function among networks, and not their topologies. Our work focuses on the topographical arrangement of the DMN network, which can be active or not while maintaining its form. So, the two works are compatible. Note, I played a bit with AR and MA processes per subject to try to understand the autocorrelation in the sliding window. First, both acf/pacf and arima (order = n,0,n) R functions suggested that the data was better fit by AR. Moreover, ARs from 1 to 10 had neglegible differences, so I stuck with 1 results for simplicity. As expected the data is significantly autocorrelated, and when I checked plotted the residuals they were mostly within the 0.15 bound (normally distributed). Coefficients ranged from 0.6 to 1. So, there is clear rythmicity in the agreement between each window and the overall pattern. However, the intercepts from the ARn processes gave more or less the same estimates as the mean rand index over all the windows. This is mostly expected, as we saw that the standard deviation of the rand index was low across participants. I am currently interpreting this as a signal that there is clear periodicity that is otherwise harmless for our results: in the end, the agreement remains stable throughout the 4800 TRs.
 
 In terms of noise, there are a handful of things to keep in mind. First is that yes, mPFC is noisier overall, but that did not preclude the relatively high levels of agreement across days and sessions per subject, even though ARI heavily penalizes discrepancies (less than linearly). Second, low $R^2$ values were found all throughout the z-axis, meaning that variance explained is not strictly determined by the cardinal position of the vertex (and while the correlation was significant due to the sheer number of items, the coefficient was relatively low). Right now this might be ok as a way to bypass noise comments, but it would also be interesting to take advantage of the Fiedler vector here. Since it's linearly related to $R^2$ per subject, perhaps finding a way to threshold these values would provide cleaner and even more consistent maps. 
+
+So what's the advantage of this work over previous ones? Gratton, Gordon, and Kong have already found some degree of subject stability and intersubject variability. Ours complements these findings by looking at the vertex level, not just mean parcel activity (this made sense for them, as they were looking at the whole brain). Also, most of these analyses rely on a small set of oversampled subjects (i.e. MSC). Here we extend this to 100, giving credit to individualize examinations even without oversampling. 
 
 \newpage
 ## Acknowledgements
@@ -1946,7 +1961,7 @@ mtext(expression(bold("PCC")), side = 1, line = 4, at = par("usr")[1]+0.18*diff(
 ``` {r Partition comparison: halves (Fig. 5), fig.align="center", out.width = "60%", fig.cap = "Figure 5. Similarity matrices for 10 example participants showing pattern agreement across days for the whole partition (left), and for PCC and mPFC separately (right). These figures show high agreement within (but not between) subjects, with mPFC again showing significant variability.", echo=FALSE, message = FALSE, cache = TRUE}
 # plots
 par(mfrow=c(1,2))
-corrplot(RI_all_between_halves, 
+corrplot(RI_all_between_halves_plot, 
          is.corr = F, 
          method = "color",
          addgrid.col = "grey90",
@@ -1963,7 +1978,7 @@ corrplot(RI_all_between_halves,
 # segments(20.5,0.5,20.5,20.5, lwd = 2)
 mtext(expression(bold("Subjects (Day 1 and Day 2)")), line = 1)
 mtext(expression(bold("Subjects (Day 1 and Day 2)")), side = 2, line = 3)
-corrplot(RI_PCC_halves, 
+corrplot(RI_PCC_halves_plot, 
          is.corr = F,     
          method = "color",
          type = "lower", 
@@ -1972,7 +1987,7 @@ corrplot(RI_PCC_halves,
          cl.pos = "r",
          addgrid.col = "grey90",
          cl.length = 3)
-corrplot(RI_PFC_halves, 
+corrplot(RI_PFC_halves_plot, 
          is.corr = F, 
          method = "color",
          type = "upper", 
@@ -1999,7 +2014,7 @@ ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) +
 ``` {r Partition comparison: session similarity matrices (Fig. 7), fig.align="center", out.width = "60%", fig.cap = "Figure 7. Similarity matrices showing pattern agreement across sessions for the whole partition (left), and for PCC and mPFC separately (right) (10 example subjects). The pattern from the daily analysis is preserved, with marked individuality for mPFC, but not PCC.", echo=FALSE, message = FALSE, cache = TRUE}
 # plot
 par(mfrow=c(1,2))
-corrplot(RI_all_between_sess, 
+corrplot(RI_all_between_sess_plot, 
          is.corr = F, 
          method = "color", 
          tl.pos = "n", 
@@ -2016,7 +2031,7 @@ corrplot(RI_all_between_sess,
 # segments(40.5,0.5,40.5,40.5, lwd = 2)
 mtext(expression(bold("Subjects (Session)")), line = 1)
 mtext(expression(bold("Subjects (Session)")), side = 2, line = 3)
-corrplot(RI_PCC_sess, 
+corrplot(RI_PCC_sess_plot, 
          is.corr = F, 
          method = "color", 
          type = "lower", 
@@ -2031,7 +2046,7 @@ corrplot(RI_PCC_sess,
 # segments(0.5,0.5,20.5,0.5, lwd = 2)
 # segments(0.5,20.5,20.5,20.5, lwd = 2)
 # segments(20.5,0.5,20.5,20.5, lwd = 2)
-corrplot(RI_PFC_sess, 
+corrplot(RI_PFC_sess_plot, 
          is.corr = F, 
          method = "color", 
          type = "upper", 
