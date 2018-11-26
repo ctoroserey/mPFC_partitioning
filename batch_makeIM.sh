@@ -116,7 +116,7 @@ for coordFile in coords*.txt ; do
       	echo
     fi
 
-    ## 3. volumetric to cortical surface conversion
+    ## 3. volumetric to cortical surface conversion using white matter folding
     ## surface templates in $FREESURFER_HOME/subjects/fsaverage/surf/
     ## note: appending "--nvox ${fname}_nvox.csv --srchit ${fname}_vox.nii.gz" gives num of surviving converted voxels (not specific to mask though)
     if [ ! -f ${fname}_lh.gii ] ; then
@@ -131,8 +131,9 @@ for coordFile in coords*.txt ; do
       	echo
     fi
 
-    ## 4. extracting vector of binaries for all vertices
+    ## 4. extracting boolean vector (is vertex in sphere, yes/no?) for all vertices to match with Glasser parcels
     ## wb_command properly transforms data into ASCII, so don't use FS, AFNI, or FSL for this
+	## personal note: potentially no need to use xmllint if wb_command -gifti-convert is used instead
     if [ ! -f ${fname}_lh_binaries.csv ] ; then
       	echo
       	echo "Converting GIFTI into ASCII for binary extraction..."
@@ -141,7 +142,7 @@ for coordFile in coords*.txt ; do
       	wb_command -gifti-convert ASCII ${fname}_rh.gii ${fname}_rh_binaries
       	echo "cat //GIFTI/DataArray/Data" | xmllint --shell ${fname}_lh_binaries | sed '/^\/ >/d' | sed 's/<[^>]*.//g' >> ${fname}_lh_binaries.csv
       	echo "cat //GIFTI/DataArray/Data" | xmllint --shell ${fname}_rh_binaries | sed '/^\/ >/d' | sed 's/<[^>]*.//g' >> ${fname}_rh_binaries.csv
-	sed -i 1d ${fname}_lh_binaries.csv
+		sed -i 1d ${fname}_lh_binaries.csv
       	sed -i 1d ${fname}_rh_binaries.csv
     else
       	echo
@@ -149,7 +150,7 @@ for coordFile in coords*.txt ; do
       	echo
     fi
 
-    ## 5. match binaries to labels and create parcel list
+    ## 5. match boolean vector to labels and create parcel list
     if [ ! -f ${fname}_matchLabels.csv ] ; then
       	echo
       	echo "Matching mask vertices to labels..."
@@ -158,8 +159,8 @@ for coordFile in coords*.txt ; do
       	paste ${fname}_rh_binaries.csv ../Glasser_labels_rh.csv > ${fname}_rh_allLabels.csv
       	(awk '$1 == 1' ${fname}_lh_allLabels.csv ; awk '$1 == 1' ${fname}_rh_allLabels.csv) > ${fname}_matchLabels.csv
       	sort -u -o ${fname}_u_matchLabels.csv ${fname}_matchLabels.csv && sed -i 1d ${fname}_u_matchLabels.csv
-	empty=$(awk -F "\"*,\"*" '{print $1}' ${fname}_matchLabels.csv | cut -c10 | grep -c -e '^$')
-	printf '%s,' ${fname} $((empty / 2)) >> noMatch.csv # store the per-study match-less vertex #
+		empty=$(awk -F "\"*,\"*" '{print $1}' ${fname}_matchLabels.csv | cut -c10 | grep -c -e '^$')
+		printf '%s,' ${fname} $((empty / 2)) >> noMatch.csv # store the per-study match-less vertex #
       	#rm ${fname}_lh_binaries.csv ${fname}_rh_binaries.csv ${fname}_rh_allLabels.csv ${fname}_lh_allLabels.csv
     else
       	echo
@@ -167,7 +168,8 @@ for coordFile in coords*.txt ; do
       	echo
     fi
 
-    ## 6. threshold labels to include (manually checked with Excel query of ${fname}_matchLabels.csv)
+    ## 6. threshold labels to include (visually checked with Excel query of ${fname}_matchLabels.csv)
+	## this step counts the number of vertices in each parcel, and compares this to the prespecified threshold (see labelThresh in 'parameters')
     if [ ! -f ${fname}_threshParcels.csv ] ; then
       	echo
       	echo "Picking out thresholded parcels..."
@@ -176,8 +178,8 @@ for coordFile in coords*.txt ; do
       	while IFS=$'\t' read -r -a label ; do
       	    count="$(grep -c ${label[1]} ${fname}_matchLabels.csv)"
       	    if [ "$count" -ge "$labelThresh" ]  ; then
-            		echo ${label[1]} >> ${fname}_threshParcels.csv
-            		printf "%s," ${label[1]} $count | awk '{print $0}' >> ${fname}_summary.csv
+				echo ${label[1]} >> ${fname}_threshParcels.csv
+				printf "%s," ${label[1]} $count | awk '{print $0}' >> ${fname}_summary.csv
       	    fi
       	done < ${fname}_u_matchLabels.csv
     else
@@ -186,29 +188,29 @@ for coordFile in coords*.txt ; do
       	echo
     fi
 
-    ## 7. merge labels to create a study-specific atlas
+    ## 7. merge labels to create a study-specific label atlas to be visualized in FreeView
     if [ ! -f ./results/${fname}_lh_atlas.label ] ; then
       	echo
       	echo "Creating study atlas..."
       	echo
-      	echo "#!ascii label, from subject ${fname}" >> ${fname}_lh_atlas.label
+      	echo "#!ascii label, from subject ${fname}" >> ${fname}_lh_atlas.label # header
       	echo "#!ascii label, from subject ${fname}" >> ${fname}_rh_atlas.label
       	totalLeft=0
       	totalRight=0
       	while IFS=$'\t' read -r -a label ; do
       	    if [[ $label == L* ]] ; then
-        		    totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/lh/lh.${label}.label))
-            		totalLeft=$(expr $totalLines + $totalLeft)
-            		sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/lh/lh.${label}.label >> ${fname}_lh_atlas.label
+				totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/lh/lh.${label}.label))
+				totalLeft=$(expr $totalLines + $totalLeft)
+				sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/lh/lh.${label}.label >> ${fname}_lh_atlas.label
       	    else
-            		totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/rh/rh.${label}.label))
-            		totalRight=$(expr $totalLines + $totalRight)
-            		sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/rh/rh.${label}.label >> ${fname}_rh_atlas.label
+				totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/rh/rh.${label}.label))
+				totalRight=$(expr $totalLines + $totalRight)
+				sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/rh/rh.${label}.label >> ${fname}_rh_atlas.label
       	    fi
       	done < ${fname}_threshParcels.csv
       	sed -i "2i "$totalLeft"" ${fname}_lh_atlas.label
       	sed -i "2i "$totalRight"" ${fname}_rh_atlas.label
-        # move summary files to the results folder
+        # move final summary files to the results folder
         mv -f -n ${fname}_summary.csv ./results/
         mv -f -n ${fname}_*h_atlas.label ./results/
     else
@@ -235,11 +237,13 @@ echo
 
 numStudies=0
 
+# concatenate the surviving parcels across studies
 for file in *summary.csv ; do
 	awk -F "\"*,\"*" '{print $1}' $file | sed 1d >> ${dirName}_studyLabels.csv
 	numStudies=$(expr 1 + $numStudies)
 done
 
+# get the proportion of times each parcel was reported across studies
 while IFS=$',' read -r -a label ; do
     	count="$(grep -c $label ${dirName}_studyLabels.csv)"
    	if [ "$count" -ge 1 ] ; then
@@ -247,24 +251,26 @@ while IFS=$',' read -r -a label ; do
 		echo $label >> ${dirName}_threshLabels.csv
    	 	printf "%s," $label $fraction | awk '{print $0}' >> ${dirName}_summary.csv
 	else
-		echo 0 >> ${dirName}_summary.csv
+		echo 0 >> ${dirName}_summary.csv # if parcel was not reported in the literature
   	fi
 done < $HOME/fMRI/Glasser_labels.csv
 ############
 
+# create a label file to visualize which areas were reported in the literature
+# first comes the header, then for each label you add the vertices (and their coords) associated with that label from the Glasser label file
 echo "#!ascii label, from condition ${dirName}" >> ${dirName}_lh_atlas.label
-echo "#!ascii label, from ondition ${dirName}" >> ${dirName}_rh_atlas.label
+echo "#!ascii label, from condition ${dirName}" >> ${dirName}_rh_atlas.label
 totalLeft=0
 totalRight=0
 while IFS=$'\t' read -r -a label ; do
   	if [[ $label == L* ]] ; then
-			totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/lh/lh.${label}.label))
-    			totalLeft=$(expr $totalLines + $totalLeft)
-    			sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/lh/lh.${label}.label >> ${dirName}_lh_atlas.label
+			totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/lh/lh.${label}.label)) 
+			totalLeft=$(expr $totalLines + $totalLeft)
+			sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/lh/lh.${label}.label >> ${dirName}_lh_atlas.label
     	else
-    			totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/rh/rh.${label}.label))
-    			totalRight=$(expr $totalLines + $totalRight)
-    			sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/rh/rh.${label}.label >> ${dirName}_rh_atlas.label
+			totalLines=$(expr 2 + $(awk 'NR == 2 {print $1}' $HOME/fMRI/Glasser/label/rh/rh.${label}.label))
+			totalRight=$(expr $totalLines + $totalRight)
+			sed -n 3,${totalLines}p $HOME/fMRI/Glasser/label/rh/rh.${label}.label >> ${dirName}_rh_atlas.label
     	fi
 done < ${dirName}_threshLabels.csv
 sed -i "2i "$totalLeft"" ${dirName}_lh_atlas.label
@@ -274,7 +280,9 @@ sed -i "2i "$totalRight"" ${dirName}_rh_atlas.label
 
 ############ Create overlays ##########
 
+# Unlike labels, these overlays contain vertex-specific information (specifically, proportion of reports across studies)
 ## Note: the contents of *_*h_overlay.csv have to be pasted into templateOverlay.gii
+## Note on note: there has to be a better way to do that.. it's just a .txt -> xml conversion that FS must have a function for
 
 echo
 echo "Creating overlays for ${dirName}..."
@@ -318,6 +326,8 @@ while IFS=$'\t' read -r -a label ; do
         #echo 0 >> check.csv
     fi
 done < $HOME/fMRI/Glasser_labels_rh.csv
+
+
 ## To do ##
 # - Turn some things into functions on separate files (set function path as "". /path/to/functions" at the beginning of the script, including the period)
 # - Might be good to cat echos like (echo ; echo "Skip..." ; echo) to avoid extra lines
