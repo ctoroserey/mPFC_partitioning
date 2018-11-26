@@ -24,7 +24,7 @@ export filename
 echo $filename
 
 
-# create dirs, including those to make FS commands compatible
+# create dirs, including those to make FreeSurfer commands compatible
 # important for step 7 and annot2label transformation
 mkdir -p $PWD/$filename/results
 mkdir -p $PWD/Glasser/surf
@@ -60,8 +60,8 @@ else
 fi
 
 # parameters
-sphereSze=10 ;
-labelThresh=1; # too small at 10, maybe use SD of all sizes.
+sphereSze=10 ; # size of the sphere to be projected to the cortical surface
+labelThresh=1; # Minimum n of vertices needed to map single coordinate spheres to a Glasser parcel (previously 10, but decided to avoid this threshold)
 printf "%s," Study Vertices_count | awk '{print $0}' >> noMatch.csv
 
 # index so that the MNI atlas is only multiplied by 0 once
@@ -76,24 +76,24 @@ for coordFile in coords*.txt ; do
 
     ## 1. generate an MNI template with the coordinate points
     if [ ! -f ${fname}_Points.nii.gz ] ; then
-      	while IFS=$'\t' read -r -a coords ; do
-	    num1=$(printf "%.0f" "${coords[0]}")
-	    num2=$(printf "%.0f" "${coords[1]}")
-	    num3=$(printf "%.0f" "${coords[2]}")
-	    # sanity check
-	    echo $num1
+		# get the first set of coordinates, each num = (x,y,z)
+		while IFS=$'\t' read -r -a coords ; do
+			num1=$(printf "%.0f" "${coords[0]}")
+			num2=$(printf "%.0f" "${coords[1]}")
+			num3=$(printf "%.0f" "${coords[2]}")
+			# sanity check
+			echo $num1
       	    echo $num2
       	    echo $num3
-            # create points
+            # create points using AFNI
+			# MNI template is first multiplied by 0 to ensure that only the relevant coordinates are present 
       	    if [ $startIndex = 0 ] ; then
             	echo
             	echo "Setting coordinate foci..."
-       		echo
-            	3dcalc -LPI -a MNI152_T1_1mm_brain.nii.gz -prefix points.nii.gz \
-            		-expr "a*0 + (equals(x,$num1)*equals(y,$num2)*equals(z,$num3))"
+       			echo
+            	3dcalc -LPI -a MNI152_T1_1mm_brain.nii.gz -prefix points.nii.gz -expr "a*0 + (equals(x,$num1)*equals(y,$num2)*equals(z,$num3))"
             else
-            	3dcalc -LPI -a ${fname}_Points.nii.gz -prefix points.nii.gz \
-            		-expr "a + (equals(x,$num1)*equals(y,$num2)*equals(z,$num3))"
+            	3dcalc -LPI -a ${fname}_Points.nii.gz -prefix points.nii.gz -expr "a + (equals(x,$num1)*equals(y,$num2)*equals(z,$num3))"
       	    fi
       	    mv points.nii.gz ${fname}_Points.nii.gz
       	    startIndex=1
@@ -104,7 +104,7 @@ for coordFile in coords*.txt ; do
       	echo
     fi
 
-    ## 2. convert points to spheres
+    ## 2. convert points to spheres using FSLMATHS
     if [ ! -f ${fname}_spheres.nii.gz ] ; then
       	echo
       	echo "Converting foci to spheres..."
