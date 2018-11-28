@@ -1888,6 +1888,8 @@ In terms of noise, there are a handful of things to keep in mind. First is that 
 
 So what's the advantage of this work over previous ones? Gratton, Gordon, and Kong have already found some degree of subject stability and intersubject variability. Ours complements these findings by looking at the vertex level, not just mean parcel activity (this made sense for them, as they were looking at the whole brain). Also, most of these analyses rely on a small set of oversampled subjects (i.e. MSC). Here we extend this to 100, giving credit to individualize examinations even without oversampling. 
 
+Make sure to emphasize that the high overlap between sliding windows makes it more likely that differences are due to noise in the signal, and not strong variability. Like, you wouldn't expect the actual network distribution to shift that much after shifting the time series by 1 minute.g
+
 \newpage
 ## Acknowledgements
 
