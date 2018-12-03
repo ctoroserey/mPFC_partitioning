@@ -987,6 +987,9 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
   # 
   # Index: VI for variation of information, RI for the adjusted rand index, Cor for a Pearson correlation
   
+  # NOTES:
+  # you can apply pairwise comparisons with outer: outer(tempList,tempList,FUN = Vectorize(arandi, SIMPLIFY = FALSE, USE.NAMES = FALSE))
+  
   # Get the column position of the MOI(s)
   Columns <- colnames(Data[[1]])
   indx <- as.numeric(Columns %in% MOI)
@@ -1273,6 +1276,7 @@ Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) # caveat: maybe not ideal for bo
 
 # To get the rate of stability per vertex across subjects
 FB <- do.call(cbind, lapply(Summaries, "[[", "FiedlerBinary"))
+FV <- do.call(cbind, lapply(Summaries, "[[", "FiedlerVec"))
 FBS <- rowMeans(FB)
 FBS[FBS < 0.5] <- 1 - FBS[FBS < 0.5]
 
@@ -1281,8 +1285,43 @@ FBS[FBS < 0.5] <- 1 - FBS[FBS < 0.5]
 # If these traditional analyses miss out on these idiosyncrasies, you should get unsignificant results.
 # So we did a prop.test per vertex, and corrected with FDR to mimic this situation.
 All_proptests <- apply(FB, 1, function(x) {prop.test(sum(x), nSubj)})
-Pvals_corrected <- p.adjust(sapply(All_proptests, "[[", "p.value"), method = "BY")
+Prop_pvals_corrected <- p.adjust(sapply(All_proptests, "[[", "p.value"), method = "BY")
+Prop_pvals_corrected <- ifelse(Prop_pvals_corrected < 0.05, 1, 0)
 Chisquares <- sapply(All_proptests, "[[", "statistic")
+
+# And a t-test on the FV vals
+All_ttests <- apply(FV, 1, t.test)
+Ttest_pvals_corrected <- p.adjust(sapply(All_ttests, "[[", "p.value"), method = "BY")
+Ttest_pvals_corrected <- ifelse(Ttest_pvals_corrected < 0.05, 1, 0)
+Tstats <- sapply(All_ttests, "[[", "statistic")
+
+
+### Testing grounds
+# this part compares the distribution of Fiedler values for DMN and nonDMN
+# note: remove filter(y > 0) for 'full brain'
+# First plot compares the median FV between communities across subjects
+test <- do.call(rbind, Summaries)
+test %>%
+  mutate(SubjID = rep(subjList, each = 5081),
+         FV_abs = abs(FiedlerVec),
+         Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
+  filter(y > 0) %>%
+  group_by(SubjID, Community) %>%
+  summarize(FV_mean = median(FV_abs)) %>%
+  ggplot(aes(Community, FV_mean)) +
+  geom_boxplot() + 
+  theme_classic()
+# Second one plots the ecdf
+# Line indicates the 75th quantile of the combined Fiedler vectors across participants (i.e. potential threshold)
+test %>%
+  mutate(SubjID = rep(subjList, each = nrow(Summaries[[1]])),
+         FV_abs = abs(FiedlerVec),
+         Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
+  filter(y > 0) %>%
+  ggplot(aes(FV_abs, group = interaction(SubjID, Community), color = Community)) +
+  stat_ecdf() +
+  geom_vline(xintercept = 0.009, lty = 2) +
+  theme_classic()
 ```
 
 The distribution suggests that both clustering methods were in high agreement across subjects (mean = `r round(mean(RI_all_within$Index), digits = 2)` sd = `r round(sd(RI_all_within$Index), digits = 2)`). The importance of this result lies in that while spectral partitioning forces a bipartition of the network, modularity does not. This adds evidence to the division of these areas into DMN and non-DMN during rest. 
