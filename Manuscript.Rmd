@@ -770,8 +770,8 @@ permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, pair
       
       # relabel samples
       tempBig <- sample(bigSample)
-      tempOne <- tempBig[1:lOne]
-      tempTwo <- tempBig[(lOne+1):length(bigSample)]
+      tempOne <- tempBig[seq(lOne)]
+      tempTwo <- tempBig[-seq(lOne)]
       
       # stats
       tempDiffs <- statType(tempOne,na.rm=T) - statType(tempTwo,na.rm=T)
@@ -1159,62 +1159,211 @@ Finally, we examined whether each idiosyncrasies in functional topology correspo
 
 ### *Meta-analysis*
 
+``` {r ROI computation from Matlab, echo=FALSE, message = FALSE}
+# Based on Yeo et al. 17 network parcellation
+# These only include areas in the medial wall belonging to DMN + OFC (changed on 12/4/18)
+Yeo_labels <- c("_25_",
+                "_OFC_",
+                "_10v_",
+                "_s32_",
+                "_TE1a_",
+                "_STSva_",
+                "_8ad_",
+                "_9p_",
+                "_23d_",
+                "_d23ab_",
+                "_31a_",
+                "_31pv_",
+                "_31pd_",
+                "_7m_",
+                "_v23ab_",
+                "_p24_",
+                "_d32_",
+                "_9m_",
+                "_p32_",
+                "_a24_",
+                "_s32_",
+                "_10r_",
+                "_10d_",
+                "_9a_",
+                "_p10p_",
+                "_PCV_",
+                "_POS1_",
+                "_RSC_")
+
+Yeo_PCC_labels <- c("_7m_",
+                    "_23d_",
+                    "_31a_",
+                    "_31pd_",
+                    "_31pv_",
+                    "_PCV_",
+                    "_POS1_",
+                    "_RSC_",
+                    "_d23ab_",
+                    "_v23ab_")
+
+mPFC_only <- c("_a24_",
+               "_d32_",
+               "_p32_",
+               "_10r_",
+               "_9m_",
+               "_10v_",
+               "_OFC_",
+               "_s32_",
+               "_p24_")
+
+# Permutation analysis
+# Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
+# Load the coordinates as studies in a list, because for the contrast the studies are permuted
+# Use table(unlist(list)) to get the counts in that case
+setwd('./DEC')
+templist <- dir()
+studyList_sv <- lapply(templist, readr::read_csv, col_names = F)
+
+setwd('../DMN/')
+templist <- dir()
+studyList_dmn <- lapply(templist, readr::read_csv, col_names = F)
+
+# For each permutation, reassign the study labels, maintaining the original number of studies per condition 
+allStudies <- c(studyList_sv, studyList_dmn)
+nPerms <- 10
+nullDist <- numeric()
+
+for (i in seq(nPerms)) {
+  
+  # Sample all the studies and divide into 2 groups
+  randPerm <- sample(allStudies)
+  tmpSV <- randPerm[seq(length(studyList_sv))]
+  tmpDMN <- randPerm[-seq(length(studyList_sv))]
+  
+  # Count the number of times each region was reported in the literature
+  # Bilateral activations still count as 1, so we might want to reconsider that
+  tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
+                      SV = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpSV))}),
+                      DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpDMN))}))
+  
+  # Perform the prop test for each pair and get the max chi-squared stat
+  nullDist[i] <- max(
+                  apply(tmpDF[,2:3], 1, function(data) {
+                    prop.test(data, c(length(tmpSV), length(tmpDMN)))$statistic
+                    }
+                  ), na.rm = T)
+  
+}
+```
+
+
 ``` {r ROI computation, echo=FALSE, message = FALSE}
+# Based on Yeo et al. 17 network parcellation
+# These only include areas in the medial wall belonging to DMN + OFC (changed on 12/4/18)
+Yeo_labels <- c("_25_",
+                "_OFC_",
+                "_10v_",
+                "_s32_",
+                "_TE1a_",
+                "_STSva_",
+                "_8ad_",
+                "_9p_",
+                "_23d_",
+                "_d23ab_",
+                "_31a_",
+                "_31pv_",
+                "_31pd_",
+                "_7m_",
+                "_v23ab_",
+                "_p24_",
+                "_d32_",
+                "_9m_",
+                "_p32_",
+                "_a24_",
+                "_s32_",
+                "_10r_",
+                "_10d_",
+                "_9a_",
+                "_p10p_",
+                "_PCV_",
+                "_POS1_",
+                "_RSC_")
 
-  ## ROI definition
-  # First, load the raw count csv files
-  valCounts <- read.csv2('decCounts.csv', sep = ",")
-  dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
-  
-  # Then, get the means of the counts per domain
-  tempBoot <- bootstrap(valCounts$Counts)
-  BV <- round(mean(tempBoot))
-  BVquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
-  tempBoot <- bootstrap(dmnCounts$Counts)
-  BD <- round(mean(tempBoot))
-  BDquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
-  rm(tempBoot)
-  
-  # Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
-  # than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
-  for (i in seq(valCounts$Counts)) {
-    indx <- valCounts$Counts[i]
-    tempTest <- prop.test(indx, 27, alternative = "greater", p = BV/27)
-    valCounts$Chi[i] <- tempTest$statistic
-    valCounts$pVal[i] <- tempTest$p.value
-  }
-  
-  for (i in seq(dmnCounts$Counts)) {
-    indx <- dmnCounts$Counts[i]
-    tempTest <- prop.test(indx, 77, alternative = "greater", p = BD/77)
-    dmnCounts$Chi[i] <- tempTest$statistic
-    dmnCounts$pVal[i] <- tempTest$p.value
-  }
-  
-  # Retain only the significant parcels
-  t1 <- valCounts$Label[valCounts$pVal < 0.05]
-  t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
+Yeo_PCC_labels <- c("_7m_",
+                    "_23d_",
+                    "_31a_",
+                    "_31pd_",
+                    "_31pv_",
+                    "_PCV_",
+                    "_POS1_",
+                    "_RSC_",
+                    "_d23ab_",
+                    "_v23ab_")
 
-  # Remove hemispheric references
-  t1 <- unique(substring(t1,2))
-  t2 <- unique(substring(t2,2))
-  
-  # Labels to put in text
-  dmnLbls <- gsub("ROI","", t2) 
-  dmnLbls <- gsub("_","", dmnLbls)
-  valLbls <- gsub("ROI","", t1) 
-  valLbls <- gsub("_","", valLbls)
-  
-  # This part is just for reference, as the labels are loaded from a file
-  # # And get the set of overlapping areas between literatures
-  # # This is missing some cingulate and PFC areas, and adds V2.
-  # # However, we can say that we are filling in the gap for completeness,
-  # # and removing V2 because it's demonstrably irrelevant.
-  # bothLbls <- unique(c(t1[t1 %in% t2], t2[t2 %in% t1]))
-  # 
-  # # You could also try to permute the allocation of reports per literature,
-  # # and then perform a chi-squared per parcel. Get the max stat per iteration.
-  # # Now you have your null distribution.
+mPFC_only <- c("_a24_",
+               "_d32_",
+               "_p32_",
+               "_10r_",
+               "_9m_",
+               "_10v_",
+               "_OFC_",
+               "_s32_",
+               "_p24_")
+
+## ROI definition
+# First, load the raw count csv files
+valCounts <- read.csv2('decCounts.csv', sep = ",")
+dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
+
+# Now select only the ROIs from Yeo et al (TEMP)
+valCounts <- getCoords(Labels = Yeo_labels, Coords = valCounts)$Coords
+dmnCounts <- getCoords(Labels = Yeo_labels, Coords = dmnCounts)$Coords
+
+# Then, get the means of the counts per domain
+tempBoot <- bootstrap(valCounts$Counts)
+BV <- round(mean(tempBoot))
+BVquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
+tempBoot <- bootstrap(dmnCounts$Counts)
+BD <- round(mean(tempBoot))
+BDquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
+rm(tempBoot)
+
+# Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
+# than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
+for (i in seq(valCounts$Counts)) {
+  indx <- valCounts$Counts[i]
+  tempTest <- prop.test(indx, 27, alternative = "greater", p = BV/27)
+  valCounts$Chi[i] <- tempTest$statistic
+  valCounts$pVal[i] <- tempTest$p.value
+}
+
+for (i in seq(dmnCounts$Counts)) {
+  indx <- dmnCounts$Counts[i]
+  tempTest <- prop.test(indx, 77, alternative = "greater", p = BD/77)
+  dmnCounts$Chi[i] <- tempTest$statistic
+  dmnCounts$pVal[i] <- tempTest$p.value
+}
+
+# Retain only the significant parcels
+t1 <- valCounts$Label[valCounts$pVal < 0.05]
+t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
+
+# Remove hemispheric references
+t1 <- unique(substring(t1,2))
+t2 <- unique(substring(t2,2))
+
+# Labels to put in text
+dmnLbls <- gsub("ROI","", t2) 
+dmnLbls <- gsub("_","", dmnLbls)
+valLbls <- gsub("ROI","", t1) 
+valLbls <- gsub("_","", valLbls)
+
+# This part is just for reference, as the labels are loaded from a file
+# # And get the set of overlapping areas between literatures
+# # This is missing some cingulate and PFC areas, and adds V2.
+# # However, we can say that we are filling in the gap for completeness,
+# # and removing V2 because it's demonstrably irrelevant.
+# bothLbls <- unique(c(t1[t1 %in% t2], t2[t2 %in% t1]))
+# 
+# # You could also try to permute the allocation of reports per literature,
+# # and then perform a chi-squared per parcel. Get the max stat per iteration.
+# # Now you have your null distribution.
 
 ```
 
