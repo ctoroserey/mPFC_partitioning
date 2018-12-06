@@ -1079,6 +1079,25 @@ Corresponding author:
 
 \newpage
 
+## Ideas to do
+
+- The new manuscript organization could go like this: 
+1) Meta-analysis and ROIs
+2) Summary all
+  a) Make sure to report mean density and algebraic connectivity
+  b) Cross-method agreement
+  c) Spatially averaged community maps reproduce group-level analysis
+3) Sliding window
+  a) Fiedler vector magnitude as a proxy for affiliation strength
+  b) Proportion DMN for mPFC and PCC separately to denote overall stability
+  b) Proportion DMN across time-series ~ fiedler vector value (consider renaming propDMN to stability)
+4) Threshold the maps and rerun summary all
+5) Day 1 vs day 2
+6) Session
+7) Potential noise
+8) Structural correspondence
+9) Community > correlation
+
 ## Abstract
 
   Valuation effects are consistently observed in medial prefrontal and posterior cingulate cortex (mPFC and PCC). The spatial extent of these effects is mostly indistinguishable from the default mode network (DMN) in existing meta-analyses. However, little is known about how valuation effects fit within the broader functional architecture of mPFC and PCC, or whether that architecture is consistent or idiosyncratic across individuals. Here we complement a meta-analysis with fMRI-based graph theoretic approaches to subdivide mPFC and PCC at the single-subject level. Our results suggest the functional topography of mPFC has substantial variability across individuals. This highlights the potential usefulness of estimating brain effects at the individual level in this region, and points to limitations of aggregative methods such as coordinate-based meta-analysis in determining whether valuation and DMN effects emerge from common or separable brain systems. Our approach shows promise in addressing this issue through future manipulations of valuation.
@@ -2066,7 +2085,8 @@ In terms of noise, there are a handful of things to keep in mind. First is that 
 
 So what's the advantage of this work over previous ones? Gratton, Gordon, and Kong have already found some degree of subject stability and intersubject variability. Ours complements these findings by looking at the vertex level, not just mean parcel activity (this made sense for them, as they were looking at the whole brain). Also, most of these analyses rely on a small set of oversampled subjects (i.e. MSC). Here we extend this to 100, giving credit to individualize examinations even without oversampling. 
 
-Make sure to emphasize that the high overlap between sliding windows makes it more likely that differences are due to noise in the signal, and not strong variability. Like, you wouldn't expect the actual network distribution to shift that much after shifting the time series by 1 minute.g
+Make sure to emphasize that the high overlap between sliding windows makes it more likely that differences are due to noise in the signal, and not strong variability. Like, you wouldn't expect the actual network distribution to shift that much after shifting the time series by 1 minute.
+
 
 \newpage
 ## Acknowledgements
