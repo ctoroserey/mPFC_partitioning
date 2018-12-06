@@ -1486,6 +1486,161 @@ The distribution suggests that both clustering methods were in high agreement ac
 
 Next, we examined how similar the partitions were across subjects by computing the ARI between every pair of subjects, and found that there was considerable agreement overall (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). However, qualitative inspection of the brain community topologies shows good alignment for PCC, with a topologically similar mPFC pattern that shifts topographically across subjects. To quantify this heterogeneity in mPFC, we performed the same analysis for each region separately (Figure 4). Indeed, this analysis showed that the functional topology of PCC is well maintained across subjects (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`), while mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) showed significantly lower levels of agreement (paired permutation, *p* = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`).
 
+### *Pattern stability over time*
+
+
+``` {r Stability per subject: Overall, echo=FALSE, message = FALSE, cache = TRUE}
+# Load files
+setwd('./Sliding_window/')
+temp <- list.files(pattern = '*Comparisons.csv')
+SC <- lapply(temp, read.csv2)
+temp <- list.files(pattern = '*Values.csv')
+SVals <- lapply(temp, read.csv2)
+ 
+# Put together a data frame to plot Fiedler vec x proprtion DMN
+allSummaries <- do.call(rbind, Summaries)
+allSummaries$SubjID <- rep(subjList, each = nrow(Summaries[[1]])) 
+
+# Do a mixed effects GLM (binomial, quasi unavailable on glmer) to estimate the relationship between Fiedler vec and propDMN
+SC_FVvPDMN_model <- glmer(slidePropDMN ~ FiedlerVec + (1 | SubjID), family = "binomial", data = allSummaries)
+SC_FVvPDMN_modelSummary <- summary(SC_FVvPDMN_model)
+allSummaries$FittedVals <- fitted(SC_FVvPDMN_model)
+
+
+# Overall
+SC_all <- do.call(rbind, SC)
+SC_plot <- ggplot(data = SC_all)
+SC_plot <- SC_plot + geom_line(aes(x = Window, y = Index, group = as.factor(SubjID)), color = "slategray4",alpha = 0.3, show.legend = F) +
+              geom_smooth(aes(x = Window, y = Index), color = Cols[2], fill = Cols[2]) +
+              ylim(0,1) + 
+              theme(text = element_text(size=35)) +
+              labs(y = "ARI") +
+              theme_classic()
+
+
+# Mean RI across windows per subject
+SC_summary <- aggregate(SC_all$Index, by = list(SC_all$SubjID), FUN = mean)
+SC_summary$SD <- aggregate(SC_all$Index, by = list(SC_all$SubjID), FUN = sd)$x
+colnames(SC_summary) <- list("SubjID", "RI", "SD")
+SC_sd_plot <- ggplot(data = SC_summary, aes(x=SD)) + 
+  geom_density(color = "black", fill = Cols[2]) + 
+  xlim(0,1) +
+  labs(x = "SD") +
+  theme(text = element_text(size=35)) +
+  theme_classic() 
+
+## PLAYING WITH AR AND MA PROCESSES
+# tempSC <- do.call(rbind, SC)
+# tempSC <- SC_PFC
+# tempSC$SubjID <- as.factor(tempSC$SubjID)
+# test <- numeric()
+# intercepts <- numeric()
+# coefficients <- numeric()
+# 
+# for (i in seq(100)) {
+#   temp <- arima(SC[[i]]$Index, c(1,0,0), method = "ML")
+#   test <- c(test, temp$residuals)
+#   intercepts[i] <- temp$coef[2]
+#   coefficients[i] <- temp$coef[1] 
+# }
+# 
+# tempSC$Res <- test
+# 
+# ggplot(data = tempSC, aes(Window, Res, group = SubjID, color = SubjID)) +
+#   geom_line(show.legend = F, alpha = 0.5) +
+#   theme_classic()
+# 
+# ggplot(data = tempSC, aes(Res, group = SubjID, color = SubjID)) +
+#   geom_density(alpha = 0.5, show.legend = F) +
+#   theme_classic()
+# 
+# 
+# test <- aggregate(SC_PCC$Index, by = list(SC_PFC$SubjID), arima, order = c(10,0,0), method = "ML")
+# intercepts <- numeric()
+# coefficients <- numeric()
+# for(i in seq(100)) {
+#   intercepts[i] <- test$x[[i]]['intercept']
+#   coefficients[i] <- test$x[[i]]['ar1']
+# }
+# 
+# plot(intercepts)
+
+# AND WITH MORE SIMILARITY MATRICES
+# THE POINT HERE IS THAT I TOOK THE ARI SIMILARITY MATRIX OF ALL THE SLIDING WINDOWS PER SUBJECT AND AVERAGED ACROSS SUBJECTS
+# THIS PRODUCES A MATRIX WHERE YOU CAN TELL THE AUTOCORRELATED NATURE OF THE DATA IF UNCLUSTERED, BUT OTHERWISE THERE ARE MARKED DAY CLUSTERS
+# simMatrices <- list()
+# nrun <- 1
+# for (subj in SVals) {
+#   nWins <- ncol(subj)
+#   if (nWins != 37) {
+#     print("Fewer than 37 windows...")
+#   } else {
+#     tempMat <- matrix(NA, nWins, nWins)
+#     for (i in seq(nWins)) {
+#       for(j in seq(nWins)) {
+#         tempMat[i,j] <- arandi(subj[,i], subj[,j], adjust = T)
+#       }
+#     }
+#     simMatrices[[nrun]] <- tempMat
+#     nrun <- nrun + 1
+#   }
+# }
+# 
+# meanMatrices <- Reduce("+", simMatrices) / length(simMatrices)
+# corrplot(meanMatrices, method = "color", is.corr = F, cl.lim = c(0,1))
+```
+
+While the distinction of DMN and non-DMN is consistent across session and days, it is possible that the decrease in global ARI values going from full to session-specific data could be due to a dynamic shift in DMN organization. In order to address this possibility, we performed a sliding window analysis on each subject's full time series (20 min windows shifting at 1 min), comparing the community arrangement derived from each window with the original pattern estimated using the whole time series (Figure 9). Note that the length of the windows is well equipped to find stable community features in brain networks [@Gordon2017]. This analysis revealed persistently high levels of agreement for most subjects, with overall low variability (overall mean of each subject's average ARI = `r round(mean(SC_summary$RI), digits = 2)`; SD = `r round(mean(SC_summary$SD), digits = 2)`). 
+
+``` {r Stability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
+## Check stability for PCC and mPFC separately
+# Get the sliding values for PCC and PFC separately
+tempSW_PCC <- lapply(SVals, "[", i = posteriorIndx, j =)
+tempSW_PFC <- lapply(SVals, "[", i = !posteriorIndx, j =)
+
+SC_PCC <- data.frame()
+SC_PFC <- data.frame()
+
+for (subj in seq(nSubj)) {
+  tempPCC <- numeric()
+  tempPFC <- numeric()
+  nWins <- ncol(tempSW_PCC[[subj]])
+  for (Win in seq(nWins)) {
+    tempPCC[Win] <- arandi(tempComm_PCC[[subj]]$FiedlerBinary, tempSW_PCC[[subj]][,Win], adjust = T)
+    tempPFC[Win] <- arandi(tempComm_PFC[[subj]]$FiedlerBinary, tempSW_PFC[[subj]][,Win], adjust = T)
+  }
+  dfPCC <- data.frame(SubjID = rep(subjList[subj], nWins),
+                      Window = seq(nWins),
+                      Index = tempPCC)
+  dfPFC <- data.frame(SubjID = rep(subjList[subj], nWins),
+                      Window = seq(nWins),
+                      Index = tempPFC)
+  SC_PCC <- rbind(SC_PCC, dfPCC)
+  SC_PFC <- rbind(SC_PFC, dfPFC)
+}
+
+SC_PCC_summary <- aggregate(SC_PCC$Index, by = list(SC_PCC$SubjID), FUN = mean)
+SC_PCC_summary$SD <- aggregate(SC_PCC$Index, by = list(SC_PCC$SubjID), FUN = sd)$x
+SC_PCC_summary$Region <- rep("PCC", nSubj)
+SC_PFC_summary <- aggregate(SC_PFC$Index, by = list(SC_PFC$SubjID), FUN = mean)
+SC_PFC_summary$SD <- aggregate(SC_PFC$Index, by = list(SC_PFC$SubjID), FUN = sd)$x
+SC_PFC_summary$Region <- rep("mPFC", nSubj)
+SC_PCCPFC_summary <- rbind(SC_PFC_summary, SC_PCC_summary)
+colnames(SC_PCCPFC_summary) <- list("SubjID", "Index", "SD", "Region")
+rm(SC_PCC_summary, SC_PFC_summary)
+
+# Compare mean ARI of sliding windows between regions
+SW_PCCvPFC_permuteTest <- permute(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"], paired = T)
+SW_PCCvPFC_ES <- cohenD(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"])
+
+```
+
+We additionally performed this analysis on mPFC and PCC separately to determine whether these results were region-specific (Figure 10). Even though the within-subject variance remained low for both regions, we found that the average agreement per subject was significantly higher for PCC (paired permutation,*p*= `r SW_PCCvPFC_permuteTest$Pval`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). Nonetheless, the mean ARI across each subject's time series was still relatively high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), thus suggesting that the each individual's DMN distribution is cosiderably stable in time.
+
+We complemented these analyses by asking whether the magnitude of values in the Fiedler vector was associated with the stability of nodes throughout a subject's time series (*PERSONAL NOTE: It might be better to justify this from the use of this vector in statistical mechanics rather than mere curiosity, i.e. extreme FV values are given to elements at the peaks of the wave. Find a simple citation for this.*). Specifically, we examined whether Fiedler vector values could predict the proportion of DMN affiliations per node by performing a logistic mixed effects model, with subject acting as a random effect (Figure 11). The model yielded a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDMN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDMN_modelSummary$coefficients[2,2], digits = 2)`, *p* < 0.001), meaning that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community in time. These analysis show that the original pattern identified with the full dataset is temporally stable in time, and that there is potential value in thresholding the Fiedler vector as a means to capture idiosyncratic and reliable DMN vertices in relatively short fMRI sessions (i.e. less than 20 mins).
+
+\bigskip
+
 ### *Partition Comparison: Day 1 vs Day 2*
 
 In order to determine whether the low agreement shown in mPFC across subjects was a function of intrinsic variability or a subject-specific pattern, we compared the agreement among communities estimated with data from each separate day. If the latter were true, within-subject ARI values should be consistently higher than across subjects. Since SP and modularity showed converging estimates, from here on we focus on results computed with spectral partitioning to ensure bipartitions. Communities were estimated on concatenated pairs of daily left-right and right-left phase encoded sessions (see Methods for details), and once again compared using ARI. Figure 5 shows pairwise comparisons among ten example subjects for PCC and mPFC separately. 
@@ -1729,161 +1884,6 @@ Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 
 
 We can see again that the ratios for mPFC were higher than those of PCC (permutation,*p*= `r Sess_mPFCvPCC_permTest$Pval`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1. This further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that such patterns can be identified with relatively small amounts of data in spite of a reduction in the estimates. 
-
-### *Pattern stability over time*
-
-
-``` {r Stability per subject: Overall, echo=FALSE, message = FALSE, cache = TRUE}
-# Load files
-setwd('./Sliding_window/')
-temp <- list.files(pattern = '*Comparisons.csv')
-SC <- lapply(temp, read.csv2)
-temp <- list.files(pattern = '*Values.csv')
-SVals <- lapply(temp, read.csv2)
- 
-# Put together a data frame to plot Fiedler vec x proprtion DMN
-allSummaries <- do.call(rbind, Summaries)
-allSummaries$SubjID <- rep(subjList, each = nrow(Summaries[[1]])) 
-
-# Do a mixed effects GLM (binomial) to estimate the relationship between Fiedler vec and propDMN
-SC_FVvPDMN_model <- glmer(slidePropDMN ~ FiedlerVec + (1 | SubjID), family = "binomial", data = allSummaries)
-SC_FVvPDMN_modelSummary <- summary(SC_FVvPDMN_model)
-allSummaries$FittedVals <- fitted(SC_FVvPDMN_model)
-
-
-# Overall
-SC_all <- do.call(rbind, SC)
-SC_plot <- ggplot(data = SC_all)
-SC_plot <- SC_plot + geom_line(aes(x = Window, y = Index, group = as.factor(SubjID)), color = "slategray4",alpha = 0.3, show.legend = F) +
-              geom_smooth(aes(x = Window, y = Index), color = Cols[2], fill = Cols[2]) +
-              ylim(0,1) + 
-              theme(text = element_text(size=35)) +
-              labs(y = "ARI") +
-              theme_classic()
-
-
-# Mean RI across windows per subject
-SC_summary <- aggregate(SC_all$Index, by = list(SC_all$SubjID), FUN = mean)
-SC_summary$SD <- aggregate(SC_all$Index, by = list(SC_all$SubjID), FUN = sd)$x
-colnames(SC_summary) <- list("SubjID", "RI", "SD")
-SC_sd_plot <- ggplot(data = SC_summary, aes(x=SD)) + 
-  geom_density(color = "black", fill = Cols[2]) + 
-  xlim(0,1) +
-  labs(x = "SD") +
-  theme(text = element_text(size=35)) +
-  theme_classic() 
-
-## PLAYING WITH AR AND MA PROCESSES
-# tempSC <- do.call(rbind, SC)
-# tempSC <- SC_PFC
-# tempSC$SubjID <- as.factor(tempSC$SubjID)
-# test <- numeric()
-# intercepts <- numeric()
-# coefficients <- numeric()
-# 
-# for (i in seq(100)) {
-#   temp <- arima(SC[[i]]$Index, c(1,0,0), method = "ML")
-#   test <- c(test, temp$residuals)
-#   intercepts[i] <- temp$coef[2]
-#   coefficients[i] <- temp$coef[1] 
-# }
-# 
-# tempSC$Res <- test
-# 
-# ggplot(data = tempSC, aes(Window, Res, group = SubjID, color = SubjID)) +
-#   geom_line(show.legend = F, alpha = 0.5) +
-#   theme_classic()
-# 
-# ggplot(data = tempSC, aes(Res, group = SubjID, color = SubjID)) +
-#   geom_density(alpha = 0.5, show.legend = F) +
-#   theme_classic()
-# 
-# 
-# test <- aggregate(SC_PCC$Index, by = list(SC_PFC$SubjID), arima, order = c(10,0,0), method = "ML")
-# intercepts <- numeric()
-# coefficients <- numeric()
-# for(i in seq(100)) {
-#   intercepts[i] <- test$x[[i]]['intercept']
-#   coefficients[i] <- test$x[[i]]['ar1']
-# }
-# 
-# plot(intercepts)
-
-# AND WITH MORE SIMILARITY MATRICES
-# THE POINT HERE IS THAT I TOOK THE ARI SIMILARITY MATRIX OF ALL THE SLIDING WINDOWS PER SUBJECT AND AVERAGED ACROSS SUBJECTS
-# THIS PRODUCES A MATRIX WHERE YOU CAN TELL THE AUTOCORRELATED NATURE OF THE DATA IF UNCLUSTERED, BUT OTHERWISE THERE ARE MARKED DAY CLUSTERS
-# simMatrices <- list()
-# nrun <- 1
-# for (subj in SVals) {
-#   nWins <- ncol(subj)
-#   if (nWins != 37) {
-#     print("Fewer than 37 windows...")
-#   } else {
-#     tempMat <- matrix(NA, nWins, nWins)
-#     for (i in seq(nWins)) {
-#       for(j in seq(nWins)) {
-#         tempMat[i,j] <- arandi(subj[,i], subj[,j], adjust = T)
-#       }
-#     }
-#     simMatrices[[nrun]] <- tempMat
-#     nrun <- nrun + 1
-#   }
-# }
-# 
-# meanMatrices <- Reduce("+", simMatrices) / length(simMatrices)
-# corrplot(meanMatrices, method = "color", is.corr = F, cl.lim = c(0,1))
-```
-
-While the distinction of DMN and non-DMN is consistent across session and days, it is possible that the decrease in global ARI values going from full to session-specific data could be due to a dynamic shift in DMN organization. In order to address this possibility, we performed a sliding window analysis on each subject's full time series (20 min windows shifting at 1 min), comparing the community arrangement derived from each window with the original pattern estimated using the whole time series (Figure 9). Note that the length of the windows is well equipped to find stable community features in brain networks [@Gordon2017]. This analysis revealed persistently high levels of agreement for most subjects, with overall low variability (overall mean of each subject's average ARI = `r round(mean(SC_summary$RI), digits = 2)`; SD = `r round(mean(SC_summary$SD), digits = 2)`). 
-
-``` {r Stability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
-## Check stability for PCC and mPFC separately
-# Get the sliding values for PCC and PFC separately
-tempSW_PCC <- lapply(SVals, "[", i = posteriorIndx, j =)
-tempSW_PFC <- lapply(SVals, "[", i = !posteriorIndx, j =)
-
-SC_PCC <- data.frame()
-SC_PFC <- data.frame()
-
-for (subj in seq(nSubj)) {
-  tempPCC <- numeric()
-  tempPFC <- numeric()
-  nWins <- ncol(tempSW_PCC[[subj]])
-  for (Win in seq(nWins)) {
-    tempPCC[Win] <- arandi(tempComm_PCC[[subj]]$FiedlerBinary, tempSW_PCC[[subj]][,Win], adjust = T)
-    tempPFC[Win] <- arandi(tempComm_PFC[[subj]]$FiedlerBinary, tempSW_PFC[[subj]][,Win], adjust = T)
-  }
-  dfPCC <- data.frame(SubjID = rep(subjList[subj], nWins),
-                      Window = seq(nWins),
-                      Index = tempPCC)
-  dfPFC <- data.frame(SubjID = rep(subjList[subj], nWins),
-                      Window = seq(nWins),
-                      Index = tempPFC)
-  SC_PCC <- rbind(SC_PCC, dfPCC)
-  SC_PFC <- rbind(SC_PFC, dfPFC)
-}
-
-SC_PCC_summary <- aggregate(SC_PCC$Index, by = list(SC_PCC$SubjID), FUN = mean)
-SC_PCC_summary$SD <- aggregate(SC_PCC$Index, by = list(SC_PCC$SubjID), FUN = sd)$x
-SC_PCC_summary$Region <- rep("PCC", nSubj)
-SC_PFC_summary <- aggregate(SC_PFC$Index, by = list(SC_PFC$SubjID), FUN = mean)
-SC_PFC_summary$SD <- aggregate(SC_PFC$Index, by = list(SC_PFC$SubjID), FUN = sd)$x
-SC_PFC_summary$Region <- rep("mPFC", nSubj)
-SC_PCCPFC_summary <- rbind(SC_PFC_summary, SC_PCC_summary)
-colnames(SC_PCCPFC_summary) <- list("SubjID", "Index", "SD", "Region")
-rm(SC_PCC_summary, SC_PFC_summary)
-
-# Compare mean ARI of sliding windows between regions
-SW_PCCvPFC_permuteTest <- permute(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"], paired = T)
-SW_PCCvPFC_ES <- cohenD(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC"], SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "mPFC"])
-
-```
-
-We additionally performed this analysis on mPFC and PCC separately to determine whether these results were region-specific (Figure 10). Even though the within-subject variance remained low for both regions, we found that the average agreement per subject was significantly higher for PCC (paired permutation,*p*= `r SW_PCCvPFC_permuteTest$Pval`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). Nonetheless, the mean ARI across each subject's time series was still relatively high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), thus suggesting that the each individual's DMN distribution is cosiderably stable in time.
-
-We complemented these analyses by asking whether the magnitude of values in the Fiedler vector was associated with the stability of nodes throughout a subject's time series (*PERSONAL NOTE: It might be better to justify this from the use of this vector in statistical mechanics rather than mere curiosity, i.e. extreme FV values are given to elements at the peaks of the wave. Find a simple citation for this.*). Specifically, we examined whether Fiedler vector values could predict the proportion of DMN affiliations per node by performing a logistic mixed effects model, with subject acting as a random effect (Figure 11). The model yielded a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDMN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDMN_modelSummary$coefficients[2,2], digits = 2)`,*p*< 0.001), meaning that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community in time. These analysis show that the original pattern identified with the full dataset is temporally stable in time, and that there is potential value in thresholding the Fiedler vector as a means to capture idiosyncratic and reliable DMN vertices in relatively short fMRI sessions (i.e. less than 20 mins).
-
-\bigskip
 
 ### *Potential Noise Effects (this part is challenging)*
 
