@@ -1238,22 +1238,27 @@ mPFC_only <- c("_a24_",
                "_s32_",
                "_p24_")
 
-# This version is literally what I had selected originally, plus 25, OFC, 10v. This replicates the 7m finding. 
+# This version is literally what I had selected originally, plus 25, OFC, 10v, and RSC; 
+# Minus PGi and PGs. This replicates the 7m finding. 
 # But if I add L_s32 in accord with our meeting on 12/4/18, then that's significant too
-Yeo_labels <- c("L_25_",
-                "L_OFC_",
-                "L_10v_",
-                "R_PGi_ROI",
-                "R_PGs_ROI",
+Yeo_labels <- c("L_25_ROI",
+                "L_OFC_ROI",
+                "L_10v_ROI",
+                "R_25_ROI",
+                "R_OFC_ROI",
+                "R_10v_ROI",
+                "L_s32_ROI",
+                "L_RSC_ROI",
+                "R_RSC_ROI",
                 "R_8Ad_ROI",
                 "R_9p_ROI",
                 "R_23d_ROI",
-                "R_d23ab_RO",
+                "R_d23ab_ROI",
                 "R_31a_ROI",
                 "R_31pv_ROI",
                 "R_31pd_ROI",
                 "R_7m_ROI",
-                "R_v23ab_RO",
+                "R_v23ab_ROI",
                 "R_p24_ROI",
                 "R_d32_ROI",
                 "R_9m_ROI",
@@ -1261,8 +1266,6 @@ Yeo_labels <- c("L_25_",
                 "R_a24_ROI",
                 "R_10r_ROI",
                 "R_10d_ROI",
-                "L_PGi_ROI",
-                "L_PGs_ROI",
                 "L_8Ad_ROI",
                 "L_9p_ROI",
                 "L_23d_ROI",
@@ -1271,7 +1274,7 @@ Yeo_labels <- c("L_25_",
                 "L_31pv_ROI",
                 "L_31pd_ROI",
                 "L_7m_ROI",
-                "L_v23ab_RO",
+                "L_v23ab_ROI",
                 "L_p24_ROI",
                 "L_d32_ROI",
                 "L_9m_ROI",
@@ -1279,8 +1282,6 @@ Yeo_labels <- c("L_25_",
                 "L_a24_ROI",
                 "L_10r_ROI",
                 "L_10d_ROI",
-                "R_TE1a_ROI",
-                "R_STSva_RO",
                 "R_s32_ROI",
                 "R_9a_ROI",
                 "L_p10p_ROI",
@@ -1300,7 +1301,7 @@ studyList_dmn <- lapply(templist, readr::read_csv, col_names = F)
 
 # For each permutation, reassign the study labels, maintaining the original number of studies per condition 
 allStudies <- c(studyList_sv, studyList_dmn)
-nPerms <- 100
+nPerms <- 5000
 nullDist <- numeric()
 
 for (i in seq(nPerms)) {
