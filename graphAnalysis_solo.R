@@ -1023,7 +1023,7 @@ Cols <- c("DMN" = "aquamarine4","Valuation" = "#D9541A",rgb(190,190,190,100, max
 # Label groups for specific analyses (DMN and DEC)
 # These come from an arbitrary division based on where Mackey & Petrides (2014) draw their line
 # This is computed below, but if we want to save time it can be loaded instead.
-bothLbls <- as.character(read.table('bothLbls.csv', header = F)$V2)
+#bothLbls <- as.character(read.table('bothLbls.csv', header = F)$V2)
 
 vmPFC_labels <- c("_10pp_",
                   "_10r_",
@@ -1036,32 +1036,51 @@ vmPFC_labels <- c("_10pp_",
                   "_s32_")
 
 # Based on Yeo et al.
-Yeo_labels <- c("_PG1_",
-                "_PGs_",
-                "_TE1a_",
-                "_STSva_",
-                "_8ad_",
-                "_9p_",
-                "_23d_",
-                "_d23ab_",
-                "_31a_",
-                "_31pv_",
-                "_31pd_",
-                "_7m_",
-                "_v23ab_",
-                "_p24_",
-                "_d32_",
-                "_9m_",
-                "_p32_",
-                "_a24_",
-                "_s32_",
-                "_10r_",
-                "_10d_",
-                "_9a_",
-                "_p10p_",
-                "_PCV_",
-                "_POS1_",
-                "_RSC_")
+bothLbls <- c("L_25_ROI",
+              "L_OFC_ROI",
+              "L_10v_ROI",
+              "R_25_ROI",
+              "R_OFC_ROI",
+              "R_10v_ROI",
+              "L_s32_ROI",
+              "L_RSC_ROI",
+              "R_RSC_ROI",
+              "R_8Ad_ROI",
+              "R_9p_ROI",
+              "R_23d_ROI",
+              "R_d23ab_ROI",
+              "R_31a_ROI",
+              "R_31pv_ROI",
+              "R_31pd_ROI",
+              "R_7m_ROI",
+              "R_v23ab_ROI",
+              "R_p24_ROI",
+              "R_d32_ROI",
+              "R_9m_ROI",
+              "R_p32_ROI",
+              "R_a24_ROI",
+              "R_10r_ROI",
+              "R_10d_ROI",
+              "L_8Ad_ROI",
+              "L_9p_ROI",
+              "L_23d_ROI",
+              "L_d23ab_RO",
+              "L_31a_ROI",
+              "L_31pv_ROI",
+              "L_31pd_ROI",
+              "L_7m_ROI",
+              "L_v23ab_ROI",
+              "L_p24_ROI",
+              "L_d32_ROI",
+              "L_9m_ROI",
+              "L_p32_ROI",
+              "L_a24_ROI",
+              "L_10r_ROI",
+              "L_10d_ROI",
+              "R_s32_ROI",
+              "R_9a_ROI",
+              "L_p10p_ROI",
+              "L_PCV_ROI")            
 
 Yeo_PCC_labels <- c("_7m_",
                     "_23d_",
@@ -1074,6 +1093,16 @@ Yeo_PCC_labels <- c("_7m_",
                     "_d23ab_",
                     "_v23ab_")
 
+# mPFC_only <- c("_a24_",
+#                "_d32_",
+#                "_p32_",
+#                "_10r_",
+#                "_9m_",
+#                "_10v_",
+#                "_OFC_",
+#                "_s32_",
+#                "_p24_")
+
 mPFC_only <- c("_a24_",
                "_d32_",
                "_p32_",
@@ -1082,7 +1111,9 @@ mPFC_only <- c("_a24_",
                "_10v_",
                "_OFC_",
                "_s32_",
-               "_p24_")
+               "_p24_",
+               "_10d_",
+               "_25_")
 
 # Little test to ensure that the ROIs match before running the whole thing
 if (FALSE %in% (mPFC_only %in% c(mPFC_only, "Blah"))) {
@@ -1327,32 +1358,28 @@ if (Meta == T) {
   
   ## ALTERNATIVE AND MORE PARSIMONIOUS WAY TO GET MOST OF THE WAY THERE
   # First, load the raw count csv files
-  valCounts <- read.csv2('decCounts.csv', sep = ",")
-  dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
   
   # Then, get the means of the counts per domain
-  BV <- round(mean(bootstrap(valCounts$Counts)))
+  BV <- round(mean(boostrap(valCounts$Counts)))
   BD <- round(mean(bootstrap(dmnCounts$Counts)))
   
   # Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
   # than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
+  valTest <- numeric()
   for (i in seq(valCounts$Counts)) {
     indx <- valCounts$Counts[i]
-    tempTest <- prop.test(indx, 27, alternative = "greater", p = BV/27)
-    valCounts$Chi[i] <- tempTest$statistic
-    valCounts$pVal[i] <- tempTest$p.value
+    valTest[i] <- prop.test(indx, 27, alternative = "greater", p = BV/27)$p.value
   }
   
+  dmnTest <- numeric()
   for (i in seq(dmnCounts$Counts)) {
     indx <- dmnCounts$Counts[i]
-    tempTest <- prop.test(indx, 77, alternative = "greater", p = BD/77)
-    dmnCounts$Chi[i] <- tempTest$statistic
-    dmnCounts$pVal[i] <- tempTest$p.value
+    dmnTest[i] <- prop.test(indx, 77, alternative = "greater", p = BD/77)$p.value
   }
   
   # Retain only the significant parcels
-  t1 <- valCounts$Label[valCounts$pVal < 0.05]
-  t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
+  t1 <- valCounts$Label[valTest < 0.05]
+  t2 <- dmnCounts$Label[dmnTest < 0.05]
   
   # Remove hemispheric references 
   t1 <- unique(substring(t1,2))
