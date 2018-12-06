@@ -1154,13 +1154,13 @@ thicknessData <- read.csv(paste(SubjID,'_thickness.txt', sep=""), header = F)
 thicknessData$Label <- labelCoords_vertex$Label
 
 # Get myelin density for ROIs
-myelinROI <- getCoords(Labels = c(bothLbls), Coords = myelinData, TimeSeries = F)$Coords
+myelinROI <- getCoords(Labels = bothLbls, Coords = myelinData, TimeSeries = F)$Coords
 
 # Get curvature for ROIs
-curvatureROI <- getCoords(Labels = c(bothLbls), Coords = curvatureData, TimeSeries = F)$Coords
+curvatureROI <- getCoords(Labels = bothLbls, Coords = curvatureData, TimeSeries = F)$Coords
 
 # Get thickness for ROIs
-thicknessROI <- getCoords(Labels = c(bothLbls), Coords = thicknessData, TimeSeries = F)$Coords
+thicknessROI <- getCoords(Labels = bothLbls, Coords = thicknessData, TimeSeries = F)$Coords
 
 ###------- Meta-analysis: Load ---------------
 if (Meta == T) {
@@ -1516,7 +1516,7 @@ if (Parcellated == T) {
   write("Computing community detection for the parcellated brain...", stdout())
   
   # Modularity
-  parcelCommunities <- mclapply(ptSeries, communityDetection, ROIS = c(bothLbls), Type = "parcels", thresh = T)
+  parcelCommunities <- mclapply(ptSeries, communityDetection, ROIS = bothLbls, Type = "parcels", thresh = T)
   
   # Spectral
   tempEigen <- mclapply(parcelCommunities, eigenVals)
@@ -1550,7 +1550,7 @@ if (Vertex) {
   write("Computing community detection for the ROI vertices...", stdout())
   
   # Modularity
-  dmnval7mCommunities <- communityDetection(Data = timeSeries, ROIS = c(bothLbls), Type = "vertex", thresh = T)
+  dmnval7mCommunities <- communityDetection(Data = timeSeries, ROIS = bothLbls, Type = "vertex", thresh = T)
   
   # Spectral
   tempEigen <- eigenVals(dmnval7mCommunities)
@@ -1609,7 +1609,7 @@ if (Vertex) {
   
   ## Raw mPFC and PCC SNR
   # Reduce the 4 SNR-dedicated tseries to the ROIs
-  timeSeries_SNR_ROI <- lapply(timeSeries_SNR, getCoords, Labels = c(bothLbls), TimeSeries = T)
+  timeSeries_SNR_ROI <- lapply(timeSeries_SNR, getCoords, Labels = bothLbls, TimeSeries = T)
   rm(timeSeries_SNR)
   
   # Compute coefficient of variation
@@ -1667,7 +1667,7 @@ if (Vertex) {
   # rm(corHalves)
   
   # Compute the day 1/2 communities too
-  dmnval7mCommunities_halves <- lapply(timeSeries_halves, communityDetection, ROIS = c(bothLbls), Type = "vertex", thresh = T)
+  dmnval7mCommunities_halves <- lapply(timeSeries_halves, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T)
   
   # Spectral
   tempEigen_halves <- mclapply(dmnval7mCommunities_halves, eigenVals)
@@ -1720,7 +1720,7 @@ if (Vertex == T) {
   write("Computing community detection for the ROI vertices, session...", stdout())
   
   # Modularity
-  dmnval7mCommunities_sess <- lapply(timeSeries_sess, communityDetection, ROIS = c(bothLbls), Type = "vertex", thresh = T)
+  dmnval7mCommunities_sess <- lapply(timeSeries_sess, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T)
   
   # Spectral
   tempEigen_sess <- mclapply(dmnval7mCommunities_sess, eigenVals)
@@ -1837,10 +1837,10 @@ if (Vertex & Sliding) {
   write("Computing sliding window analysis for vertex communities...", stdout())
   
   # Prep data
-  ROI_timeSeries <- getCoords(Coords = timeSeries, Labels = c(bothLbls), TimeSeries = T)
+  ROI_timeSeries <- getCoords(Coords = timeSeries, Labels = bothLbls, TimeSeries = T)
   
   # Sliding window analysis for each subject (using defaults)
-  slideCommunities <- slidingWindow(subjTS = ROI_timeSeries, ROIs = c(bothLbls), Spectral = T, Modularity = F, mins = 20, jump = 1)
+  slideCommunities <- slidingWindow(subjTS = ROI_timeSeries, ROIs = bothLbls, Spectral = T, Modularity = F, mins = 20, jump = 1)
   
   # Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)
   for (Win in seq(length(slideCommunities))) {
