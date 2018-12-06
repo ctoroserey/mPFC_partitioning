@@ -1160,84 +1160,6 @@ Finally, we examined whether each idiosyncrasies in functional topology correspo
 ### *Meta-analysis*
 
 ``` {r ROI computation from Matlab, echo=FALSE, message = FALSE}
-# Based on Yeo et al. 17 network parcellation
-# These only include areas in the medial wall belonging to DMN + OFC (changed on 12/4/18)
-Yeo_labels <- c("L_25_",
-                "L_OFC_",
-                "L_10v_",
-                "L_s32_",
-                "L_TE1a_",
-                "L_STSva_",
-                "L_8ad_",
-                "L_9p_",
-                "L_23d_",
-                "L_d23ab_",
-                "L_31a_",
-                "L_31pv_",
-                "L_31pd_",
-                "L_7m_",
-                "L_v23ab_",
-                "L_p24_",
-                "L_d32_",
-                "L_9m_",
-                "L_p32_",
-                "L_a24_",
-                "L_10r_",
-                "L_10d_",
-                "L_9a_",
-                "L_p10p_",
-                "L_PCV_",
-                "L_POS1_",
-                "L_RSC_",
-                "L_25_",
-                "R_OFC_",
-                "R_10v_",
-                "R_s32_",
-                "R_TE1a_",
-                "R_STSva_",
-                "R_8ad_",
-                "R_9p_",
-                "R_23d_",
-                "R_d23ab_",
-                "R_31a_",
-                "R_31pv_",
-                "R_31pd_",
-                "R_7m_",
-                "R_v23ab_",
-                "R_p24_",
-                "R_d32_",
-                "R_9m_",
-                "R_p32_",
-                "R_a24_",
-                "R_10r_",
-                "R_10d_",
-                "R_9a_",
-                "R_p10p_",
-                "R_PCV_",
-                "R_POS1_",
-                "R_RSC_")
-
-Yeo_PCC_labels <- c("_7m_",
-                    "_23d_",
-                    "_31a_",
-                    "_31pd_",
-                    "_31pv_",
-                    "_PCV_",
-                    "_POS1_",
-                    "_RSC_",
-                    "_d23ab_",
-                    "_v23ab_")
-
-mPFC_only <- c("_a24_",
-               "_d32_",
-               "_p32_",
-               "_10r_",
-               "_9m_",
-               "_10v_",
-               "_OFC_",
-               "_s32_",
-               "_p24_")
-
 # This version is literally what I had selected originally, plus 25, OFC, 10v, and RSC; 
 # Minus PGi and PGs. This replicates the 7m finding. 
 # But if I add L_s32 in accord with our meeting on 12/4/18, then that's significant too
@@ -1287,6 +1209,27 @@ Yeo_labels <- c("L_25_ROI",
                 "L_p10p_ROI",
                 "L_PCV_ROI")
 
+Yeo_PCC_labels <- c("_7m_",
+                    "_23d_",
+                    "_31a_",
+                    "_31pd_",
+                    "_31pv_",
+                    "_PCV_",
+                    "_POS1_",
+                    "_RSC_",
+                    "_d23ab_",
+                    "_v23ab_")
+
+mPFC_only <- c("_a24_",
+               "_d32_",
+               "_p32_",
+               "_10r_",
+               "_9m_",
+               "_10v_",
+               "_OFC_",
+               "_s32_",
+               "_p24_")
+
 # Permutation analysis
 # Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
 # Load the coordinates as studies in a list, because for the contrast the studies are permuted
@@ -1335,80 +1278,27 @@ tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
                     propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
                     propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
 
-# Perform the prop test for each pair and get the max chi-squared stat
-tmpDF$Chi_squared <- apply(tmpDF[,2:3], 1, function(data) {round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)})
+# Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
+tmpDF$Chi_squared <- apply(tmpDF[,2:3], 1, function(data) {
+  round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
+  })
+tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
 
-plot(density(nullDist))
+# ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
+significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist,0.95))
 
-quantile(nullDist, 0.95)
-
-tmpDF %>% filter(Chi_squared > quantile(nullDist,0.95))
 ```
 
 
 ``` {r ROI computation, echo=FALSE, message = FALSE}
-# Based on Yeo et al. 17 network parcellation
-# These only include areas in the medial wall belonging to DMN + OFC (changed on 12/4/18)
-Yeo_labels <- c("_25_",
-                "_OFC_",
-                "_10v_",
-                "_s32_",
-                "_TE1a_",
-                "_STSva_",
-                "_8ad_",
-                "_9p_",
-                "_23d_",
-                "_d23ab_",
-                "_31a_",
-                "_31pv_",
-                "_31pd_",
-                "_7m_",
-                "_v23ab_",
-                "_p24_",
-                "_d32_",
-                "_9m_",
-                "_p32_",
-                "_a24_",
-                "_s32_",
-                "_10r_",
-                "_10d_",
-                "_9a_",
-                "_p10p_",
-                "_PCV_",
-                "_POS1_",
-                "_RSC_")
-
-Yeo_PCC_labels <- c("_7m_",
-                    "_23d_",
-                    "_31a_",
-                    "_31pd_",
-                    "_31pv_",
-                    "_PCV_",
-                    "_POS1_",
-                    "_RSC_",
-                    "_d23ab_",
-                    "_v23ab_")
-
-mPFC_only <- c("_a24_",
-               "_d32_",
-               "_p32_",
-               "_10r_",
-               "_9m_",
-               "_10v_",
-               "_OFC_",
-               "_s32_",
-               "_p24_")
-
+#TO DO: CHANGE THIS SO IT'S BASED ON STUDYLIST_SV/DMN, COUNTING JUST LIKE IN THE PERMUTATION ABOVE
 ## ROI definition
 # First, load the raw count csv files
 valCounts <- read.csv2('decCounts.csv', sep = ",")
 dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
 
-# Now select only the ROIs from Yeo et al (TEMP)
-valCounts <- getCoords(Labels = Yeo_labels, Coords = valCounts)$Coords
-dmnCounts <- getCoords(Labels = Yeo_labels, Coords = dmnCounts)$Coords
-
-# Then, get the means of the counts per domain
+# Then, get the means of the counts per domain, both within/outside the search space
+# This is to get a broad estimate of the average report amounts in the literature
 tempBoot <- bootstrap(valCounts$Counts)
 BV <- round(mean(tempBoot))
 BVquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
@@ -1416,6 +1306,10 @@ tempBoot <- bootstrap(dmnCounts$Counts)
 BD <- round(mean(tempBoot))
 BDquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
 rm(tempBoot)
+
+# Now select only the ROIs from Yeo et al (TEMP)
+valCounts <- getCoords(Labels = Yeo_labels, Coords = valCounts)$Coords
+dmnCounts <- getCoords(Labels = Yeo_labels, Coords = dmnCounts)$Coords
 
 # Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
 # than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
@@ -1446,6 +1340,9 @@ dmnLbls <- gsub("ROI","", t2)
 dmnLbls <- gsub("_","", dmnLbls)
 valLbls <- gsub("ROI","", t1) 
 valLbls <- gsub("_","", valLbls)
+
+# final overlap
+bothLbls <- dmnLbls[dmnLbls %in% valLbls]
 
 # This part is just for reference, as the labels are loaded from a file
 # # And get the set of overlapping areas between literatures
