@@ -23,6 +23,8 @@ Cols <- c("aquamarine4","#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # l
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv')[,2:6]
 labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(x)), y = as.numeric(as.character(y)), z = as.numeric(as.character(z)))
 
+# Libraries used for the whole process
+library(tidyverse)
 library(igraph)
 library(pander)
 library(ggnetwork)
@@ -1249,119 +1251,119 @@ mPFC_only <- c("_a24_",
                "_s32_",
                "_p24_")
 
-# Permutation analysis
-# Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
-# Load the coordinates as studies in a list, because for the contrast the studies are permuted
-# Use table(unlist(list)) to get the counts in that case
-setwd('./DEC')
-templist <- dir()
-studyList_sv <- lapply(templist, readr::read_csv, col_names = F)
-
-setwd('../DMN/')
-templist <- dir()
-studyList_dmn <- lapply(templist, readr::read_csv, col_names = F)
-
-# For each permutation, reassign the study labels, maintaining the original number of studies per condition 
-allStudies <- c(studyList_sv, studyList_dmn)
-nPerms <- 5000
-nullDist <- numeric()
-
-for (i in seq(nPerms)) {
-  
-  if(i %in% c(nPerms*0.25, nPerms*0.5, nPerms*0.75, nPerms*0.95)) {print(paste("Completed", i/nPerms, "percent of the permutation..."))}
-    
-  # Sample all the studies and divide into 2 groups
-  randPerm <- sample(allStudies)
-  tmpSV <- randPerm[seq(length(studyList_sv))]
-  tmpDMN <- randPerm[-seq(length(studyList_sv))]
-  
-  # Count the number of times each region was reported in the literature
-  # Bilateral activations still count as 1, so we might want to reconsider that
-  tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
-                      SV = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpSV))}),
-                      DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpDMN))}))
-  
-  # Perform the prop test for each pair and get the max chi-squared stat
-  nullDist[i] <- max(
-                  apply(tmpDF[,2:3], 1, function(data) {
-                    prop.test(data, c(length(tmpSV), length(tmpDMN)))$statistic
-                    }
-                  ), na.rm = T)
-  
-}
-
-# Now do the same for the actual data, to see how it compares to the null dist
-tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
-                    SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
-                    DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
-                    propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
-                    propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
-
-# Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
-tmpDF$Chi_squared <- apply(tmpDF[,2:3], 1, function(data) {
-  round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
-  })
-tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
-
-# ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
-significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist,0.95))
+# # Permutation analysis
+# # Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
+# # Load the coordinates as studies in a list, because for the contrast the studies are permuted
+# # Use table(unlist(list)) to get the counts in that case
+# setwd('./DEC')
+# templist <- dir()
+# studyList_sv <- lapply(templist, readr::read_csv, col_names = F)
+# 
+# setwd('../DMN/')
+# templist <- dir()
+# studyList_dmn <- lapply(templist, readr::read_csv, col_names = F)
+# 
+# # For each permutation, reassign the study labels, maintaining the original number of studies per condition 
+# allStudies <- c(studyList_sv, studyList_dmn)
+# nPerms <- 5000
+# nullDist <- numeric()
+# 
+# for (i in seq(nPerms)) {
+#   
+#   if(i %in% c(nPerms*0.25, nPerms*0.5, nPerms*0.75, nPerms*0.95)) {print(paste("Completed", i/nPerms, "percent of the permutation..."))}
+#     
+#   # Sample all the studies and divide into 2 groups
+#   randPerm <- sample(allStudies)
+#   tmpSV <- randPerm[seq(length(studyList_sv))]
+#   tmpDMN <- randPerm[-seq(length(studyList_sv))]
+#   
+#   # Count the number of times each region was reported in the literature
+#   # Bilateral activations still count as 1, so we might want to reconsider that
+#   tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
+#                       SV = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpSV))}),
+#                       DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpDMN))}))
+#   
+#   # Perform the prop test for each pair and get the max chi-squared stat
+#   nullDist[i] <- max(
+#                   apply(tmpDF[,2:3], 1, function(data) {
+#                     prop.test(data, c(length(tmpSV), length(tmpDMN)))$statistic
+#                     }
+#                   ), na.rm = T)
+#   
+# }
+# 
+# # Now do the same for the actual data, to see how it compares to the null dist
+# tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
+#                     SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
+#                     DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
+#                     propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
+#                     propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
+# 
+# # Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
+# tmpDF$Chi_squared <- apply(tmpDF[,2:3], 1, function(data) {
+#   round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
+#   })
+# tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
+# 
+# # ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
+# significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist,0.95))
 
 ```
 
 
 ``` {r ROI computation, echo=FALSE, message = FALSE}
-#TO DO: CHANGE THIS SO IT'S BASED ON STUDYLIST_SV/DMN, COUNTING JUST LIKE IN THE PERMUTATION ABOVE
-## ROI definition
-# First, load the raw count csv files
-valCounts <- read.csv2('decCounts.csv', sep = ",")
-dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
-
-# Then, get the means of the counts per domain, both within/outside the search space
-# This is to get a broad estimate of the average report amounts in the literature
-tempBoot <- bootstrap(valCounts$Counts)
-BV <- round(mean(tempBoot))
-BVquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
-tempBoot <- bootstrap(dmnCounts$Counts)
-BD <- round(mean(tempBoot))
-BDquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
-rm(tempBoot)
-
-# Now select only the ROIs from Yeo et al (TEMP)
-valCounts <- getCoords(Labels = Yeo_labels, Coords = valCounts)$Coords
-dmnCounts <- getCoords(Labels = Yeo_labels, Coords = dmnCounts)$Coords
-
-# Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
-# than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
-for (i in seq(valCounts$Counts)) {
-  indx <- valCounts$Counts[i]
-  tempTest <- prop.test(indx, 27, alternative = "greater", p = BV/27)
-  valCounts$Chi[i] <- tempTest$statistic
-  valCounts$pVal[i] <- tempTest$p.value
-}
-
-for (i in seq(dmnCounts$Counts)) {
-  indx <- dmnCounts$Counts[i]
-  tempTest <- prop.test(indx, 77, alternative = "greater", p = BD/77)
-  dmnCounts$Chi[i] <- tempTest$statistic
-  dmnCounts$pVal[i] <- tempTest$p.value
-}
-
-# Retain only the significant parcels
-t1 <- valCounts$Label[valCounts$pVal < 0.05]
-t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
-
-# Remove hemispheric references
-t1 <- unique(substring(t1,2))
-t2 <- unique(substring(t2,2))
-
-# Labels to put in text
-dmnLbls <- gsub("ROI","", t2) 
-dmnLbls <- gsub("_","", dmnLbls)
-valLbls <- gsub("ROI","", t1) 
-valLbls <- gsub("_","", valLbls)
-
-# final overlap
-bothLbls <- dmnLbls[dmnLbls %in% valLbls]
+# #TO DO: CHANGE THIS SO IT'S BASED ON STUDYLIST_SV/DMN, COUNTING JUST LIKE IN THE PERMUTATION ABOVE
+# ## ROI definition
+# # First, load the raw count csv files
+# valCounts <- read.csv2('decCounts.csv', sep = ",")
+# dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
+# 
+# # Then, get the means of the counts per domain, both within/outside the search space
+# # This is to get a broad estimate of the average report amounts in the literature
+# tempBoot <- bootstrap(valCounts$Counts)
+# BV <- round(mean(tempBoot))
+# BVquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
+# tempBoot <- bootstrap(dmnCounts$Counts)
+# BD <- round(mean(tempBoot))
+# BDquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
+# rm(tempBoot)
+# 
+# # Now select only the ROIs from Yeo et al (TEMP)
+# valCounts <- getCoords(Labels = Yeo_labels, Coords = valCounts)$Coords
+# dmnCounts <- getCoords(Labels = Yeo_labels, Coords = dmnCounts)$Coords
+# 
+# # Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
+# # than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
+# for (i in seq(valCounts$Counts)) {
+#   indx <- valCounts$Counts[i]
+#   tempTest <- prop.test(indx, 27, alternative = "greater", p = BV/27)
+#   valCounts$Chi[i] <- tempTest$statistic
+#   valCounts$pVal[i] <- tempTest$p.value
+# }
+# 
+# for (i in seq(dmnCounts$Counts)) {
+#   indx <- dmnCounts$Counts[i]
+#   tempTest <- prop.test(indx, 77, alternative = "greater", p = BD/77)
+#   dmnCounts$Chi[i] <- tempTest$statistic
+#   dmnCounts$pVal[i] <- tempTest$p.value
+# }
+# 
+# # Retain only the significant parcels
+# t1 <- valCounts$Label[valCounts$pVal < 0.05]
+# t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
+# 
+# # Remove hemispheric references
+# t1 <- unique(substring(t1,2))
+# t2 <- unique(substring(t2,2))
+# 
+# # Labels to put in text
+# dmnLbls <- gsub("ROI","", t2) 
+# dmnLbls <- gsub("_","", dmnLbls)
+# valLbls <- gsub("ROI","", t1) 
+# valLbls <- gsub("_","", valLbls)
+# 
+# # final overlap
+# bothLbls <- dmnLbls[dmnLbls %in% valLbls]
 
 # This part is just for reference, as the labels are loaded from a file
 # # And get the set of overlapping areas between literatures
@@ -1388,6 +1390,7 @@ setwd('./Summary/')
 temp <- list.files()
 subjList <- sapply(temp, substring, first=1, last=6)
 Summaries <- lapply(temp, read.csv)
+nVertices <- nrow(Summaries[[1]]) # in case I need the number of vertices included per brain
 ```
 
 ```{r Density calculation, out.width="60%", fig.align = "center"}
@@ -1459,27 +1462,47 @@ Tstats <- sapply(All_ttests, "[[", "statistic")
 # note: remove filter(y > 0) for 'full brain'
 # First plot compares the median FV between communities across subjects
 test <- do.call(rbind, Summaries)
-test %>%
-  mutate(SubjID = rep(subjList, each = 5081),
+ecdfPCC <- test %>%
+          mutate(SubjID = rep(subjList, each = nVertices),
+                 FV_abs = abs(FiedlerVec),
+                 Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
+          filter(y < 0) %>%
+          ggplot(aes(FV_abs, group = interaction(SubjID, Community), color = Community)) +
+          stat_ecdf(alpha = 0.3) +
+          #scale_color_manual(values = c("Yellow", "Red")) +
+          xlim(0,0.05) +
+          geom_vline(xintercept = 0.009, lty = 2) +
+          labs(title = "Per-subject ECDF of Fiedler values: PCC") +
+          theme_classic()
+
+ecdfPFC <- test %>%
+          mutate(SubjID = rep(subjList, each = nVertices),
+                 FV_abs = abs(FiedlerVec),
+                 Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
+          filter(y > 0) %>%
+          ggplot(aes(FV_abs, group = interaction(SubjID, Community), color = Community)) +
+          #scale_color_manual(values = c("Yellow", "Red")) +
+          stat_ecdf(alpha = 0.3) +
+          xlim(0,0.05) +
+          labs(title = "Per-subject ECDF of Fiedler values: PFC") +
+          geom_vline(xintercept = 0.009, lty = 2) +
+          theme_classic()
+
+ecdfALL <- test %>%
+  mutate(SubjID = rep(subjList, each = nVertices),
          FV_abs = abs(FiedlerVec),
          Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
-  filter(y > 0) %>%
-  group_by(SubjID, Community) %>%
-  summarize(FV_mean = median(FV_abs)) %>%
-  ggplot(aes(Community, FV_mean)) +
-  geom_boxplot() + 
-  theme_classic()
-# Second one plots the ecdf
-# Line indicates the 75th quantile of the combined Fiedler vectors across participants (i.e. potential threshold)
-test %>%
-  mutate(SubjID = rep(subjList, each = nrow(Summaries[[1]])),
-         FV_abs = abs(FiedlerVec),
-         Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
-  filter(y > 0) %>%
   ggplot(aes(FV_abs, group = interaction(SubjID, Community), color = Community)) +
-  stat_ecdf() +
+  #scale_color_manual(values = c("Yellow", "Red")) +
+  stat_ecdf(alpha = 0.5) +
+  xlim(0,0.05) +
+  labs(title = "Per-subject ECDF of Fiedler values") +
   geom_vline(xintercept = 0.009, lty = 2) +
   theme_classic()
+
+#grid.arrange(pcc1,pfc1, ncol = 2)
+#grid.arrange(All,pcc2,pfc2, ncol = 1)
+
 ```
 
 The distribution suggests that both clustering methods were in high agreement across subjects (mean = `r round(mean(RI_all_within$Index), digits = 2)` sd = `r round(sd(RI_all_within$Index), digits = 2)`). The importance of this result lies in that while spectral partitioning forces a bipartition of the network, modularity does not. This adds evidence to the division of these areas into DMN and non-DMN during rest. 
