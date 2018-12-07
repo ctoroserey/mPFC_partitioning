@@ -970,7 +970,7 @@ evenSpectral <- function(Data = slideCommunities[[1]][[7]]) {
 HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID = "100307"){
   
   nVertices <- 59412
-  tempVec <- rep(-1, nVertices)
+  tempVec <- rep(0, nVertices)
   temp <- grep(MOI, colnames(Data))
   tempVec[Data$Vertex] <- Data[[temp]]
   write.table(file = paste(SubjID,"_",MOI,'_dataforCifti.txt', sep=""), tempVec, row.names = F, col.names = F, dec = ".")
@@ -1509,6 +1509,91 @@ The distribution suggests that both clustering methods were in high agreement ac
 
 Next, we examined how similar the partitions were across subjects by computing the ARI between every pair of subjects, and found that there was considerable agreement overall (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). However, qualitative inspection of the brain community topologies shows good alignment for PCC, with a topologically similar mPFC pattern that shifts topographically across subjects. To quantify this heterogeneity in mPFC, we performed the same analysis for each region separately (Figure 4). Indeed, this analysis showed that the functional topology of PCC is well maintained across subjects (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`), while mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) showed significantly lower levels of agreement (paired permutation, *p* = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`).
 
+### *Thresholding*
+``` {r Threshold this stupid stuff}
+# This function will select a two-tailed fiedler vector threshold with respect to the stability of the vertex
+# The threshold will be based on proportion DMN given by thresholdRange
+threshFV <- function(Data, thresholdRange = c(0.01, 0.99), nthresh = 50) {
+
+  ## Check if the proportions even go that low, otherwise replace by next most stable low/high value
+  # get the 2 values with highest reports (this should be stable upper/lower proportions)
+  stableExtremes <- sort(table(Data$slidePropDMN), decreasing = T)[seq(2)]
+  stableExtremes <- sort(as.numeric(names(stableExtremes)))
+  
+  
+  # if the values are not extreme enough, replace the original threshold with the new stable ones
+  if (thresholdRange[1] < stableExtremes[1]) {
+    
+    thresholdRange[1] <- stableExtremes[1]
+    
+  }
+  
+  if (thresholdRange[2] > stableExtremes[2]) {
+    
+    thresholdRange[2] <- stableExtremes[2]
+    
+  }
+  
+  ## Run the actual process
+  # placeholder to be returned
+  thresholds <- c(NA,NA)
+  
+  
+  # start the counter at chance
+  meanProp <- 0.5
+  
+  
+  # select a range of FV values
+  thresh <- seq(0, min(Data$FiedlerVec), length.out = nthresh)
+  
+  
+  # Iterate over the possible FV until DMN affiliations go below 1%
+  count <- 1
+  while (meanProp > thresholdRange[1]) {
+    
+    # get the mean proportion of DMN from remaining vertices based on putative threshold
+    meanProp <- Data %>% filter(FiedlerVec <= thresh[count]) %>% summarize(mean(slidePropDMN))
+    
+    # if a threshold meets requirement, store its value
+    if (meanProp <= thresholdRange[1]) {
+      thresholds[1] <- thresh[count]
+    }
+    print(count)
+    print(meanProp)
+    print(thresh[count])
+    count <- count + 1
+    
+  }
+  
+  
+  # repeat for the upper threshold
+  # restart parameters
+  meanProp <- 0.5
+  thresh <- seq(0, max(abs(Data$FiedlerVec)), length.out = nthresh)
+  
+  
+  # Iterate over the possible FV until DMN affiliations go over 99%
+  count <- 1
+  while (meanProp < thresholdRange[2]) {
+    
+    # get the mean proportion of DMN from remaining vertices based on putative threshold
+    meanProp <- Data %>% filter(FiedlerVec > thresh[count]) %>% summarize(mean(slidePropDMN))
+    
+    # if a threshold meets requirement, store its value
+    if (meanProp >= thresholdRange[2]) {
+      thresholds[2] <- thresh[count]
+    }
+
+    count <- count + 1
+    
+  }
+  
+  
+  return(round(thresholds, digits = 5))
+
+  
+}
+```
 ### *Pattern stability over time*
 
 
@@ -2154,7 +2239,7 @@ corrplot(RI_PCC,
          type = "lower", 
          tl.pos = "n", 
          tl.cex = 0.1, 
-         cl.lim = c(0,1),
+         #cl.lim = c(0,1),
          cl.length = 3,
          addgrid.col = "grey99",
          cl.pos = "r",
@@ -2192,7 +2277,7 @@ corrplot(RI_all_between_halves_plot,
          tl.col = "black",
          tl.cex = 0.1,
          cl.pos = "n",
-         cl.lim = c(0,1),
+         #cl.lim = c(0,1),
          cl.length = 3,
          mar = c(1.1,1.1,1.1,1.1))
 # segments(0.5,0.5,0.5,20.5, lwd = 2)
@@ -2206,7 +2291,7 @@ corrplot(RI_PCC_halves_plot,
          method = "color",
          type = "lower", 
          tl.pos = "n", 
-         cl.lim = c(0,1),
+         #cl.lim = c(0,1),
          cl.pos = "r",
          addgrid.col = "grey90",
          cl.length = 3)
@@ -2261,7 +2346,7 @@ corrplot(RI_PCC_sess_plot,
          tl.pos = "n", 
          tl.cex = 0.5,
          tl.col = "black", 
-         cl.lim = c(0,1),
+         #cl.lim = c(0,1),
          cl.length = 3,
          cl.pos = "r", 
          addgrid.col = "grey90")
