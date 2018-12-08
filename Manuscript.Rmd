@@ -1062,7 +1062,86 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
   finalMatrix
 }
 
+# This function will select a two-tailed fiedler vector threshold with respect to the stability of the vertex
+# The threshold will be based on proportion DMN given by thresholdRange
+threshFV <- function(Data, thresholdRange = c(0.01, 0.99), nthresh = 50) {
 
+  ## Check if the proportions even go that low, otherwise replace by next most stable low/high value
+  # get the 2 values with highest reports (this should be stable upper/lower proportions)
+  stableExtremes <- sort(table(Data$slidePropDMN), decreasing = T)[seq(2)]
+  stableExtremes <- sort(as.numeric(names(stableExtremes)))
+  
+  
+  # if the values are not extreme enough, replace the original threshold with the new stable ones
+  if (thresholdRange[1] < stableExtremes[1]) {
+    
+    thresholdRange[1] <- stableExtremes[1]
+    
+  }
+  
+  if (thresholdRange[2] > stableExtremes[2]) {
+    
+    thresholdRange[2] <- stableExtremes[2]
+    
+  }
+  
+  ## Run the actual process
+  # placeholder to be returned
+  thresholds <- c(NA,NA)
+  
+  
+  # start the counter at chance
+  meanProp <- 0.5
+  
+  
+  # select a range of FV values
+  thresh <- seq(0, min(Data$FiedlerVec), length.out = nthresh)
+  
+  
+  # Iterate over the possible FV until DMN affiliations go below 1%
+  count <- 1
+  while (meanProp >= thresholdRange[1]) {
+    
+    # get the mean proportion of DMN from remaining vertices based on putative threshold
+    meanProp <- Data %>% filter(FiedlerVec <= thresh[count]) %>% summarize(mean(slidePropDMN))
+    
+    # if a threshold meets requirement, store its value
+    if (meanProp <= thresholdRange[1]) {
+      thresholds[1] <- thresh[count]
+    }
+
+    count <- count + 1
+    
+  }
+  
+  
+  # repeat for the upper threshold
+  # restart parameters
+  meanProp <- 0.5
+  thresh <- seq(0, max(abs(Data$FiedlerVec)), length.out = nthresh)
+  
+  
+  # Iterate over the possible FV until DMN affiliations go over 99%
+  count <- 1
+  while (meanProp <= thresholdRange[2]) {
+    
+    # get the mean proportion of DMN from remaining vertices based on putative threshold
+    meanProp <- Data %>% filter(FiedlerVec > thresh[count]) %>% summarize(mean(slidePropDMN))
+    
+    # if a threshold meets requirement, store its value
+    if (meanProp >= thresholdRange[2]) {
+      thresholds[2] <- thresh[count]
+    }
+
+    count <- count + 1
+    
+  }
+  
+  
+  return(round(thresholds, digits = 5))
+
+  
+}
 ```
   
 ``` {r For HCP data, fig.align="center", echo=FALSE, message = FALSE}
@@ -1511,87 +1590,23 @@ Next, we examined how similar the partitions were across subjects by computing t
 
 ### *Thresholding*
 ``` {r Threshold this stupid stuff}
-# This function will select a two-tailed fiedler vector threshold with respect to the stability of the vertex
-# The threshold will be based on proportion DMN given by thresholdRange
-threshFV <- function(Data, thresholdRange = c(0.01, 0.99), nthresh = 50) {
+# Get a FV threshold for each subject based on mean vertex stability
+# Run the function safely, because some noisy subjects have no relationship between stability and FV
+# Note, the mean resulting threshold is similar to the group's 25th and 75th quantiles
+TFV <- safely(threshFV)
+tempList <- lapply(Summaries, TFV)
 
-  ## Check if the proportions even go that low, otherwise replace by next most stable low/high value
-  # get the 2 values with highest reports (this should be stable upper/lower proportions)
-  stableExtremes <- sort(table(Data$slidePropDMN), decreasing = T)[seq(2)]
-  stableExtremes <- sort(as.numeric(names(stableExtremes)))
-  
-  
-  # if the values are not extreme enough, replace the original threshold with the new stable ones
-  if (thresholdRange[1] < stableExtremes[1]) {
-    
-    thresholdRange[1] <- stableExtremes[1]
-    
+# Store thre FV thresholds for all subject 
+threshDF <- data_frame(SubjID = substring(subjList,1,6),
+                       Lower = NA,
+                       Upper = NA)
+for (i in seq_along(tempList)) {
+  if (is.null(tempList[[i]]$result)) {
+    threshDF[i,2:3] <- c(0,0)
+  } else {
+    threshDF[i,2] <- tempList[[i]]$result[1]
+    threshDF[i,3] <- tempList[[i]]$result[2]
   }
-  
-  if (thresholdRange[2] > stableExtremes[2]) {
-    
-    thresholdRange[2] <- stableExtremes[2]
-    
-  }
-  
-  ## Run the actual process
-  # placeholder to be returned
-  thresholds <- c(NA,NA)
-  
-  
-  # start the counter at chance
-  meanProp <- 0.5
-  
-  
-  # select a range of FV values
-  thresh <- seq(0, min(Data$FiedlerVec), length.out = nthresh)
-  
-  
-  # Iterate over the possible FV until DMN affiliations go below 1%
-  count <- 1
-  while (meanProp > thresholdRange[1]) {
-    
-    # get the mean proportion of DMN from remaining vertices based on putative threshold
-    meanProp <- Data %>% filter(FiedlerVec <= thresh[count]) %>% summarize(mean(slidePropDMN))
-    
-    # if a threshold meets requirement, store its value
-    if (meanProp <= thresholdRange[1]) {
-      thresholds[1] <- thresh[count]
-    }
-    print(count)
-    print(meanProp)
-    print(thresh[count])
-    count <- count + 1
-    
-  }
-  
-  
-  # repeat for the upper threshold
-  # restart parameters
-  meanProp <- 0.5
-  thresh <- seq(0, max(abs(Data$FiedlerVec)), length.out = nthresh)
-  
-  
-  # Iterate over the possible FV until DMN affiliations go over 99%
-  count <- 1
-  while (meanProp < thresholdRange[2]) {
-    
-    # get the mean proportion of DMN from remaining vertices based on putative threshold
-    meanProp <- Data %>% filter(FiedlerVec > thresh[count]) %>% summarize(mean(slidePropDMN))
-    
-    # if a threshold meets requirement, store its value
-    if (meanProp >= thresholdRange[2]) {
-      thresholds[2] <- thresh[count]
-    }
-
-    count <- count + 1
-    
-  }
-  
-  
-  return(round(thresholds, digits = 5))
-
-  
 }
 ```
 ### *Pattern stability over time*
