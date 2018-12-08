@@ -1092,6 +1092,7 @@ Yeo_PCC_labels <- c("_7m_",
                     "_d23ab_",
                     "_v23ab_")
 
+
 # mPFC_only <- c("_a24_",
 #                "_d32_",
 #                "_p32_",
@@ -1100,22 +1101,41 @@ Yeo_PCC_labels <- c("_7m_",
 #                "_10v_",
 #                "_OFC_",
 #                "_s32_",
-#                "_p24_")
+#                "_p24_",
+#                "_10d_",
+#                "_25_")
 
-mPFC_only <- c("_a24_",
-               "_d32_",
-               "_p32_",
-               "_10r_",
-               "_9m_",
-               "_10v_",
-               "_OFC_",
-               "_s32_",
-               "_p24_",
-               "_10d_",
-               "_25_")
+mPFC_only <- c("L_25_ROI",
+              "L_OFC_ROI",
+              "L_10v_ROI",
+              "R_25_ROI",
+              "R_OFC_ROI",
+              "R_10v_ROI",
+              "L_s32_ROI",
+              "R_8Ad_ROI",
+              "R_9p_ROI",
+              "R_p24_ROI",
+              "R_d32_ROI",
+              "R_9m_ROI",
+              "R_p32_ROI",
+              "R_a24_ROI",
+              "R_10r_ROI",
+              "R_10d_ROI",
+              "L_8Ad_ROI",
+              "L_9p_ROI",
+              "L_p24_ROI",
+              "L_d32_ROI",
+              "L_9m_ROI",
+              "L_p32_ROI",
+              "L_a24_ROI",
+              "L_10r_ROI",
+              "L_10d_ROI",
+              "R_s32_ROI",
+              "R_9a_ROI",
+              "L_p10p_ROI")
 
 # Little test to ensure that the ROIs match before running the whole thing
-if (FALSE %in% (mPFC_only %in% c(mPFC_only, "Blah"))) {
+if (FALSE %in% (mPFC_only %in% bothLbls)) {
   stop("mPFC-only and Overlapping ROIs don't match")
 }
 
