@@ -23,6 +23,9 @@ Cols <- c("aquamarine4","#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # l
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv')[,2:6]
 labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(x)), y = as.numeric(as.character(y)), z = as.numeric(as.character(z)))
 
+# Whether to apply subject-wise thresholds on maps or not
+threshMaps <- TRUE
+
 # Libraries used for the whole process
 library(tidyverse)
 library(igraph)
@@ -1486,6 +1489,7 @@ mdDay <- mean(Densities$Density[grep("Day", Densities$Type)])
 mdSess <- mean(Densities$Density[grep("Session", Densities$Type)])
 ```
 
+*NOTE: It might be better to just avoid cluster comparisons at this pre-threshold level*
 With these 16 ROIs (15 overlapping, 1 DMN-specific), we estimated each individual's DMN coverage using the whole time series (4800 total TRs from four scanning sessions over two days). Each subject's network (n = `r nSubj`) was constructed by performing pairwise correlations among the time series of all the surface vertices contained within the ROIs (`r nrow(Summaries[[1]])` total vertices). After correcting for multiple testing, we performed spectral partitioning and modularity on these networks to identify cohesive functional communities denoting DMN and non-DMN areas. On average, networks had high densities (i.e. highly connected) regardless of the amount of data to produce them (mean = `r round(mdAll, digits = 2)`, SD = `r round(sddAll, digits = 3)`). This degree of density is important, as these methods are known to face challenges when computed on sparse networks [@Fortunato2016]. 
 
 Figure 2 shows a stereotypical subdivision of the ROIs for a single subject (100307) using spectral partitioning. This method dissects a network by the positive and negative values derived from the Fiedler vector (the eigenvector related to the second-to-lowest eigenvalue of the network's Laplacian matrix, see Methods), which we used to binarize the ROIs Since this is a data-driven approach, there is no a priori labeling for these communities. We thus defined the DMN community as the one containing the one DMN-specific area from the meta-analysis (7m), and ensured that the binary labeling of the vertices was consistent across subjects. In general, the resulting pattern shows large DMN coverage in PCC, with non-DMN vertices populating its anterior segment. mPFC, on the other hand, is mostly covered by DMN vertices in its ventral-anterior and dorsal-anterior areas, with a persistent non-DMN pocket between them. This non-DMN section extends posteriorly onto pregenual cinglate cortex. Note that vmPFC does not encompass area a25, which is often related to negative emotional valuation [@Joyce2018]. Interstingly, this topographical combination of dorsal and ventral mPFC, with extensive PCC coverage, matches previous meta-analytic patterns more closely attributed to social cognition than SV [@Hiser2018].
@@ -1588,27 +1592,6 @@ The distribution suggests that both clustering methods were in high agreement ac
 
 Next, we examined how similar the partitions were across subjects by computing the ARI between every pair of subjects, and found that there was considerable agreement overall (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). However, qualitative inspection of the brain community topologies shows good alignment for PCC, with a topologically similar mPFC pattern that shifts topographically across subjects. To quantify this heterogeneity in mPFC, we performed the same analysis for each region separately (Figure 4). Indeed, this analysis showed that the functional topology of PCC is well maintained across subjects (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`), while mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) showed significantly lower levels of agreement (paired permutation, *p* = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`).
 
-### *Thresholding*
-``` {r Threshold this stupid stuff}
-# Get a FV threshold for each subject based on mean vertex stability
-# Run the function safely, because some noisy subjects have no relationship between stability and FV
-# Note, the mean resulting threshold is similar to the group's 25th and 75th quantiles
-TFV <- safely(threshFV)
-tempList <- lapply(Summaries, TFV)
-
-# Store thre FV thresholds for all subject 
-threshDF <- data_frame(SubjID = substring(subjList,1,6),
-                       Lower = NA,
-                       Upper = NA)
-for (i in seq_along(tempList)) {
-  if (is.null(tempList[[i]]$result)) {
-    threshDF[i,2:3] <- c(0,0)
-  } else {
-    threshDF[i,2] <- tempList[[i]]$result[1]
-    threshDF[i,3] <- tempList[[i]]$result[2]
-  }
-}
-```
 ### *Pattern stability over time*
 
 
@@ -1764,6 +1747,79 @@ We complemented these analyses by asking whether the magnitude of values in the 
 
 \bigskip
 
+### *Thresholding*
+``` {r Threshold this stupid stuff}
+# Get a FV threshold for each subject based on mean vertex stability
+# Run the function safely, because some noisy subjects have no relationship between stability and FV
+# Note, the mean resulting threshold is similar to the group's 25th and 75th quantiles
+TFV <- safely(threshFV)
+tempList <- lapply(Summaries, TFV)
+
+# Store thre FV thresholds for all subject 
+threshDF <- data_frame(SubjID = substring(subjList,1,6),
+                       Lower = NA,
+                       Upper = NA)
+for (i in seq_along(tempList)) {
+  if (is.null(tempList[[i]]$result)) {
+    threshDF[i,2:3] <- c(0,0)
+  } else {
+    threshDF[i,2] <- as.numeric(tempList[[i]]$result[1])
+    threshDF[i,3] <- as.numeric(tempList[[i]]$result[2])
+  }
+}
+
+```
+
+### *Partition Comparison:Thresholded Full Datasets*
+``` {r Partition comparison: all 2, echo=FALSE, message = FALSE, cache = TRUE}
+# Apply threshold to Summaries
+if (threshMaps) {
+  for (i in seq(nSubj)) {
+  Summaries[[i]] <- Summaries[[i]] %>%
+    mutate(FiedlerVec = ifelse(FiedlerVec > as.numeric(threshDF[i,2]) & FiedlerVec < as.numeric(threshDF[i,3]), 0, FiedlerVec)) %>%
+    mutate(FiedlerBinary = ifelse(FiedlerVec > 0, 1, ifelse(FiedlerVec < 0, 0, 0.5)))
+  }
+}
+
+# Across subjects
+# Note: the upper and lower triangles can totally be combined before plotting, instead of adding one corrplot over another. Might work on that eventually.
+RI_all_between <- comparePartitions(Data = Summaries, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
+RI_all_between_lowtri <- RI_all_between[lower.tri(RI_all_between)]
+
+posteriorIndx <- Summaries[[1]]$y < 0
+tempComm_PCC <- lapply(Summaries, "[", i = posteriorIndx, j =)
+tempComm_PFC <- lapply(Summaries, "[", i = !posteriorIndx, j =)
+RI_PFC <- comparePartitions(Data = tempComm_PFC, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
+RI_PCC <- comparePartitions(Data = tempComm_PCC, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
+
+# Let's compare stuff
+testPCC <- RI_PCC[lower.tri(RI_PCC)]
+testPFC <- RI_PFC[lower.tri(RI_PFC)]
+Overall_PCCvsPFC_permTest <- permute(testPCC, testPFC, statType = mean, paired = T)
+Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) # caveat: maybe not ideal for bounded values, like RI. BUT VI yields similar results.
+
+# To get the rate of stability per vertex across subjects
+FB <- do.call(cbind, lapply(Summaries, "[[", "FiedlerBinary"))
+FV <- do.call(cbind, lapply(Summaries, "[[", "FiedlerVec"))
+FBS <- rowMeans(FB)
+FBS[FBS < 0.5] <- 1 - FBS[FBS < 0.5]
+
+# Now let's test something: 
+# Traditionally, a vertex-wise test would be carried across subjects.
+# If these traditional analyses miss out on these idiosyncrasies, you should get unsignificant results.
+# So we did a prop.test per vertex, and corrected with FDR to mimic this situation.
+All_proptests <- apply(FB, 1, function(x) {prop.test(sum(x), nSubj)})
+Prop_pvals_corrected <- p.adjust(sapply(All_proptests, "[[", "p.value"), method = "BY")
+Prop_pvals_corrected <- ifelse(Prop_pvals_corrected < 0.05, 1, 0)
+Chisquares <- sapply(All_proptests, "[[", "statistic")
+
+# And a t-test on the FV vals
+All_ttests <- apply(FV, 1, t.test)
+Ttest_pvals_corrected <- p.adjust(sapply(All_ttests, "[[", "p.value"), method = "BY")
+Ttest_pvals_corrected <- ifelse(Ttest_pvals_corrected < 0.05, 1, 0)
+Tstats <- sapply(All_ttests, "[[", "statistic")
+
+```
 ### *Partition Comparison: Day 1 vs Day 2*
 
 In order to determine whether the low agreement shown in mPFC across subjects was a function of intrinsic variability or a subject-specific pattern, we compared the agreement among communities estimated with data from each separate day. If the latter were true, within-subject ARI values should be consistently higher than across subjects. Since SP and modularity showed converging estimates, from here on we focus on results computed with spectral partitioning to ensure bipartitions. Communities were estimated on concatenated pairs of daily left-right and right-left phase encoded sessions (see Methods for details), and once again compared using ARI. Figure 5 shows pairwise comparisons among ten example subjects for PCC and mPFC separately. 
@@ -1774,6 +1830,19 @@ setwd('./Summary_halves/')
 temp <- list.files(pattern = "*_finalSummary.csv")
 subjList_halves <- sapply(temp, substring, first=1, last=9)
 Summaries_halves <- lapply(temp, read.csv)
+
+# Apply threshold to Summaries
+if (threshMaps) {
+  # create a vector of repeated indices, so each threshold is applied to each subject twice
+  threshindex <- rep(seq(nSubj), each = 2)
+  count <- 1
+  for (i in threshindex) {
+    Summaries_halves[[count]] <- Summaries_halves[[count]] %>%
+            mutate(FiedlerVec = ifelse(FiedlerVec > as.numeric(threshDF[i,2]) & FiedlerVec < as.numeric(threshDF[i,3]), 0, FiedlerVec)) %>%
+            mutate(FiedlerBinary = ifelse(FiedlerVec > 0, 1, ifelse(FiedlerVec < 0, 0, 0.5)))
+    count <- count + 1
+  }
+}
 
 # Select subsection of subjects for plotting the similarity matrices
 selectSubj <- seq(1,20)
@@ -1895,6 +1964,19 @@ setwd('./Summary_sess/')
 temp <- list.files()
 subjList_sess <- sapply(temp, substring, first=1, last=9)
 Summaries_sess <- lapply(temp, read.csv)
+
+# Apply threshold to Summaries
+if (threshMaps) {
+  # create a vector of repeated indices, so each threshold is applied to each subject twice
+  threshindex <- rep(seq(nSubj), each = 4)
+  count <- 1
+  for (i in threshindex) {
+    Summaries_sess[[count]] <- Summaries_sess[[count]] %>%
+            mutate(FiedlerVec = ifelse(FiedlerVec > as.numeric(threshDF[i,2]) & FiedlerVec < as.numeric(threshDF[i,3]), 0, FiedlerVec)) %>%
+            mutate(FiedlerBinary = ifelse(FiedlerVec > 0, 1, ifelse(FiedlerVec < 0, 0, 0.5)))
+    count <- count + 1
+  }
+}
 
 # Select 10 subjects from the sample to plot
 selectSubj <- seq(1,40)
@@ -2343,7 +2425,7 @@ corrplot(RI_all_between_sess_plot,
          tl.pos = "n", 
          tl.cex = 0.5,
          tl.col = "black", 
-         cl.lim = c(-0.03,1),
+         #cl.lim = c(-0.03,1),
          cl.pos = "n",
          cl.length = 3,
          mar = c(1.1,1.1,1.1,1.1), 
