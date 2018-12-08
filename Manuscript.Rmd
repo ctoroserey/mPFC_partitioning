@@ -970,10 +970,10 @@ evenSpectral <- function(Data = slideCommunities[[1]][[7]]) {
 # Once this is created, go to the terminal and input something like this
 # wb_command -cifti-convert -from-text dataforCifti.txt 100307.MyelinMap_BC.32k_fs_LR.dscalar.nii testCifti.dscalar.nii
 # Where the myelin file here is just a templace. It can be any dscalar.nii with the right surface size
-HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID = "100307"){
+HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID = "100307", padding = 0){
   
   nVertices <- 59412
-  tempVec <- rep(0, nVertices)
+  tempVec <- rep(padding, nVertices)
   temp <- grep(MOI, colnames(Data))
   tempVec[Data$Vertex] <- Data[[temp]]
   write.table(file = paste(SubjID,"_",MOI,'_dataforCifti.txt', sep=""), tempVec, row.names = F, col.names = F, dec = ".")
