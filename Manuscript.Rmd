@@ -2335,16 +2335,7 @@ include_graphics("./Images/ROIS3.png")
 ```
 
 ```{r Template partition (Fig. 2), out.width="50%", fig.align = "center", fig.cap = "Figure 2. Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."}
-include_graphics("./Images/newPattern_both.png")
-```
-
-``` {r Partition comparison: all cross-method agreement (Fig. 3), fig.align="center", fig.width=3.5, fig.height=3.5, echo=FALSE, message = FALSE, fig.cap = "Figure 3. Distribution of ARI indices when comparing modularity and spectral partitioning. The distribution shows overall high agreement. (Will probably remove this figure)"}
-RI_within_plot <- ggplot(data = RI_all_within, aes(Index)) + 
-        geom_density(fill = Cols[3]) + 
-        xlim(0,1) + 
-        labs(x = "Adj. Rand Index") +
-        theme_classic()
-RI_within_plot
+include_graphics("./Images/FB_FV_example.png")
 ```
 
 ``` {r Partition comparison: all 2 (Fig. 4), fig.align="center", out.width = "40%", fig.cap = "Figure 4. Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. PCC is well aligned across individuals, while mPFC shows clear topographical heterogeneity.", echo=FALSE, message = FALSE}
@@ -2380,6 +2371,55 @@ mtext(expression(bold("mPFC")), line = 2, at = par("usr")[1]+0.73*diff(par("usr"
 mtext(expression(bold("PCC")), side = 1, line = 4, at = par("usr")[1]+0.18*diff(par("usr")[1:2]), col = "steelblue4")
 
 
+```
+
+``` {r Stability per subject: PCC vs mPFC (Fig 10), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 10. ARI between each window and the original pattern for PCC and mPFC separately (left), and the mean per-subject ARI for the whole group (middle). Regardless of the mean ARI, standard deviation remained low for both regions (right).", echo=FALSE, message = FALSE}
+
+# # plots
+# SC_PCCPFC_plot <- ggplot(data = SC_PCC)
+# SC_PCCPFC_plot <- SC_PCCPFC_plot + geom_line(aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[2], alpha = 0.3, show.legend = F) +
+#   geom_smooth(aes(x = Window, y = Index), color = Cols[2], fill = Cols[2]) +
+#   ylim(0,1) + 
+#   labs(y = "ARI") +
+#   theme(text = element_text(size=35)) +
+#   geom_line(data = SC_PFC, aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[1], alpha = 0.3, show.legend = F) +
+#   geom_smooth(data = SC_PFC, aes(x = Window, y = Index), color = Cols[1], fill = Cols[1]) +
+#   theme_classic()
+
+
+SC_PCCPFC_mean_plot <- ggplot(data = SC_PCCPFC_summary, aes(x=as.factor(Region), y=Index, fill = as.factor(Region))) + 
+  geom_boxplot(show.legend = F) + 
+  scale_fill_manual(values = Cols[seq(2)]) +
+  ylim(0,1) +
+  labs(x = "", y = "") +
+  theme(text = element_text(size=35), axis.text.y = element_text(size=40)) +
+  theme_classic() 
+
+
+SC_PCCPFC_sd_plot <- ggplot(data = SC_PCCPFC_summary, aes(x=SD, fill = as.factor(Region))) + 
+  scale_fill_manual(values = Cols[seq(2)]) +
+  geom_density(color = "black", alpha = 0.7, show.legend = F) + 
+  xlim(0,1) +
+  labs(x = "SD") +
+  theme(text = element_text(size=35)) +
+  theme_classic() 
+
+
+grid.arrange(SC_PCCPFC_mean_plot, SC_PCCPFC_sd_plot, ncol = 2)
+
+```
+
+``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 11), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 11. Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines denote each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
+# Fiedler Vector x proportion of times a vertex was affiliated with DMN
+SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
+  geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
+  #geom_line(aes(FiedlerVec, FittedVals), alpha = 1, size = 3) +
+  geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 3) +
+  labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_classic()
+
+SC_FVvPDMN_plot
 ```
 
 ``` {r Partition comparison: halves (Fig. 5), fig.align="center", out.width = "60%", fig.cap = "Figure 5. Similarity matrices for 10 example participants showing pattern agreement across days for the whole partition (left), and for PCC and mPFC separately (right). These figures show high agreement within (but not between) subjects, with mPFC again showing significant variability.", echo=FALSE, message = FALSE}
@@ -2492,60 +2532,6 @@ ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) +
   geom_hline(yintercept = 1) +
   labs(y = "ARI Ratio", x = "") + 
   theme_classic(base_size = 14)
-```
-
-``` {r Stability per subject: Overall (Fig. 9), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 9. ARI between communities computed at each sliding epoch and the original partition for all subjects (left), as well as the distribution of ARI standard deviations per subject (right).", echo=FALSE, message = FALSE}
-# TAKE THE TIME TO BRING THE GGPLOT DEFINITION DOWN HERE EVENTUALLY
-grid.arrange(SC_plot, SC_sd_plot, ncol = 2)
-```
-
-``` {r Stability per subject: PCC vs mPFC (Fig 10), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 10. ARI between each window and the original pattern for PCC and mPFC separately (left), and the mean per-subject ARI for the whole group (middle). Regardless of the mean ARI, standard deviation remained low for both regions (right).", echo=FALSE, message = FALSE}
-
-# # plots
-# SC_PCCPFC_plot <- ggplot(data = SC_PCC)
-# SC_PCCPFC_plot <- SC_PCCPFC_plot + geom_line(aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[2], alpha = 0.3, show.legend = F) +
-#   geom_smooth(aes(x = Window, y = Index), color = Cols[2], fill = Cols[2]) +
-#   ylim(0,1) + 
-#   labs(y = "ARI") +
-#   theme(text = element_text(size=35)) +
-#   geom_line(data = SC_PFC, aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[1], alpha = 0.3, show.legend = F) +
-#   geom_smooth(data = SC_PFC, aes(x = Window, y = Index), color = Cols[1], fill = Cols[1]) +
-#   theme_classic()
-
-
-SC_PCCPFC_mean_plot <- ggplot(data = SC_PCCPFC_summary, aes(x=as.factor(Region), y=Index, fill = as.factor(Region))) + 
-  geom_boxplot(show.legend = F) + 
-  scale_fill_manual(values = Cols[seq(2)]) +
-  ylim(0,1) +
-  labs(x = "", y = "") +
-  theme(text = element_text(size=35), axis.text.y = element_text(size=40)) +
-  theme_classic() 
-
-
-SC_PCCPFC_sd_plot <- ggplot(data = SC_PCCPFC_summary, aes(x=SD, fill = as.factor(Region))) + 
-  scale_fill_manual(values = Cols[seq(2)]) +
-  geom_density(color = "black", alpha = 0.7, show.legend = F) + 
-  xlim(0,1) +
-  labs(x = "SD") +
-  theme(text = element_text(size=35)) +
-  theme_classic() 
-
-
-grid.arrange(SC_PCCPFC_mean_plot, SC_PCCPFC_sd_plot, ncol = 2)
-
-```
-
-``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 11), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 11. Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines denote each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
-# Fiedler Vector x proportion of times a vertex was affiliated with DMN
-SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
-  geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
-  #geom_line(aes(FiedlerVec, FittedVals), alpha = 1, size = 3) +
-  geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 3) +
-  labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
-  scale_y_continuous(limits = c(0,1)) +
-  theme_classic()
-
-SC_FVvPDMN_plot
 ```
 
 ``` {r Noise Effects: tSNR Comparison (Fig. 12), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 12. Mean tSNR for mPFC and PCC across participants. This measure was derived from the minimally preprocessed fMRI data from the HCP, and thus shows the base level of reltive noise in each region.", echo=FALSE, message = FALSE}
