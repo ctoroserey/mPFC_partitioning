@@ -1829,6 +1829,16 @@ Summaries_halves <- lapply(temp, read.csv)
 # Before thresholding, capture within/between daily comparisons for FV vs correlation analysis (only for daily)
 Summaries_halves_unthresh <- Summaries_halves
 
+# Some participants have strongly uncorrelated maps because 7m isn't fully covered on one of the days
+# ARI doesn't mind this, so the results are fine
+# But the Corr vs FV analysis below is badly affected
+# For now I'm just selecting the individuals that have negatively correlated FVectors
+# It might be worth visually inspecting each to see if a simple heuristic works (i.e. if corr < -0.5, then FV * -1 & 1 - FB)
+# Although this doesn't adress which half is the culprit
+unCorrParticipants <- data.frame(SubjID = subjList,
+                                 Corrs = sapply(seq(1, nSubj *2, by = 2), function(x) {cor(Summaries_halves_unthresh[[x]]$FiedlerVec, Summaries_halves_unthresh[[x+1]]$FiedlerVec)})) %>%
+  filter(Corrs < 0)
+
 # Load the correlation-based maps from each day for analysis in a subsequent section
 temp <- list.files(pattern = "*_corHalves.csv")
 Correlation_halves <- lapply(temp, read.csv, header = F)
