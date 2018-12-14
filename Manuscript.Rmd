@@ -1827,6 +1827,12 @@ subjList_halves <- sapply(temp, substring, first=1, last=9)
 Summaries_halves <- lapply(temp, read.csv)
 
 # Before thresholding, capture within/between daily comparisons for FV vs correlation analysis (only for daily)
+# Some subjects didn't have the correct labeling scheme in one of their days (see corr vs FV below), so we're manually reverting it after visual inspection
+revertSubjs <- c("144226_H2", "165840_H1", "192843_H1", "303624_H1", "687163_H1", "120515_H2", "108525_H2", "156637_H1", "156637_H1")
+for (subj in revertSubjs) {
+  indx <- grep(subj, subjList_halves)
+  Summaries_halves[[indx]] <- transform(Summaries_halves[[indx]], FiedlerVec = FiedlerVec * -1)
+}
 Summaries_halves_unthresh <- Summaries_halves
 
 # Some participants have strongly uncorrelated maps because 7m isn't fully covered on one of the days
@@ -1973,6 +1979,8 @@ RI_PCC_halves_plot <- RI_PCC_halves[bestindx, bestindx]
 Correlation_halves_plot <- Correlation_halves[bestindx] 
 
 # Save unthresholded subjects for comparing and plotting against correlation maps
+# this comment is temporary, just to force the cache to update
+Foo <- "Fighters"
 unthreshComm_PFC_halves_plot <- lapply(Summaries_halves_unthresh[bestindx], "[", i = !posteriorIndx, j =)
 unthreshComm_PFC_halves <- lapply(Summaries_halves_unthresh, "[", i = !posteriorIndx, j =)
 ```
@@ -2242,6 +2250,7 @@ Given this trend, we asked whether there is a "gradient of noise" along the z-ax
 
 ``` {r Correlation vs community detection: compute, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 ## Between halves analysis for correlation and communities (mPFC only)
+Foo <- "Fighters"
 unthreshComm_PFC_halves_plot <- lapply(seq_along(unthreshComm_PFC_halves_plot), function(x) cbind(unthreshComm_PFC_halves_plot[[x]], Correlation_halves_plot[[x]]))
 D1 <- unthreshComm_PFC_halves_plot
 D2 <- lapply(unthreshComm_PFC_halves_plot, function(data) transform(data, V1 = FiedlerVec)) # the comparison function can only take 1 column name for this stuff
@@ -2269,6 +2278,7 @@ allHalfCombs <- comparePartitions(Data = Data, MOI = "V1", nSubjects = 40, Index
 # 
 
 # Compare correlation with community approach on mPFC
+Foo <- "Fighters"
 tempComm <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(unthreshComm_PFC_halves[[x]]$FiedlerVec, unthreshComm_PFC_halves[[x+1]]$FiedlerVec))
 tempCor <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(Correlation_halves[[x]]$V1, Correlation_halves[[x+1]]$V1))
 tempBoth <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(unthreshComm_PFC_halves[[x]]$FiedlerVec, Correlation_halves[[x+1]]$V1))
@@ -2279,7 +2289,7 @@ prepostComp_permTest <- permute(tempComm, tempCor, paired = T)
 prepostComp_ES <- cohenD(tempComm, tempCor)
 ```
 
-The computational demands of our approach escalate quickly as the number of vertices increases. We thus explored the possible advantage to using graph-theoretic approaches on all possible network connections over a simple seed-based functional connectivity analysis from PCC. Given that the spatial distribution of the DMN is considerably stable within individuals [@Laumann2015; @Gordon2017; @Braga2017; @Kong2018], we examined whether maps generated with spectral partitioning were more similar per subject across days than those computed from seed-based correlations. First, we computed the mean time series of all the vertices contained in the DMN PCC ROI from Yeo et al. (2011) parcellation, and correlated it with the activity of every mPFC vertex from our ROIs. We then performed pairwise spatial Pearson correlations among maps computed for each day and method from all subjects (Figure 15).
+The computational demands of our approach escalate quickly as the number of vertices increases. We thus explored the possible advantage to using graph-theoretic approaches on all possible network connections over a simple seed-based functional connectivity analysis from PCC. Given that the spatial distribution of the DMN is considerably stable within individuals [@Laumann2015; @Gordon2017; @Braga2017; @Kong2018], we examined whether maps generated with spectral partitioning were more similar per subject across days than those computed from seed-based correlations. First, we computed the mean time series of all the vertices contained in the DMN PCC ROI from Yeo et al. (2011) parcellation, and correlated it with the activity of every mPFC vertex from our ROIs. We then performed pairwise spatial Pearson correlations among maps computed for each day and method from all subjects (Figure 15). For `r nrow(unCorrParticipants %>% filter(Corrs < 0))` subjects, the maps produced with one of the days' datasets insufficiently covered area 7m, and so the community labeling was reversed (for one additional subject, both daily maps were reverted). ARI is robust to these labeling issues, but this produced strong negative correlations of the Fiedler vector for these subjects, even though the topology was highly similar. We thus visually inspected these subjects and reverted the labeling when it was clear that the topologies aligned across days (n = 8).
 
 Figure 16 shows the overall degree of similarity across days for patterns dervied using community detection, seed-based correlation, and across methods (i.e. day one community detection versus day two seed-based correlation). While both approaches are very consistent, community detection displayed a significantly higher ARI across days than a simple correlation (paired permutation *p* < 0.001; Cohen's D = `r round(prepostComp_ES, digits = 2)`). It is worth noting that the cross-method agreement is fair, meaning that both approaches show similar topological features. These findings suggest that graph-theoretic community detection algorithms provide a better way to detect stable functional topologies, an important factor when faced with the levels of noise present in mPFC.
 
@@ -2590,6 +2600,7 @@ grid.arrange(s1, s2, ncol = 2)
 ```
 
 ``` {r Correlation vs community detection (Fig. 15), fig.align="center", fig.width = 4, fig.height = 4, fig.cap = "Figure 15. Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector (10 example subjects). The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector.", echo=FALSE, message = FALSE}
+Foo <- "Fighters"
 corrplot(allHalfCombs, 
          #title = "Comparing All Community and Correlation mPFC Partitions \n Across All Subjects",
          method = "color", 
