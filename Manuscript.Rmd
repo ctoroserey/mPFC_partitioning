@@ -1465,6 +1465,7 @@ setwd('./Summary/')
 temp <- list.files()
 subjList <- sapply(temp, substring, first=1, last=6)
 Summaries <- lapply(temp, read.csv)
+nSubj <- length(Summaries)
 nVertices <- nrow(Summaries[[1]]) # in case I need the number of vertices included per brain
 ```
 
@@ -1828,7 +1829,7 @@ Summaries_halves <- lapply(temp, read.csv)
 
 # Before thresholding, capture within/between daily comparisons for FV vs correlation analysis (only for daily)
 # Some subjects didn't have the correct labeling scheme in one of their days (see corr vs FV below), so we're manually reverting it after visual inspection
-revertSubjs <- c("144226_H2", "165840_H1", "192843_H1", "303624_H1", "687163_H1", "120515_H2", "108525_H2", "156637_H1", "156637_H1")
+revertSubjs <- c("144226_H2", "165840_H1", "192843_H1", "303624_H1", "687163_H1", "108525_H2", "156637_H1", "156637_H1")
 for (subj in revertSubjs) {
   indx <- grep(subj, subjList_halves)
   Summaries_halves[[indx]] <- transform(Summaries_halves[[indx]], FiedlerVec = FiedlerVec * -1)
@@ -1960,7 +1961,7 @@ Halves_RIRatios_summary <- data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", 
                                       RI = c(Halves_RIRatios_PCC, Halves_RIRatios_PFC))
 
 # Stats
-Halves_mPFCvPCC_permTest <- permute(Halves_RIRatios_PFC, Halves_RIRatios_PCC, paired = T)
+Halves_mPFCvPCC_permTest <- permute(Halves_RIRatios_PFC, Halves_RIRatios_PCC, paired = T, statType = median)
 Halves_mPFCvPCC_ES <- cohenD(Halves_RIRatios_PFC, Halves_RIRatios_PCC)
 
 # Select a submatrix with the best-performing subjects to show on the matrix figures
@@ -1985,7 +1986,7 @@ unthreshComm_PFC_halves_plot <- lapply(Summaries_halves_unthresh[bestindx], "[",
 unthreshComm_PFC_halves <- lapply(Summaries_halves_unthresh, "[", i = !posteriorIndx, j =)
 ```
 
-Once again we found greater alignment across subjects for PCC (mean = `r round(mean(Halves_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[2]]), digits = 2)`) than mPFC (mean = `r round(mean(Halves_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[2]]), digits = 2)`), but both areas showed higher levels of agreement within subjects (PCC: mean = `r round(mean(Halves_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[1]]), digits = 2)`; mPFC: mean = `r round(mean(Halves_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[1]]), digits = 2)`). However, a coarse comparison of mean ARIs neglects the degree to which subject-wise partitions were indeed idiosyncratic. Therefore, we divided each subject's ARI between days by the ARI values with the days from the other subjects. This ratio denotes the relative specificity of their partition. That means, partitions that align well across subjects should yield ratios close to 1, while subject-consistent and unique partitions would produce high ratios. Figure 6 shows the ratios for PCC and mPFC for all subjects. As expected, we found that while both regions had good specificity (i.e. ratios > 1), the ratios for PCC were significantly lower than mPFC (paired permutation,*p*= `r Halves_mPFCvPCC_permTest$Pval`; Cohen's D = `r Halves_mPFCvPCC_ES`). These test/retest results suggest that the topographic varability seen in mPFC is reliably rooted in subject-specific organization, and not an inability to capture its topology.
+Once again we found greater alignment across subjects for PCC (mean = `r round(mean(Halves_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[2]]), digits = 2)`) than mPFC (mean = `r round(mean(Halves_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[2]]), digits = 2)`), but both areas showed higher levels of agreement within subjects (PCC: mean = `r round(mean(Halves_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[1]]), digits = 2)`; mPFC: mean = `r round(mean(Halves_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[1]]), digits = 2)`). However, a coarse comparison of mean ARIs neglects the degree to which subject-wise partitions were indeed idiosyncratic. Therefore, we divided each subject's ARI between days by the ARI values with the days from the other subjects. This ratio denotes the relative specificity of their partition, such that partitions that align well across subjects should yield ratios close to 1, while subject-consistent and unique partitions would produce high ratios. Figure 6 shows the ratios for PCC and mPFC for all subjects. As expected, we found that while both regions had good specificity (i.e. ratios > 1), the ratios for mPFC (median = `r round(median(Halves_RIRatios_PFC), digits = 2)`; SD = `r round(sd(Halves_RIRatios_PFC), digits = 2)`) were significantly higher than those for PCC (median = `r round(median(Halves_RIRatios_PCC), digits = 2)`; SD = `r round(sd(Halves_RIRatios_PCC), digits = 2)`) *CONSIDER IQR INSTEAD OF MEANS/SD* when compared with a paired permutation test (*p* = `r Halves_mPFCvPCC_permTest$Pval`; Cohen's D = `r round(Halves_mPFCvPCC_ES, digits = 2)`). These test/retest results suggest that the topographic varability seen in mPFC is reliably rooted in subject-specific organization, and not an inability to capture its topology.
 
 ### *Partition Comparison: Session*
 
@@ -2119,7 +2120,7 @@ Sess_RIRatios_summary <- data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nS
                                     RI = c(Sess_RIRatios_PCC, Sess_RIRatios_PFC))
 
 # Stats
-Sess_mPFCvPCC_permTest <- permute(Sess_RIRatios_PFC, Sess_RIRatios_PCC, paired = T)
+Sess_mPFCvPCC_permTest <- permute(Sess_RIRatios_PFC, Sess_RIRatios_PCC, paired = T, statType = median)
 Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 ```
 
@@ -2289,7 +2290,7 @@ prepostComp_permTest <- permute(tempComm, tempCor, paired = T)
 prepostComp_ES <- cohenD(tempComm, tempCor)
 ```
 
-The computational demands of our approach escalate quickly as the number of vertices increases. We thus explored the possible advantage to using graph-theoretic approaches on all possible network connections over a simple seed-based functional connectivity analysis from PCC. Given that the spatial distribution of the DMN is considerably stable within individuals [@Laumann2015; @Gordon2017; @Braga2017; @Kong2018], we examined whether maps generated with spectral partitioning were more similar per subject across days than those computed from seed-based correlations. First, we computed the mean time series of all the vertices contained in the DMN PCC ROI from Yeo et al. (2011) parcellation, and correlated it with the activity of every mPFC vertex from our ROIs. We then performed pairwise spatial Pearson correlations among maps computed for each day and method from all subjects (Figure 15). For `r nrow(unCorrParticipants %>% filter(Corrs < 0))` subjects, the maps produced with one of the days' datasets insufficiently covered area 7m, and so the community labeling was reversed (for one additional subject, both daily maps were reverted). ARI is robust to these labeling issues, but this produced strong negative correlations of the Fiedler vector for these subjects, even though the topology was highly similar. We thus visually inspected these subjects and reverted the labeling when it was clear that the topologies aligned across days (n = 8).
+The computational demands of our approach escalate quickly as the number of vertices increases. We thus explored the possible advantage to using graph-theoretic approaches on all possible network connections over a simple seed-based functional connectivity analysis from PCC. Given that the spatial distribution of the DMN is considerably stable within individuals [@Laumann2015; @Gordon2017; @Braga2017; @Kong2018], we examined whether maps generated with spectral partitioning were more similar per subject across days than those computed from seed-based correlations. First, we computed the mean time series of all the vertices contained in the DMN PCC ROI from Yeo et al. (2011) parcellation, and correlated it with the activity of every mPFC vertex from our ROIs. We then performed pairwise spatial Pearson correlations among maps computed for each day and method from all subjects (Figure 15). For `r nrow(unCorrParticipants %>% filter(Corrs < 0))` subjects, the maps produced with one of the days' datasets insufficiently covered area 7m, and so the community labeling was reversed (for one additional subject, both daily maps were reverted). ARI is robust to these labeling issues, but this produced strong negative correlations of the Fiedler vector for these subjects, even though the topology was highly similar. We thus visually inspected these subjects and reverted the labeling when it was clear that the topologies aligned across days (n = 7).
 
 Figure 16 shows the overall degree of similarity across days for patterns dervied using community detection, seed-based correlation, and across methods (i.e. day one community detection versus day two seed-based correlation). While both approaches are very consistent, community detection displayed a significantly higher ARI across days than a simple correlation (paired permutation *p* < 0.001; Cohen's D = `r round(prepostComp_ES, digits = 2)`). It is worth noting that the cross-method agreement is fair, meaning that both approaches show similar topological features. These findings suggest that graph-theoretic community detection algorithms provide a better way to detect stable functional topologies, an important factor when faced with the levels of noise present in mPFC.
 
@@ -2566,7 +2567,7 @@ snrmeanComp_plot
 ```
 
 ``` {r Noise Effects: Mean R-sqd mPFC and PCC (Fig. 13 UPDATE IN TEXT FROM THIS FIG ON), fig.align="center", fig.width=6, fig.height=4, fig.cap = "Figure 13. Differences in mean R-squared values for each region per participant. The figure shows that PCC vertices tend to be more coupled with the overall dynamics of DMN across subjects.", echo=FALSE, message = FALSE}
-v4
+#v4
 ```
 
 ``` {r Noise Effects: R-sqd vs tSNR (Fig. 14), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 14. Vertex tSNR values across all subjects are correlated with their position along the z-axis in mPFC, with vmPFC showing the lowest tSNR (left). However, R-square values do not show this strong relationship (right), suggesting that the coupling of each vertex is not necessarily influenced by signal noise.", echo=FALSE, message = FALSE}
