@@ -2,9 +2,9 @@
 title: 'Individual heterogeneity in the functional topography of the DMN in medial prefrontal cortex '
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
-  pdf_document: default
   word_document: 
     reference_docx: Style_reference.docx
+  pdf_document: default
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -1233,7 +1233,7 @@ $$\begin{aligned}
 L = I - D^{-\frac{1}{2}}WD^{-\frac{1}{2}}
 \end{aligned}$$
 
-Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlation values with every other vertex), and $W$ is the adjusted correlation matrix. This resulted in a matrix wherein each entry was the normalized value of the connection (from 0 to 1) between any two vertices relative to their combined connectivity strength, and with ones along the diagonal. This transormation ensures that every row adds up to zero. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected [@Fiedler1975]. Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community to be the one containing the DMN-specific area from the meta-analysis (ensuring that the labeling of the DMN community was consistent across subjects). Importantly, given the high density of these networks (see results), spectral partitioning was unlikely to face the issues associated with its use in sparse networks [@Fortunato2016].
+Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlation values with every other vertex), and $W$ is the adjusted correlation matrix. This resulted in a matrix wherein each entry was the normalized value of the connection (from 0 to 1) between any two vertices relative to their combined connectivity strength, and with ones along the diagonal. This transormation ensures that every row adds up to zero. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected [@Fiedler1975]. Every individual map is therefore binarized by sign in order to evaluate the topography of each sub-network (see next section for details). Figure 1 provides a schematic of the process. Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community to be the one containing the DMN-specific area from the meta-analysis (ensuring that the labeling of the DMN community was consistent across subjects). Importantly, given the high density of these networks (see results), spectral partitioning was unlikely to face the issues associated with its use in sparse networks [@Fortunato2016].
 
 In order to evaluate the validity of the resulting partitions, we also estimated these communities using the more traditional approach of modularity maximization, based on the algorithm from Clauset et al. [-@Clauset2004]. This method maximizes a quality function that compares the strength of the connection between any two vertices against a null model of their probability of being randomly connected to any other vertex in the network. The method heuristically iterates through many possible combinations of vertices, and selects the clustering that maximizes the network's modularity. Thus, unlike SP, modularity can fractionate a network into many functional groups. We assumed that if the partitions from the bounded and unbounded community detection methods show high level of agreement, we could gain confidence in that we are indeed fractioning the ROIs into those belonging to DMN and not.
 
@@ -1262,8 +1262,6 @@ Finally, we examined whether each idiosyncrasies in functional topology correspo
 ### *Seed-based FC vs Community Detection*
 
 A potential downfall of our approach lies in whether the considerable computational demands are indeed required to identify these individualized partitions. It is possible that regional seed-based functional connectivity could provide sufficiently stable approximations of an individual's DMN arrangement. Given the high variability and idiosyncrasy of mPFC (see Results), we examined if SP could capture more reliable maps than seed-based functional connectivity in this area. First, we estimated each subject's DMN partition in mPFC based on its vertex-wise functional correlation (Pearson) with the average PCC activity for each day separately. We compared these seed-based maps with the Fiedler vectors produced by SP by spatially correlating them across days and subjects in three ways: 1) between seed-based maps; 2) between community-based maps; and 3) between correlation- and community-based maps. These spatial correlations were aimed to determine the day-to-day stability of each approach, as well as the overall level of agreement between them. These methods should produce somewhat similar arrangements, but the one displaying the highest within-subject agreement across days should be preferred (for a discussion on the stability of functional networks see [@Kong2018; @Mueller2013a]). We thus compared the mean within-subject inter-day correlation coefficients of each method through a paired permutation analysis (5000 iterations).   
-
-The thresholded partitions in our work qualitatively resembled the topographical arrangement of networks A and B defined by Braga and Buckner [-@Braga2017]. We explored this similarity by reproducing their seed-based connectivity approach in three of our subjects. In their work, Braga and Buckner selected individual vertices along the dorsolateral prefrontal cortex (DLPFC) that produced these two anticorrelated networks. Therefore, we hypothesized that if the communities we identified on the medial wall match their proposed networks, we should be able to find seed vertices in DLPFC that can reproduce them. The whole-brain seed-based functional connectivity maps for these subjects were qualitatively compared to those produced by spectral partitioning.
 
 \bigskip
 
@@ -2290,6 +2288,21 @@ To further interrogate the potential effect of noise in our results, we computed
 Given this trend, we asked whether there is a "gradient of noise" along the z-axis of mPFC, such that more ventral vertices would both be noisier and explain the least amount of DMN variance. Here we found that while $R^2$ are somewhat correlated with dorsal-ventral placement across subjects (mean *r* = `r round(mean(noiseCors$ZvR2), digits = 2)`; SD = `r round(sd(noiseCors$ZvR2), digits = 2)`), there is no clear relationship with the z-axis across subjects (Figure 14). Specifically, low $R^2$ are evenly distributed along this axis, denoting a degree of orthogonality between these features. Conversely, tSNR showed a strong linear relationship with the position of the vertex along this axis (mean *r* = `r round(mean(noiseCors$ZvtSNR), digits = 2)`; SD = `r round(sd(noiseCors$ZvtSNR), digits = 2)`). These results contextualize the degree of synchrony of mPFC vertices in terms of potential noise. While still an important factor, it is unlikely that the degree of within-subject pattern stability observed here could be due mostly to highly structured mPFC noise.
 
 
+### *Structural correspondence*
+
+``` {r Structural correspondence, fig.align="center", echo=FALSE, message = FALSE}
+# Mean of correlations
+meanMyelin <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Myelin)}))
+meanCurv <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Curvature)}))
+meanThick <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Thickness)}))
+
+# SD 
+sdMyelin <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Myelin)}))
+sdCurv <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Curvature)}))
+sdThick <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Thickness)}))
+```
+
+We coarsely examined whether these idiosyncratic topographical arrangements were defined by anatomical brain features. To do so, we correlated each subject's Fiedler vector with their respective structural MRI data. On average, we found that the Fiedler vector is uncorrelated with myelin density (mean *r* = `r round(meanMyelin, digits = 2)`; SD = `r round(sdMyelin, digits = 2)`), cortical folding (mean *r* = `r round(meanCurv, digits = 2)`; SD = `r round(sdCurv, digits = 2)`), and surface thickness (mean *r* = `r round(meanThick, digits = 2)`; SD = `r round(sdThick, digits = 2)`). While these findings point at an orthogonality between structure and functional organization, they resonate with previous work that found no strong matches between intersubject functional variability and cortical thickness, and low variability in sulcal depth within DMN [@Mueller2013a].
 ### *Correlation vs community detection in mPFC*
 
 ``` {r Correlation vs community detection: compute, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
@@ -2337,22 +2350,11 @@ The computational demands of our approach escalate quickly as the number of vert
 
 Figure 14 shows the overall degree of similarity across days for patterns dervied using community detection, seed-based correlation, and across methods (i.e. day one community detection versus day two seed-based correlation). While both approaches are very consistent, community detection displayed a significantly higher ARI across days than a simple correlation (paired permutation *p* < 0.001; Cohen's D = `r round(prepostComp_ES, digits = 2)`). It is worth noting that the cross-method agreement is fair, meaning that both approaches show similar topological features. These findings suggest that graph-theoretic community detection algorithms provide a better way to detect stable functional topologies, an important factor when faced with the levels of noise present in mPFC.
 
-### *Structural correspondence*
+### *Similarities with other work*
 
-``` {r Structural correspondence, fig.align="center", echo=FALSE, message = FALSE}
-# Mean of correlations
-meanMyelin <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Myelin)}))
-meanCurv <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Curvature)}))
-meanThick <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Thickness)}))
+The thresholded partitions in our work qualitatively resembled the topographical arrangement of networks A and B proposed by Braga and Buckner [-@Braga2017]. We explored this similarity by reproducing their seed-based connectivity approach in three of our subjects. In their work, Braga and Buckner selected individual vertices along the dorsolateral prefrontal cortex (DLPFC) that produced these two anticorrelated networks. Therefore, we hypothesized that if the communities we identified on the medial wall matched their proposed networks, we should be able to find seed vertices in DLPFC that can reproduce them. The whole-brain seed-based functional connectivity maps for these subjects are juxtaposed to their spectral partitioning counterparts on figure 15.
 
-# SD 
-sdMyelin <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Myelin)}))
-sdCurv <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Curvature)}))
-sdThick <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Thickness)}))
-```
-
-Finally, we coarsely examined whether these idiosyncratic topographical arrangements were defined by anatomical brain features. To do so, we correlated each subject's Fiedler vector with their respective structural MRI data. On average, we found that the Fiedler vector is uncorrelated with myelin density (mean *r* = `r round(meanMyelin, digits = 2)`; SD = `r round(sdMyelin, digits = 2)`), cortical folding (mean *r* = `r round(meanCurv, digits = 2)`; SD = `r round(sdCurv, digits = 2)`), and surface thickness (mean *r* = `r round(meanThick, digits = 2)`; SD = `r round(sdThick, digits = 2)`). While these findings point at an orthogonality between structure and functional organization, they resonate with previous work that found no strong matches between intersubject functional variability and cortical thickness, and low variability in sulcal depth within DMN [@Mueller2013a].
-
+Visual inspection of these networks shows a remarkable similarity between our DMN and non-DMN communities and their networks A and B. These qualitative results are important, as here we reinforce the idea that canonical DMN can be reliably subdivide at the individual level. Further, it shows the potential of community detection methods to automatically extract these partitions without the need to rely on group data. One way in which our results are at odds with those from Braga and Buckner is the functional labeling of these sub-networks. Based on our criteria, network B would more closely identify with DMN (per 7m affiliation), while we currently do not have enough evidence to label network A. These discrepancies should be addressed with explicit behavioral manipulations in the future.
 
 ## Discussion
 
@@ -2392,6 +2394,11 @@ We would like to thank Dan Sussman for initial guidance on community detection a
 | Subjective Value            | `r paste(valLbls)`          |
 
 ## Figures
+
+```{r Method (Figure 1), out.width = "100%", fig.align = "center", fig.cap= "Summary of the partitioning scheme and its evaluation. Each connectome if transformed into a normalized Laplacian matrix, whose eigenvector associated with the second-to-lowest eigenvalue assigns negative or positive values to each vertex. These continuous maps are binarized by sign, and compared within and between subjects using the chance-correcting Adjusted Rand Index (ARI)."}
+# Change to inflated eventually
+include_graphics("./Images/method_figure.png")
+```
 
 ```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Figure 1. Template atlas from Glasser et al. (2016) (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
 # Change to inflated eventually
@@ -2486,7 +2493,7 @@ SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
 SC_FVvPDMN_plot
 ```
 
-```{r Thresholded maps (Fig 6), out.width = "80%", fig.align = "center", fig.cap= "Figure 6. A: Thresholded Fiedler vector maps for subject 100307 (top), and its binarized form (bottom). Values that did not meet the threshold were set to zero on the Fiedler vector, and 0.5 on the binarized maps (giving rise to a third community of high-variability vertices). B: Spatial mean of the binarized maps across all participants, indicating the proportion of DMN affiliations per vertex in our sample. This aggregate map shows the common organizational principle of the DMN and non-DMN communities, while also pinpointing the relatively high level of variability in mPFC."}
+```{r Thresholded maps (Fig 6), out.width = "100%", fig.align = "center", fig.cap= "Figure 6. A: Thresholded Fiedler vector maps for subject 100307 (top), and its binarized form (bottom). Values that did not meet the threshold were set to zero on the Fiedler vector, and 0.5 on the binarized maps (giving rise to a third community of high-variability vertices). B: Spatial mean of the binarized maps across all participants, indicating the proportion of DMN affiliations per vertex in our sample. This aggregate map shows the common organizational principle of the DMN and non-DMN communities, while also pinpointing the relatively high level of variability in mPFC."}
 # Change to inflated eventually
 include_graphics("./Images/thresholded.png")
 ```
@@ -2687,6 +2694,10 @@ prepostComp_plot
 
 ```
 
+```{r B&B comparison (Figure 15), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between maps produced by seed-based connectivity based on Braga & Buckner's (2017) criterion, and those produced by spectral partitioning. Networks A and B were produced by carefully selecting a DLPFC seed (pointed by the green arrows). In each case, our DMN and non-DMN networks map remarkably well to their proposed functional organization."}
+# Change to inflated eventually
+include_graphics("./Images/braga_comparison.png")
+```
 
 \newpage
 ## References
