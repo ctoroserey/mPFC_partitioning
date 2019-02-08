@@ -2,9 +2,9 @@
 title: 'Individual heterogeneity in the functional topography of the DMN in medial prefrontal cortex '
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
+  pdf_document: default
   word_document: 
     reference_docx: Style_reference.docx
-  pdf_document: default
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -1163,25 +1163,6 @@ Corresponding author:
 
 \newpage
 
-## Ideas to do
-
-- The new manuscript organization could go like this: 
-1) Meta-analysis and ROIs
-2) Summary all
-  a) Make sure to report mean density and algebraic connectivity
-  b) Cross-method agreement
-  c) Spatially averaged community maps reproduce group-level analysis
-3) Sliding window
-  a) Fiedler vector magnitude as a proxy for affiliation strength
-  b) Proportion DMN for mPFC and PCC separately to denote overall stability
-  b) Proportion DMN across time-series ~ fiedler vector value (consider renaming propDMN to stability)
-4) Threshold the maps and rerun summary all
-5) Day 1 vs day 2
-6) Session
-7) Potential noise
-8) Structural correspondence
-9) Community > correlation
-
 ## Abstract
 
   Valuation effects are consistently observed in medial prefrontal and posterior cingulate cortex (mPFC and PCC). The spatial extent of these effects is mostly indistinguishable from the default mode network (DMN) in existing meta-analyses. However, little is known about how valuation effects fit within the broader functional architecture of mPFC and PCC, or whether that architecture is consistent or idiosyncratic across individuals. Here we complement a meta-analysis with fMRI-based graph theoretic approaches to subdivide mPFC and PCC at the single-subject level. Our results suggest the functional topography of mPFC has substantial variability across individuals. This highlights the potential usefulness of estimating brain effects at the individual level in this region, and points to limitations of aggregative methods such as coordinate-based meta-analysis in determining whether valuation and DMN effects emerge from common or separable brain systems. Our approach shows promise in addressing this issue through future manipulations of valuation.
@@ -1233,7 +1214,7 @@ $$\begin{aligned}
 L = I - D^{-\frac{1}{2}}WD^{-\frac{1}{2}}
 \end{aligned}$$
 
-Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlation values with every other vertex), and $W$ is the adjusted correlation matrix. This resulted in a matrix wherein each entry was the normalized value of the connection (from 0 to 1) between any two vertices relative to their combined connectivity strength, and with ones along the diagonal. This transormation ensures that every row adds up to zero. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected [@Fiedler1975]. Every individual map is therefore binarized by sign in order to evaluate the topography of each sub-network (see next section for details). Figure 1 provides a schematic of the process. Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community to be the one containing the DMN-specific area from the meta-analysis (ensuring that the labeling of the DMN community was consistent across subjects). Importantly, given the high density of these networks (see results), spectral partitioning was unlikely to face the issues associated with its use in sparse networks [@Fortunato2016].
+Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its correlation values with every other vertex), and $W$ is the adjusted correlation matrix. This resulted in a matrix wherein each entry was the normalized value of the connection (from 0 to 1) between any two vertices relative to their combined connectivity strength, and with ones along the diagonal. This transormation ensures that every row adds up to zero. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (from now on called the 'Fiedler vector') provides a set of positive and negative values to binarize the network with, and guarantees that the resulting communities are connected [@Fiedler1975]. Every individual map is therefore binarized by sign in order to evaluate the topography of each sub-network (see next section for details). Given that this data-driven method is agnostic to the prevalent function of each community (i.e. DMN or not DMN), we defined the DMN community to be the one containing the DMN-specific area from the meta-analysis (ensuring that the labeling of the DMN community was consistent across subjects). Importantly, given the high density of these networks (see results), spectral partitioning was unlikely to face the issues associated with its use in sparse networks [@Fortunato2016].
 
 In order to evaluate the validity of the resulting partitions, we also estimated these communities using the more traditional approach of modularity maximization, based on the algorithm from Clauset et al. [-@Clauset2004]. This method maximizes a quality function that compares the strength of the connection between any two vertices against a null model of their probability of being randomly connected to any other vertex in the network. The method heuristically iterates through many possible combinations of vertices, and selects the clustering that maximizes the network's modularity. Thus, unlike SP, modularity can fractionate a network into many functional groups. We assumed that if the partitions from the bounded and unbounded community detection methods show high level of agreement, we could gain confidence in that we are indeed fractioning the ROIs into those belonging to DMN and not.
 
@@ -2358,17 +2339,15 @@ Visual inspection of these networks shows a remarkable similarity between our DM
 
 ## Discussion
 
-For clinical implications, see Hiser & Koenigs 2018. In short, being able to identify functional idiosyncrasies without much data can yield important insights in diagnosis (meh, we always say that..) of a variety of psychological diseases associated with mPFC. It would be more interesting to identify the repercussions to damage in mPFC per individual. They mention that subgenual vmPFC is a common target for deep brain stimulation (or TMS) as a depression treatment. The refinement of the technique is thus coupled to being able to identify personalized functional topologies. They list a number of results related to mPFC functional connectivity too. In the end, their suggestions for clinical implications of mPFC studies rely on the individual measure of functional expanse. (note that social-relevant areas in their meta analysis look similar to our patterns, and the emotion part to Barbas latest)
+For clinical implications, see Hiser & Koenigs 2018. In short, being able to identify functional idiosyncrasies without much data can yield important insights in diagnosis (meh, we always say that..) of a variety of psychological diseases associated with mPFC. It would be more interesting to identify the repercussions of damage in mPFC per individual. They mention that subgenual vmPFC is a common target for deep brain stimulation (or TMS) as a depression treatment. The refinement of the technique is thus coupled to being able to identify personalized functional topologies. They list a number of results related to mPFC functional connectivity too. In the end, their suggestions for clinical implications of mPFC studies rely on the individual measure of functional expanse. (note that social-relevant areas in their meta analysis look similar to our patterns, and the emotion part to Barbas' latest)
 
 It will also be good to note that there is concurrent debate on the ground truth of community detection. In other fields, identifying a community structure is not necessarily associated with the true organization of the network. What happens is that you might find a tangential grouping that gives you information different from your original goal [@Clauset2004]. In our case, however, averaging everyone's partitions produces organizational maps that resemble those from previous work (e.g. Margulies).
 
-Mention the lack of interhemispheric distinction, citing Mackey and Petrides in regards to L-R diffs. 
-
-It's also worth mentioning that PCC is largely covered by DMN. Then why does this area overlap with SV? I think the Mueller paper mentions that PCC is an important hub of the brain, and perhaps subserves many cognitive functions (recent Wash U paper on this too). 
-
-And write a portion on the lack of subcortical reward-related regions (i.e. striatum). Say something like 'incorporating the ventral striatum did notrefine these partitions through either method. This could be due to the lack of signal modulation of this area at rest, and should be examined through behavioral manipulations of value in the future. Instead, here we focus on capturing the intrinsic functional heterogeneity of mPFC as a way to pave the path to refined analyses aimed at disentangling DMN and SV'.
-
 Talk about how there are other community detection algorithms, and that modularity and SP over and underfit, respectively. However, SP eigenmaps have been found to provide relevant functional information. In addition, both modularity and SP rely on connectivity strength, and thus is amenable to the correlative nature of functional connectivity.
+
+Interhemispheric differences? citing Mackey and Petrides
+
+And write a portion on the lack of subcortical reward-related regions (i.e. striatum). Say something like 'incorporating the ventral striatum did not refine these partitions through either method. This could be due to the lack of signal modulation of this area at rest, and should be examined through behavioral manipulations of value in the future. Instead, here we focus on capturing the intrinsic functional heterogeneity of mPFC as a way to pave the path to refined analyses aimed at disentangling DMN and SV'. It is worth noting that the SV-only area from the meta-analysis tends to land in non-DMN, although it ends up in no-ones land when thresholding the maps.
 
 It might also be worth mentioning that previous work has established the shift in network types during rest through hidden Markov models (Vidaurre et al., 2016?). While this suggests that we should see fluctuations in affiliation, and not stability, Vidaurre's work establishes the dynamics of prevalent function among networks, and not their topologies. Our work focuses on the topographical arrangement of the DMN network, which can be active or not while maintaining its form. So, the two works are compatible. Note, I played a bit with AR and MA processes per subject to try to understand the autocorrelation in the sliding window. First, both acf/pacf and arima (order = n,0,n) R functions suggested that the data was better fit by AR. Moreover, ARs from 1 to 10 had neglegible differences, so I stuck with 1 results for simplicity. As expected the data is significantly autocorrelated, and when I checked plotted the residuals they were mostly within the 0.15 bound (normally distributed). Coefficients ranged from 0.6 to 1. So, there is clear rythmicity in the agreement between each window and the overall pattern. However, the intercepts from the ARn processes gave more or less the same estimates as the mean rand index over all the windows. This is mostly expected, as we saw that the standard deviation of the rand index was low across participants. I am currently interpreting this as a signal that there is clear periodicity that is otherwise harmless for our results: in the end, the agreement remains stable throughout the 4800 TRs.
 
@@ -2387,29 +2366,33 @@ We would like to thank Dan Sussman for initial guidance on community detection a
 
 ## Supplemental Materials
 
+<!--
 ### *Table 1. (UPDATE) Significant brain regions per literature*
 | Literature                  | Significant Brain Regions   |
 | :-------------------------- | --------------------------: |
 | Default Mode Network        | `r paste(dmnLbls)`          |
 | Subjective Value            | `r paste(valLbls)`          |
+-->
 
 ## Figures
 
+<!---
 ```{r Method (Figure 1), out.width = "100%", fig.align = "center", fig.cap= "Summary of the partitioning scheme and its evaluation. Each connectome if transformed into a normalized Laplacian matrix, whose eigenvector associated with the second-to-lowest eigenvalue assigns negative or positive values to each vertex. These continuous maps are binarized by sign, and compared within and between subjects using the chance-correcting Adjusted Rand Index (ARI)."}
 # Change to inflated eventually
 include_graphics("./Images/method_figure.png")
 ```
+-->
 
-```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Figure 1. Template atlas from Glasser et al. (2016) (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). Overlapping ROIs (in blue) were defined as the common brain regions that were significantly present in their respective literatures, while a single DMN-specific region (7m, in red) was identified from a permutation analysis comparing these literatures."}
+```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Template atlas from Glasser et al. (2016) (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). DMN regions defined by Yeo et al. (2011) in blue, which encompass areas of considerable overlap between DMN and SV. Literature-specific regions (7m in yellow and s32 in red) were identified from a permutation analysis comparing these literatures."}
 # Change to inflated eventually
 include_graphics("./Images/ROIS3.png")
 ```
 
-```{r Template partition (Fig. 2), out.width="50%", fig.align = "center", fig.cap = "Figure 2. Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."}
+```{r Template partition (Fig. 2), out.width="50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."}
 include_graphics("./Images/FB_FV_example.png")
 ```
 
-``` {r Partition comparison: all 2 (Fig. 4), fig.align="center", out.width = "40%", fig.cap = "Figure 4. Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. PCC is well aligned across individuals, while mPFC shows clear topographical heterogeneity.", echo=FALSE, message = FALSE}
+``` {r Partition comparison: all 2 (Fig. 4), fig.align="center", out.width = "40%", fig.cap = "Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. PCC is better aligned across individuals than mPFC.", echo=FALSE, message = FALSE}
 par(xpd=T)
 corrplot(RI_PCC,
          is.corr = F, 
@@ -2444,7 +2427,7 @@ mtext(expression(bold("PCC")), side = 1, line = 4, at = par("usr")[1]+0.18*diff(
 
 ```
 
-``` {r Stability per subject: PCC vs mPFC (Fig 10), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 10. ARI between each window and the original pattern for PCC and mPFC separately (left), and the mean per-subject ARI for the whole group (middle). Regardless of the mean ARI, standard deviation remained low for both regions (right).", echo=FALSE, message = FALSE}
+``` {r Stability per subject: PCC vs mPFC (Fig 5), fig.align="center", fig.width=5, fig.height=3, fig.cap = "MEan agreement between partitions from each sliding window and the map produced with the whole data per subject, for mPFC and PCC separately (left), and the distribution of standard deviations along the time series per subject (right). There was strong (at least 50% after adjusting for chance) and stable agreement in both regions, but higher for PCC.", echo=FALSE, message = FALSE}
 
 # # plots
 # SC_PCCPFC_plot <- ggplot(data = SC_PCC)
@@ -2480,7 +2463,7 @@ grid.arrange(SC_PCCPFC_mean_plot, SC_PCCPFC_sd_plot, ncol = 2)
 
 ```
 
-``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 11), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 11. Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines denote each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
+``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 6), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines display each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
 # Fiedler Vector x proportion of times a vertex was affiliated with DMN
 SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
   geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
@@ -2493,12 +2476,12 @@ SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
 SC_FVvPDMN_plot
 ```
 
-```{r Thresholded maps (Fig 6), out.width = "100%", fig.align = "center", fig.cap= "Figure 6. A: Thresholded Fiedler vector maps for subject 100307 (top), and its binarized form (bottom). Values that did not meet the threshold were set to zero on the Fiedler vector, and 0.5 on the binarized maps (giving rise to a third community of high-variability vertices). B: Spatial mean of the binarized maps across all participants, indicating the proportion of DMN affiliations per vertex in our sample. This aggregate map shows the common organizational principle of the DMN and non-DMN communities, while also pinpointing the relatively high level of variability in mPFC."}
+```{r Thresholded maps (Fig 7), out.width = "100%", fig.align = "center", fig.cap= "A: Thresholded Fiedler vector maps for subject 100307 (top), and its binarized form (bottom). Values that did not meet the threshold were set to zero on the Fiedler vector, and 0.5 on the binarized maps (giving rise to a third community of high-variability vertices). B: Spatial mean of the binarized maps across all participants, indicating the proportion of DMN affiliations per vertex in our sample. This aggregate map shows the common organizational principle of the DMN and non-DMN communities, while also pinpointing the relatively high level of variability in mPFC."}
 # Change to inflated eventually
 include_graphics("./Images/thresholded.png")
 ```
 
-``` {r Partition comparison: halves (Fig. 5), fig.align="center", out.width = "60%", fig.cap = "Figure 5. Similarity matrices for 10 example participants showing pattern agreement across days for the whole partition (left), and for PCC and mPFC separately (right). These figures show high agreement within (but not between) subjects, with mPFC again showing significant variability.", echo=FALSE, message = FALSE}
+``` {r Partition comparison: halves (Fig. 8), fig.align="center", out.width = "60%", fig.cap = "Similarity matrices for 10 example participants showing pattern agreement across days for the whole brain (left), and for PCC and mPFC separately (right). These figures show high agreement within (but not between) subjects, with mPFC again showing higher heterogeneity in the group.", echo=FALSE, message = FALSE}
 # plots
 par(mfrow=c(1,2))
 corrplot(RI_all_between_halves_plot, 
@@ -2540,7 +2523,7 @@ mtext(expression(bold("mPFC")), line = -0.15, at = par("usr")[1]+0.8*diff(par("u
 mtext(expression(bold("PCC")), side = 1, line = 0.6, at = par("usr")[1]+0.09*diff(par("usr")[1:2]), col = "steelblue4")
 ```
 
-``` {r Partition comparison: halves ratios (Fig. 6), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 6. mPFC displays higher within-subject agreement than between subjeccts, as evidenced by a high within/between subject mean ARI. PCC also shows some level of topographical idiosyncrasy (ratio > 1), but significantly lower than mPFC.", echo=FALSE, message = FALSE}
+``` {r Partition comparison: halves ratios (Fig. 9), fig.align="center", fig.width=3, fig.height=3, fig.cap = "mPFC yields higher within-subject agreement than between subjects, as evidenced by a high within/between subject mean ARI. PCC also shows some level of topographical idiosyncrasy (ratio > 1), but significantly lower than mPFC.", echo=FALSE, message = FALSE}
 # plot
 ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) + 
   geom_boxplot(show.legend = F) +
@@ -2551,7 +2534,7 @@ ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) +
   theme_classic(base_size = 14)
 ```
 
-``` {r Partition comparison: session similarity matrices (Fig. 7), fig.align="center", out.width = "60%", fig.cap = "Figure 7. Similarity matrices showing pattern agreement across sessions for the whole partition (left), and for PCC and mPFC separately (right) (10 example subjects). The pattern from the daily analysis is preserved, with marked individuality for mPFC, but not PCC.", echo=FALSE, message = FALSE}
+``` {r Partition comparison: session similarity matrices (Fig. 10), fig.align="center", out.width = "60%", fig.cap = "Similarity matrices showing pattern agreement across sessions for the whole brain (left), and for PCC and mPFC separately (right), for the same 10 example subjects. The general pattern from the daily analysis is preserved, with marked individuality for mPFC and PCC, but higher for the former.", echo=FALSE, message = FALSE}
 # plot
 par(mfrow=c(1,2))
 corrplot(RI_all_between_sess_plot, 
@@ -2600,7 +2583,7 @@ mtext(expression(bold("mPFC")), line = 0, at = par("usr")[1]+0.8*diff(par("usr")
 mtext(expression(bold("PCC")), side = 1, line = 1, at = par("usr")[1]+0.09*diff(par("usr")[1:2]), col = "steelblue4")
 ```
 
-``` {r Partition comparison: session ratios (Fig. 8), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 8. Whole group ratio between within- and between-subject ARI for mPFC and PCC based on sessions. Consistent with the daily analysis, both regions show idiosyncrasy, with mPFC being significantly more subject-specific.", echo=FALSE, message = FALSE}
+``` {r Partition comparison: session ratios (Fig. 11), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Whole group ratio between within- and between-subject ARI for mPFC and PCC based on sessions. Consistent with the daily analysis, both regions show idiosyncrasy, with mPFC being significantly more subject-specific.", echo=FALSE, message = FALSE}
 ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) + 
   geom_boxplot(show.legend = F) +
   scale_fill_manual(values = Cols[seq(2)]) + 
@@ -2610,7 +2593,7 @@ ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) +
   theme_classic(base_size = 14)
 ```
 
-``` {r Noise Effects: tSNR Comparison (Fig. 12), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 12. Mean tSNR for mPFC and PCC across participants. This measure was derived from the minimally preprocessed fMRI data from the HCP, and thus shows the base level of reltive noise in each region.", echo=FALSE, message = FALSE}
+``` {r Noise Effects: tSNR Comparison (Fig. 12), fig.align="center", fig.width=3, fig.height=3, fig.cap = "WEIRD: Mean tSNR for mPFC and PCC across participants. This measure was derived from the minimally preprocessed fMRI data from the HCP, and thus shows the base level of reltive noise in each region.", echo=FALSE, message = FALSE}
 # Plot the mPFC SNR vs PCC SNR for each subject (one figure containing all subjects)
 snrmeanComp_plot <- ggplot(data = SNR_meanComp$Values, aes(Region, SNR, fill = Region)) +
   geom_boxplot(show.legend = F) +
@@ -2621,11 +2604,13 @@ snrmeanComp_plot <- ggplot(data = SNR_meanComp$Values, aes(Region, SNR, fill = R
 snrmeanComp_plot
 ```
 
-``` {r Noise Effects: Mean R-sqd mPFC and PCC (Fig. 13 UPDATE IN TEXT FROM THIS FIG ON), fig.align="center", fig.width=6, fig.height=4, fig.cap = "Figure 13. Differences in mean R-squared values for each region per participant. The figure shows that PCC vertices tend to be more coupled with the overall dynamics of DMN across subjects.", echo=FALSE, message = FALSE}
+<!--
+``` {r Noise Effects: Mean R-sqd mPFC and PCC (Fig. 13), fig.align="center", fig.width=6, fig.height=4, fig.cap = "Differences in mean R-squared values for each region per participant. The figure shows that PCC vertices tend to be more coupled with the overall dynamics of DMN across subjects.", echo=FALSE, message = FALSE}
 #v4
 ```
+-->
 
-``` {r Noise Effects: R-sqd vs tSNR (Fig. 14), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Figure 14. Vertex tSNR values across all subjects are correlated with their position along the z-axis in mPFC, with vmPFC showing the lowest tSNR (left). However, R-square values do not show this strong relationship (right), suggesting that the coupling of each vertex is not necessarily influenced by signal noise.", echo=FALSE, message = FALSE}
+``` {r Noise Effects: R-sqd vs tSNR (Fig. 13), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Vertex tSNR values across all subjects are correlated with their position along the z-axis, with vmPFC showing the lowest tSNR (left). However, R-square values do not show this strong relationship (right), suggesting that the coupling of each vertex is not necessarily influenced by signal noise.", echo=FALSE, message = FALSE}
 # grid.arrange(v6, v7, ncol = 2)
 # par(mfrow = c(1,2))
 # smoothScatter(allVariance[allVariance$Region == "mPFC",]$Rsquared, allVariance[allVariance$Region == "mPFC",]$tempZ,
@@ -2655,7 +2640,7 @@ s2 <- ggplot(data = mPFCVariance, aes(Rsquared, tempZ)) +
 grid.arrange(s1, s2, ncol = 2)
 ```
 
-``` {r Correlation vs community detection (Fig. 15), fig.align="center", fig.width = 4, fig.height = 4, fig.cap = "Figure 15. Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector (10 example subjects). The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector.", echo=FALSE, message = FALSE}
+``` {r Correlation vs community detection (Fig. 14), fig.align="center", fig.width = 4, fig.height = 4, fig.cap = "Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector. There is high agreement within method (diagonal quadrants), but both methods suggest similar partitions (off diagonal quadrants).", echo=FALSE, message = FALSE}
 Foo <- "Fighters"
 corrplot(allHalfCombs, 
          #title = "Comparing All Community and Correlation mPFC Partitions \n Across All Subjects",
@@ -2682,7 +2667,7 @@ mtext(expression(bold("Correlation")), side = 2, line = 2, at = par("usr")[1]+0.
 
 ```
 
-``` {r Correlation vs community detection: comparison plot (Fig. 16), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Figure 16. Day 1 vs Day 2 oefficients of spatial correlations for every method, as well as between methods. Community detection through spectral partitioning provides the most stable inter-day estimates, even though both methods show good level of agreement.", echo=FALSE, message = FALSE}
+``` {r Correlation vs community detection: comparison plot (Fig. 15), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Day 1 vs Day 2 correlation coefficients for every method, as well as between methods. Community detection through spectral partitioning provides the most stable inter-day estimates, even though both methods show good level of agreement.", echo=FALSE, message = FALSE}
 # Day 1 vs Day 2 Spatial Correlation Comparison
 prepostComp_plot <- ggplot(data = prepostComp, aes(Approach, Correlation, fill = Approach)) +
   geom_boxplot(show.legend = F) +
@@ -2694,9 +2679,11 @@ prepostComp_plot
 
 ```
 
-```{r B&B comparison (Figure 15), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between maps produced by seed-based connectivity based on Braga & Buckner's (2017) criterion, and those produced by spectral partitioning. Networks A and B were produced by carefully selecting a DLPFC seed (pointed by the green arrows). In each case, our DMN and non-DMN networks map remarkably well to their proposed functional organization."}
+```{r BandB comparison (Figure 16), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between maps produced by seed-based connectivity based on Braga and Buckner's (2017) criterion, and those produced by spectral partitioning. Networks A and B were produced by carefully selecting a DLPFC seed (pointed by the green arrows). In each case, our DMN and non-DMN networks map remarkably well to their proposed functional organization."}
+
 # Change to inflated eventually
 include_graphics("./Images/braga_comparison.png")
+
 ```
 
 \newpage
