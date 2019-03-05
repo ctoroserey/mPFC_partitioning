@@ -50,11 +50,10 @@ timeSeries_sess <- lapply(temp, fread, header=F)
 timeSeries_sess <- lapply(timeSeries_sess, data.matrix)
 
 # load the resulting mapping and produce indices for both nets (thresholded at the group mean of |0.01|)
-# mComm2 is our DMN
 map <- read_csv(paste("../For_HCP/", SubjID, "_FiedlerVec_dataforCifti.txt", sep=""), col_names = F, col_types = cols())[[1]]
 map[map == -1] <- 0
-comm1 <- which(map < -0.01)
-comm2 <- which(map > 0.01)
+comm1 <- which(map < -0.01) # non DMN
+comm2 <- which(map > 0.01) # DMN
 
 # get the mean of the communities per session
 mComm1 <- lapply(timeSeries_sess, mean.activity, mask = comm1)
@@ -74,10 +73,12 @@ ccfData <- tibble(Session = rep(factor(sessLbls, levels = sessLbls), each = nrow
 # plot all dists
 ccfCI <- quantile(bootstrap(ccfData$CCF), 0.975)
 p <- ggplot(aes(Lag, CCF, group = Session, color = Session), data = ccfData) +
-  geom_line(size = 1.5) +
-  geom_hline(yintercept = 0, size = 1, color = "#D9541A") +
+  geom_line(size = 1) +
+  geom_point(size = 1.3) +
+  geom_hline(yintercept = 0, color = "#D9541A") +
   geom_hline(yintercept = abs(ccfCI), linetype = "dashed", color = "#D9541A") +
   geom_hline(yintercept = abs(ccfCI) * -1, linetype = "dashed", color = "#D9541A") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "#D9541A") +
   scale_color_manual(values = Cols) +
   theme_classic()
 
@@ -88,7 +89,11 @@ ggsave(paste("../CCF_", SubjID, ".png", sep = ""),
        p,
        device = "png")
 
-print("Cross-correlation plots for each session produced.")
+# write a csv file with the ccf per session
+rownames(t1) <- t2[, 1]
+write.table(t1, paste("../CCF_", SubjID, "_vals.csv", sep = ""), col.names = F, sep = ",")
+
+print("Cross-correlation plots and files produced for each session")
 
 
 
