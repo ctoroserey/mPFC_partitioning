@@ -1,11 +1,11 @@
 ---
-title: 'Individual heterogeneity in the functional topography of the DMN in medial prefrontal cortex '
+title: 'Individual heterogeneity in the functional topography of the medial prefrontal cortex'
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
   pdf_document: 
     keep_tex: true
   word_document: 
-    reference_docx: Style_reference.docx
+    reference_docx: Style_reference_draft.docx
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -992,6 +992,7 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
   # MOI: measure of interest (usually the binarized Fiedler vector). If a vector, compares across algorithms per subject
   # 
   # Index: VI for variation of information, RI for the adjusted rand index, Cor for a Pearson correlation
+  # ARI can yield many decimals, thus inflating the ratios. I thus round at 4 decimals.
   
   # NOTES:
   # you can apply pairwise comparisons with outer: outer(tempList,tempList,FUN = Vectorize(arandi, SIMPLIFY = FALSE, USE.NAMES = FALSE))
@@ -1029,6 +1030,9 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
         }
       }
     }
+    
+    indexMatrix <- round(indexMatrix, digits = 4)
+    
   } else {
     indexMatrix <- data.frame(SubjID = as.character(subjList),
                               Index = rep(0, nSubjects))
@@ -1046,9 +1050,12 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
         indexMatrix$Index[subj] <- cor(Data[[subj]][, MOI_indx[1]], Data[[subj]][, MOI_indx[2]])
       }
     }
+    
+    indexMatrix$Index <- round(indexMatrix$Index, digits = 4)
+  
   }
   
-  return(indexMatrix)
+  return(indexMatrix) 
   
 }
 
@@ -1164,9 +1171,9 @@ Corresponding author:
 
 \newpage
 
-## Abstract (**will be expanded once we decide what to keep**)
+## Abstract 
 
-  Valuation effects are consistently observed in medial prefrontal and posterior cingulate cortex (mPFC and PCC). The spatial extent of these effects is mostly indistinguishable from the default mode network (DMN) in existing meta-analyses. However, little is known about how valuation effects fit within the broader functional architecture of mPFC and PCC, or whether that architecture is consistent or idiosyncratic across individuals. Here we complement a meta-analysis with fMRI-based graph theoretic approaches to subdivide mPFC and PCC at the single-subject level. Our results suggest the functional topography of mPFC has substantial variability across individuals. This highlights the potential usefulness of estimating brain effects at the individual level in this region, and points to limitations of aggregative methods such as coordinate-based meta-analysis in determining whether valuation and DMN effects emerge from common or separable brain systems. Our approach shows promise in addressing this issue through future manipulations of valuation.
+  There is extensive topographic overlap between cortical regions associated with the default-mode network (DMN) and regions that exhibit effects of subjective value during decision making. The two sets of functional effects involve common regions of medial prefrontal cortex (mPFC) and posterior cingulate cortex (PCC). At the same time, differences between the two sets of activation patterns are apparent at the aggregated meta-analytic level, and further individual-level functional subdivisions might be obscured by group averaging. Here we used cortical surface-based meta-analysis to identify a parcel in human PCC that was preferentially implicated in DMN effects. We then used resting-state fMRI data and a data-driven network analysis algorithm, spectral partitioning, to divide mPFC/PCC into distinct cortical communities in individual participants (n=100 from the Human Connectome Project). We labeled the communities "DMN" and "non-DMN" on the basis of their overlap with the meta-analytically identified PCC region. The spectral partitioning algorithm efficiently identified individual-level cortical subdivisions that were reliable over time and across test-retest days using moderate amounts of fMRI data (30 min per day). The topography of the identified subdivisions differed across individuals, and the degree of inter-individual variability was greater in mPFC than in PCC. Our results will aid future task-based fMRI studies in identifying functionally specific cortical subdivisions, and suggest it would be premature to infer that different task manipulations call upon shared cognitive processes solely because they evoke overlapping activation in mPFC at the group or meta-analytic level. 
 
 **Keywords:** brain networks; DMN; individual differences
 
@@ -1174,13 +1181,15 @@ Corresponding author:
 
 ## Introduction
 
-  Studies of decision making have consistently associated activity in ventromedial prefrontal cortex (vmPFC) with the subjective value (SV) assigned to decision outcomes [@Bartra2013; @Clithero2014; @Hiser2018; @Kable2007; @Levy2011]. However, the distributed cortical valuation system also includes posterior cingulate (PCC) and more extended mPFC regions, which collectively show significant spatial overlap with the default mode network (DMN) along the medial wall [@Fox2005; @Laird2009; @Yeo2011]. This shared neural coverage has prompted the question of whether (and to what extent) these two systems can be dissociated.
+  Human medial prefrontal cortex (mPFC) and posterior cingulate cortex (PCC) are jointly associated with a large set of disparate cognitive functions [@Hiser2018; @Kragel2018], including the subjective value (SV) assigned to decision outcomes [@Bartra2013; @Clithero2014; @Hiser2018; @Kable2007; @Levy2011]. Choice-related activity in these areas has shown significant spatial overlap with the default mode network (DMN) along the medial wall [@Fox2005; @Laird2009; @Yeo2011], prompting the question of whether (and to what extent) these two systems can be dissociated.
 
-  Previous meta-analytic work has provided important insights on the psychological phenomena attributed to mPFC subregions. Independent coordinate-based meta-analyses have found mirroring spatial coverage in mPFC for valuation [@Bartra2013] and DMN [@Laird2009]. Whole brain analyses have shown that while more ventral mPFC regions are increasingly associated with reward-related elements of decision making, vmPFC strongly coactivates with DMN regions across the literature, with no clear topographical distinction between these phenomena [@DelaVega2016]. More focused meta-analytic work aimed at disentangling DMN from subjective value has determined that these systems are inseparable within mPFC [@Acikalin2017]. These findings highlight the multifaceted embedding of psychological constructs in subregions of mPFC, and suggest that DMN and valuation might indeed be subserved by the same neural system. However, recent activation-based meta-analytic work has demonstrated considerable domain specificity in this area [@Kragel2018]. While informative, a key limitation in distinguishing constructs through this approach is that meta-analyses often rely on information derived from group-averaged data. Averaging has traditionally been beneficial in identifying tendencies in brain function and organization when faced with short scanning sessions per subject. However, it has been shown that mPFC is subject to considerable idiosyncratic cortical folding [@Zilles2013] and inter-subject functional variability [@Mueller2013a], thus making group-averaging studies difficult to interpret. 
+  Previous coordinate-based meta-analyses have identified topographically similar activation patterns in mPFC for valuation [@Bartra2013; @Clithero2014] and default-mode task deactivation [@Laird2009]. More focused meta-analytic work aimed at disentangling DMN from subjective value has determined that these systems are inseparable within mPFC [@Acikalin2017], even though there is clear divergence in other areas (ventral striatum in favor of SV, with DMN exclusively on sections of PCC and the temporoparietal junction). These findings highlight the multifaceted embedding of psychological constructs in subregions of mPFC, and suggest that DMN and valuation might indeed be subserved by the same neural system. 
   
-  Seeking to remedy these shortcomings, recent work has prescribed relevance to the analysis of single subjects in fMRI. Individual analyses of fMRI data have identified idiosyncratic, reliable, and valid functional organization that would otherwise be blurred in aggregative estimations [@Laumann2015; @Gordon2017; @Gratton2018a]. Furthermore, subject-specific network arrangements have been found to predict behavioral characteristics [@Kong2018]. In regards to DMN, the trend of individualized analyses has led to finer idiosyncratic subdivisions of the DMN through careful selection of seed-based functional connectivity [@Braga2017]. It is thus possible that the indisitinguishable overlap of DMN and valuation effects can be attributed to a lack of spatial resolution that is better understood at the individual level. With this in mind, an important first step in disentangling these phenomena would be to determine the degree of topological heterogeneity of the DMN present within mPFC.
+  A key limitation of group-averaging and meta-analysis is that individual-specific functionl subdivisions can be overlooked. Averaging has traditionally been beneficial in identifying tendencies in brain function and organization when faced with short scanning sessions per subject. However, it has been shown that mPFC is subject to considerable idiosyncratic cortical folding [@Zilles2013; @Mackey2014] and inter-subject functional variability [@Mueller2013a], thus making group-averaging studies difficult to interpret. 
+  
+  Seeking to remedy these shortcomings, recent work has prescribed relevance to the analysis of single subjects in fMRI. Individual analyses of fMRI data have identified idiosyncratic, reliable, and valid functional organization that would otherwise be blurred in aggregative estimations [@Laumann2015; @Gordon2017; @Gratton2018a; @Tobyne2018]. Furthermore, subject-specific network arrangements have been found to predict behavioral characteristics [@Kong2018]. In regards to DMN, the trend of individualized analyses has led to finer idiosyncratic subdivisions of the DMN through careful selection of seed-based functional connectivity [@Braga2017]. It is thus possible that the indistinguishable overlap of DMN and valuation effects can be attributed to a lack of spatial resolution that is better understood at the individual level. With this in mind, an important first step in disentangling these phenomena would be to determine the degree of topological heterogeneity of the DMN present within mPFC.
 
-  A persistent issue in analyzing mPFC in individuals is the various factors inducing signal dropout in its more ventral segments [@Logothetis]. As such, there is value in examining all possible sources of covariation that compose DMN, instead of estimating topologies one seed at a time. Connectome-based analyses of resting state functional connectivity (rsFC) have been fruitful in characterizing individualized functional topologies that match task-induced activity [@Gordon2017; @Laumann2015; @Tobyne2017]. A popular approach to analyze these connectomes is to rely on graph theoretic methods, which provide an organic avenue to understand brain network dynamics [@Bassett2018a]. From these, community detection algorithms have been successfully utilized to section brain networks into cohesive substructures [@Garcia2017]. Such communities represent clusters of network nodes that are more connected with each other than with the rest of the network [@Fortunato2016]. Among the algorithms used to estimate these communities, modularity has been widely effective in subsectioning brain networks into multiple groups [@Garcia2017]. However, in attempting to refine the DMN topology at the individual level, dividing these regions into what belongs and does not belong to DMN makes dissection through spectral partitioning (SP) a more valuable option. In short, spectral partitioning performs eigenvalue decompositon on an adjusted form of a correlation matrix (Laplacian matrix). The resulting eigenvector corresponding to the second-lowest eigenvalue (i.e. the Fiedler vector) provides values to divide the network into a positive and a negative community [@Fiedler1975; @Belkin2003]. SP has recently been used to characterize the posterior-anterior functional gradient of the insula using rsfMRI data [@Tian2018]. This method can thus capture a refined group of brain regions that more cohesively share activation patterns during rest.
+  [i'm here] As such, there is value in examining all possible sources of covariation that compose DMN. Connectome-based analyses of resting state functional connectivity (rsFC) have been fruitful in characterizing individualized functional topologies that match task-induced activity [@Gordon2017; @Laumann2015; @Tobyne2017]. A popular approach to analyze these connectomes is to rely on graph theoretic methods, which provide an organic avenue to understand brain network dynamics [@Bassett2018a]. From these, community detection algorithms have been successfully utilized to section brain networks into cohesive substructures [@Garcia2017]. Such communities represent clusters of network nodes that are more connected with each other than with the rest of the network [@Fortunato2016]. Among the algorithms used to estimate these communities, modularity has been widely effective in subsectioning brain networks into multiple groups [@Garcia2017]. However, in attempting to refine the DMN topology at the individual level, dividing these regions into what belongs and does not belong to DMN makes dissection through spectral partitioning (SP) a more valuable option. In short, spectral partitioning performs eigenvalue decompositon on an adjusted form of a correlation matrix (Laplacian matrix). The resulting eigenvector corresponding to the second-lowest eigenvalue (i.e. the Fiedler vector) provides values to divide the network into a positive and a negative community [@Fiedler1975; @Belkin2003]. SP has recently been used to characterize the posterior-anterior functional gradient of the insula using rsfMRI data [@Tian2018]. This method can thus capture a refined group of brain regions that more cohesively share activation patterns during rest.
 
   In this study, we aimed to subsection regions commonly attributed to both DMN and subjective value into subject-specific DMN and non-DMN partitions, quantifying the degree of topographical heterogeneity present in this network within and across individuals. We do this by capitalizing on the respective strengths of meta-analytic and subject-specific analyses of brain data. First, we define regions of interest (ROI) by identifying overlapping activation throughout the literature projected to an established brain atlas [@Glasser2016]. We then produce a rsFC networks of all the surface vertices within these ROIs for each of 100 individual resting state dataset from the Human Connectome Project (HCP)[@VanEssen2012], and estimate the extent of DMN coverage through spectral partitioning. Our results suggest the intrinsic functional topography of mPFC and PCC can be reliably partitioned into at least two idiosyncratically arranged networks that can be obscured when averaged across subjects. These sub-networks resembled an organizational scheme recently observed in a handful of subjects (Braga & Buckner, 2017). We also show that graph theoretic tools are capable of identifying these sub-networks in isolated individuals. Our work highlights the usefulness of estimating brain effects at the individual level in these regions, and points to limitations of aggregative methods in determining the degree of neural overlap between DMN and valuation.
 
@@ -1234,12 +1243,6 @@ We then estimated the level of agreement between scans taken across days (i.e. p
 BOLD signal recording through fMRI in mPFC in general, and vmPFC in particular, suffers from technical issues that promote signal dropout [@Logothetis]. Even though we made attempts to remove clear sources of noise through data preprocessing and stability analyses, it was still important to quantify the remaining potential influence of structured noise in our findings. We examined this through two complementary steps. First, we computed the temporal signal-to-noise ratio (tSNR) of all the vertices in the ROIs from the HCP minimally preprocessed data (i.e. prior to the complementary denoising described in the "fMRI Data" section). We compared the mean tSNR for each region across subjects through a permutation analysis (all permutation analyses involved 5000 iterations). In addition, we compared the mean tSNR between mPFC and PCC through a permutation analysis for each separate subject, and report the percentage of subjects who had a significantly lower mean tSNR in mPFC (post FDR correction for multiple testing [@Benjamini2001]). 
 
 Next, we examined whether a vertex's affiliation to the DMN community was driven by its tSNR. First, we computed the mean time series of each subject's DMN community. We then performed a mass univariate analysis to predict the average time series from each individual vertice's time series. The resulting $R^2$ values from each model were extracted to determine the total variance of the mean DMN time series explained by each individual vertex. If high noise in more ventral mPFC areas is affecting our results, we should see a gradient of $R^2$ values that decreases ventrally across subjects. We then spatially correlated (Pearson) each subject's $R^2$ and tSNR values to determine whether low tSNR negatively impacted the individual contribution among vertices, and report the mean correlation across subjects. 
-
-### *Anatomical Correspondence*
-
-Finally, we examined whether each idiosyncrasies in functional topology corresponded to outstanding anatomical features. To do this, we correlated each subject's thresholded Fiedler vector values with their respective cortical thickness, cortical folding, and myelin density (quantified as the ratio of T1 to T2 magnitudes at every given vertex). These simple correlations are aimed to provide a coarse sense of this possible relationship, which can be studied in depth in the future.  
-
-\bigskip
 
 ### *Seed-based FC vs Community Detection*
 
@@ -1322,22 +1325,22 @@ mPFC_only <- c("_a24_",
                "_s32_",
                "_p24_")
 
-# # Permutation analysis
-# # Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
-# # Load the coordinates as studies in a list, because for the contrast the studies are permuted
-# # Use table(unlist(list)) to get the counts in that case
-# setwd('./DEC')
-# templist <- dir()
-# studyList_sv <- lapply(templist, readr::read_csv, col_names = F)
-# 
-# setwd('../DMN/')
-# templist <- dir()
-# studyList_dmn <- lapply(templist, readr::read_csv, col_names = F)
-# 
-# # For each permutation, reassign the study labels, maintaining the original number of studies per condition
-# allStudies <- c(studyList_sv, studyList_dmn)
-# nPerms <- 1000 # stored statistics are computed @ 5k, but it's computationally demanding to do that.
-# nullDist <- numeric()
+# Permutation analysis
+# Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
+# Load the coordinates as studies in a list, because for the contrast the studies are permuted
+# Use table(unlist(list)) to get the counts in that case
+setwd('./POS')
+templist <- dir()
+studyList_sv <- lapply(templist, readr::read_csv, col_names = F)
+
+setwd('../DMN/')
+templist <- dir()
+studyList_dmn <- lapply(templist, readr::read_csv, col_names = F)
+
+# For each permutation, reassign the study labels, maintaining the original number of studies per condition
+allStudies <- c(studyList_sv, studyList_dmn)
+nPerms <- 1000 # stored statistics are computed @ 5k, but it's computationally demanding to do that.
+nullDist <- numeric()
 # 
 # for (i in seq(nPerms)) {
 # 
@@ -2156,8 +2159,8 @@ We can see again that the ratios for mPFC were higher than those of PCC (permuta
 SNR_vs_Flex <- sapply(Summaries, function(data) cor(data$varCoeff, data$slideFlexibility))
 
 # Compare SNR between PCC and mPFC per subject after thresholding (this filtering is relevant here because we aren't using ARI anymore)
-tempComm_PCC <- lapply(tempComm_PCC, function(data) {data %>% filter(FiedlerVec != 0)})
-tempComm_PFC <- lapply(tempComm_PFC, function(data) {data %>% filter(FiedlerVec != 0)}) 
+tempComm_PCC <- lapply(tempComm_PCC, filter, FiedlerVec != 0)
+tempComm_PFC <- lapply(tempComm_PFC, filter, FiedlerVec != 0) 
 SNR_PCCvsPFC_perm <- sapply(seq_along(tempComm_PCC), function(x) {permute(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)$Pval})
 SNR_PCCvsPFC_perm <- p.adjust(SNR_PCCvsPFC_perm, method = "BY")
 SNR_PCCvsPFC_ES <- sapply(seq_along(tempComm_PCC), function(x) {cohenD(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)})
@@ -2270,29 +2273,10 @@ To further interrogate the potential effect of noise in our results, we computed
 Given this trend, we asked whether there is a "gradient of noise" along the z-axis of mPFC, such that more ventral vertices would both be noisier and explain the least amount of DMN variance. Here we found that while $R^2$ are somewhat correlated with dorsal-ventral placement across subjects (mean *r* = `r round(mean(noiseCors$ZvR2), digits = 2)`; SD = `r round(sd(noiseCors$ZvR2), digits = 2)`), there is no clear relationship with the z-axis across subjects (Figure 12). Specifically, low $R^2$ are evenly distributed along this axis, denoting a degree of orthogonality between these features. Conversely, tSNR showed a strong linear relationship with the position of the vertex along this axis (mean *r* = `r round(mean(noiseCors$ZvtSNR), digits = 2)`; SD = `r round(sd(noiseCors$ZvtSNR), digits = 2)`). These results contextualize the degree of synchrony of mPFC vertices in terms of potential noise. While still an important factor, it is unlikely that the degree of within-subject pattern stability observed here could be due mostly to highly structured mPFC noise.
 
 
-### *Structural correspondence*
-
-``` {r Structural correspondence, fig.align="center", echo=FALSE, message = FALSE}
-# Mean of correlations
-meanMyelin <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Myelin)}))
-meanCurv <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Curvature)}))
-meanThick <- mean(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Thickness)}))
-
-# SD 
-sdMyelin <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Myelin)}))
-sdCurv <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Curvature)}))
-sdThick <- sd(sapply(Summaries, function(data) {cor(data$FiedlerVec, data$Thickness)}))
-```
-
-We coarsely examined whether these idiosyncratic topographical arrangements were defined by anatomical brain features. To do so, we correlated each subject's Fiedler vector with their respective structural MRI data. On average, we found that the Fiedler vector is uncorrelated with myelin density (mean *r* = `r round(meanMyelin, digits = 2)`; SD = `r round(sdMyelin, digits = 2)`), cortical folding (mean *r* = `r round(meanCurv, digits = 2)`; SD = `r round(sdCurv, digits = 2)`), and surface thickness (mean *r* = `r round(meanThick, digits = 2)`; SD = `r round(sdThick, digits = 2)`). While these findings point at an orthogonality between structure and functional organization, they resonate with previous work that found no strong matches between intersubject functional variability and cortical thickness, and low variability in sulcal depth within DMN [@Mueller2013a].
-
-\bigskip
-
 ### *Correlation vs community detection in mPFC*
 
 ``` {r Correlation vs community detection: compute, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 ## Between halves analysis for correlation and communities (mPFC only)
-Foo <- "Fighters"
 unthreshComm_PFC_halves_plot <- lapply(seq_along(unthreshComm_PFC_halves_plot), function(x) cbind(unthreshComm_PFC_halves_plot[[x]], Correlation_halves_plot[[x]]))
 D1 <- unthreshComm_PFC_halves_plot
 D2 <- lapply(unthreshComm_PFC_halves_plot, function(data) transform(data, V1 = FiedlerVec)) # the comparison function can only take 1 column name for this stuff
@@ -2320,7 +2304,6 @@ allHalfCombs <- comparePartitions(Data = Data, MOI = "V1", nSubjects = 40, Index
 # 
 
 # Compare correlation with community approach on mPFC
-Foo <- "Fighters"
 tempComm <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(unthreshComm_PFC_halves[[x]]$FiedlerVec, unthreshComm_PFC_halves[[x+1]]$FiedlerVec))
 tempCor <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(Correlation_halves[[x]]$V1, Correlation_halves[[x+1]]$V1))
 tempBoth <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(unthreshComm_PFC_halves[[x]]$FiedlerVec, Correlation_halves[[x+1]]$V1))
