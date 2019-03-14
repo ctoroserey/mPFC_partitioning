@@ -1217,7 +1217,7 @@ Data initially underwent the HCP minimally preprocessing pipeline [@Glasser2013]
 
 ### *Within-ROI Network Definition*
 
-All network analyses were performed using the igraph package [@Csardi2006] in R 3.4.1 [@R Development Core Team]. To establish each subject's network, we selected all the vertices contained within the ROIs (n = 4,801 per subject) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, where surface vertices were the nodes, and edges the correlations among all of them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. We report the proportion of retained edges (i.e. network density) in the Results section. As part of the evaluation step, we produced these network weight matrices (and the community detection outlined below) at four levels: 1) for each run separately (1200 TRs each); 2) for the concatenated time series for the two runs on the same day (2400 TRs total); 3) for each subject's full dataset (4800 TRs total); and 4) on each step of a sliding window analysis (see Partition Evaluation for more details).
+All network analyses were performed using the igraph package [@G.2006] in R 3.4.1 [@RTeam2018]. To establish each subject's network, we selected all the vertices contained within the ROIs (n = 4,801 per subject) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, where surface vertices were the nodes, and edges the correlations among all of them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. We report the proportion of retained edges (i.e. network density) in the Results section. As part of the evaluation step, we produced these network weight matrices (and the community detection outlined below) at four levels: 1) for each run separately (1200 TRs each); 2) for the concatenated time series for the two runs on the same day (2400 TRs total); 3) for each subject's full dataset (4800 TRs total); and 4) on each step of a sliding window analysis (see Partition Evaluation for more details).
 
 ### *Community Detection*
 
@@ -1330,62 +1330,62 @@ nRegions_dmn <- do.call(rbind, studyList_dmn) %>% count
 nRegions_all <- left_join(nRegions_sv, nRegions_dmn, by = "X1")
   
 # For each permutation, reassign the study labels, maintaining the original number of studies per condition
-allStudies <- c(studyList_sv, studyList_dmn)
-nPerms <- 100 # reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
-nullDist <- numeric()
-
-for (i in seq(nPerms)) {
-
-  # provide feedback only if requested (if TRUE, it will show up in the doc or pdf file)
-  if (feedback) {
-    if(i %in% c(nPerms*0.25, nPerms*0.5, nPerms*0.75, nPerms*0.95)) {print(paste("Completed", i/nPerms, "percent of the permutation..."))}
-  }
-  
-  # Sample all the studies and divide into 2 groups
-  randPerm <- sample(allStudies)
-  tmpSV <- randPerm[seq(length(studyList_sv))]
-  tmpDMN <- randPerm[-seq(length(studyList_sv))]
-
-  # Count the number of times each region was reported in the literature
-  tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
-                      SV = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpSV))}),
-                      DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpDMN))}))
-
-  # Perform the prop test for each pair and get the max chi-squared stat
-  nullDist[i] <- max(
-                  apply(tmpDF[,2:3], 1, function(data) {
-                    prop.test(data, c(length(tmpSV), length(tmpDMN)))$statistic
-                    }
-                  ), na.rm = T)
-
-}
-
-# Now do the same for the actual data, to see how it compares to the null dist
-tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
-                    SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
-                    DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
-                    propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
-                    propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
-
-# Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
-tmpDF$Chi_squared <- apply(tmpDF[,2:3], 1, function(data) {
-  round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
-  })
-tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
-
-# ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
-significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
+# allStudies <- c(studyList_sv, studyList_dmn)
+# nPerms <- 100 # reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
+# nullDist <- numeric()
+# 
+# for (i in seq(nPerms)) {
+# 
+#   # provide feedback only if requested (if TRUE, it will show up in the doc or pdf file)
+#   if (feedback) {
+#     if(i %in% c(nPerms*0.25, nPerms*0.5, nPerms*0.75, nPerms*0.95)) {print(paste("Completed", i/nPerms, "percent of the permutation..."))}
+#   }
+#   
+#   # Sample all the studies and divide into 2 groups
+#   randPerm <- sample(allStudies)
+#   tmpSV <- randPerm[seq(length(studyList_sv))]
+#   tmpDMN <- randPerm[-seq(length(studyList_sv))]
+# 
+#   # Count the number of times each region was reported in the literature
+#   tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
+#                       SV = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpSV))}),
+#                       DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpDMN))}))
+# 
+#   # Perform the prop test for each pair and get the max chi-squared stat
+#   nullDist[i] <- max(
+#                   apply(tmpDF[,2:3], 1, function(data) {
+#                     prop.test(data, c(length(tmpSV), length(tmpDMN)))$statistic
+#                     }
+#                   ), na.rm = T)
+# 
+# }
+# 
+# # Now do the same for the actual data, to see how it compares to the null dist
+# tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
+#                     SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
+#                     DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
+#                     propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
+#                     propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
+# 
+# # Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
+# tmpDF$Chi_squared <- apply(tmpDF[,2:3], 1, function(data) {
+#   round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
+#   })
+# tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
+# 
+# # ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
+# significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
   
 # results!
 # 25 bilateral (prportion sv = L: 0.42, R: 0.39; proportion DMN = L: 0.18, R: 0.16, Chi = L: 12.91, R: 12.83, both p = 0.01)
 # 7m bilateral (prportion sv = L: 0.17, R: 0.15; proportion DMN = L: 0.36, R: 0.40, Chi = L: 10.07, R: 18.89, L: p < 0.05, R: p < 0.0001)
 # v23 right (proportion sv = 0.16; proportion DMN = 0.36, chi = 11.51, p = 0.01)
-# null 95th-q chi <- 10.04 (varies; this was done ith 100 but resembles the 5k one)
+# null 95th-q chi <- 9.11 (varies; this was done ith 100 but resembles the 5k one)
 
 ```
 
 
-``` {r ROI computation, echo=FALSE, message = FALSE}
+``` {r ROI computation (overlapping: old), echo=FALSE, message = FALSE}
 #TO DO: CHANGE THIS SO IT'S BASED ON STUDYLIST_SV/DMN, COUNTING JUST LIKE IN THE PERMUTATION ABOVE
 ## ROI definition
 # First, load the raw count csv files
@@ -1447,7 +1447,7 @@ valLbls <- gsub("_","", valLbls)
 
 We performed a coordinate-based meta-analysis to identify unique standard regions across DMN and SV literatures. Volumetric coordinates from a set of DMN and SV studies were projected onto a cortical surface, and mapped to a multimodal cortical parcellation [@Glasser2016] to produce a list of brain areas reported per study. The 45 areas considered were limited to the medial portion of the default mode and limbic networks, as defined by the Yeo et al.[-@Yeo2011] 17 network parcellation. Unique areas were identified by first permuting the affiliation of each study (i.e. DMN or SV) to create a distribution of Chi-squared statistics based on the comparison of the number of reports per area between literatures (see Methods for details). This putative null distribution was used to identify regions more often reported in either literature. 
 
-Figure 1 shows the resulting ROIs from these analyses. The 95th percentile of the permuted Chi-squared distribution was `r quantile(nullDist, 0.95)`. Based on this threshold, area 7m was the only one to show unique affiliation to DMN (observed $\chi^2$ = 8.45, *p* < 0.05), while SV was uniquely represented by area 25 (observed $\chi^2$ = 11.95, *p* < 0.01). The purpose of these supra-threshold areas was to identify the most-likely affiliation of the two communities in our partitions by their coverage of these regions. However, area 25 sits in close proximity to the ventral striatum, which is reliably active in SV studies [@Bartra2013]. Considering that our projection from volumetric spheres to the cortex might have attributed striatal reports to this region, we decided not to use it as a marker of SV. We also chose not to use area v23 due to its unilateral significance. Instead, we only rely on area 7m to demarcate the DMN community.
+Figure 1 shows the proportion of times every parcel was reported in each literature, as well as the resulting significant ROIs from the permutation. The 95th percentile of the permuted Chi-squared distribution was 9.11. Based on this threshold, area 7m was the only one to show unique bilateral affiliation to DMN (Left: observed $\chi^2$ = 10.07, *p* = 0.034; Right: observed $\chi^2$ = 18.89, *p* < 0.0001), while SV was uniquely represented bilaterally by area 25 (Left: observed $\chi^2$ = 12.91, *p* = 0.014; Right: observed $\chi^2$ = 12.83, *p* = 0.014). The purpose of these supra-threshold areas was to identify the most-likely affiliation of the two communities in our partitions by their coverage of these regions. However, area 25 sits in close proximity to the ventral striatum, which is reliably active in SV studies [@Bartra2013]. Considering that our projection from volumetric spheres to the cortex might have attributed striatal reports to this region, we decided not to use it as a marker of SV. We also chose not to use area v23 due to its unilateral significance (Right: observed $\chi^2$ = 11.51, *p* = 0.018). Instead, we only rely on area 7m to demarcate the DMN community.
 
 <!--
 Using each literature's mean number of reports per area as the null probability (DMN = `r BD`, 95% CI [`r BDquant`]; SV = `r BV`, 95% CI [`r BVquant`]), one-way chi-squared tests of proportions were performed to identify regions that were significantly present in their respective literatures. The resulting lists were used to identify the set of common brain areas. Unique areas were then determined by permuting the affiliation of each study (i.e. DMN or SV) to create a null distribution of chi-squared statistics, which as used to identify regions more often reported in either literature. Importantly, we chose to examine these areas bilaterally, even if their significance was present in only one hemisphere.
@@ -1587,7 +1587,7 @@ ecdfALL <- allSummaries %>%
 
 ```
 
-This comparison showed that both clustering methods were in high agreement across subjects (mean = `r round(mean(RI_all_within$Index), digits = 2)` sd = `r round(sd(RI_all_within$Index), digits = 2)`). Modularity showed a tendency to produce additional communities (median = `r median(nModularity)`, max = `r max(nModularity)`). However, these communities encompassed a small number of vertices (median = `r median(modularityCounts_extra, na.rm = T)`, IQR = `r IQR(modularityCounts_extra, na.rm = T)`) compared to the principal two (median = `r median(modularityCounts_two, na.rm = T)`, IQR = `r IQR(modularityCounts_two, na.rm = T)`), suggesting that the overall network is composed of two main communities. In addition, the estimation of the optimal number of cuts based on the rank of the first non-zero eigenvalue (see "Partition evaluation" for details) showed that `r prcntDissection` percent of the individual networks are best partitioned into two communities.   
+This comparison showed that both clustering methods were in high agreement across subjects (mean = `r round(mean(RI_all_within$Index), digits = 2)`, SD = `r round(sd(RI_all_within$Index), digits = 2)`). Modularity showed a tendency to produce additional communities (median = `r median(nModularity)`, max = `r max(nModularity)`). However, these communities encompassed a small number of vertices (median = `r median(modularityCounts_extra, na.rm = T)`, IQR = `r IQR(modularityCounts_extra, na.rm = T)`) compared to the principal two (median = `r median(modularityCounts_two, na.rm = T)`, IQR = `r IQR(modularityCounts_two, na.rm = T)`), suggesting that the overall network is composed of two main communities. In addition, the estimation of the optimal number of cuts based on the rank of the first non-zero eigenvalue (see "Partition evaluation" for details) showed that `r prcntDissection` percent of the individual networks are best partitioned into two communities.   
 
 Next, we examined how similar the partitions were across subjects by computing the ARI between every pair of subjects, and found that there was fairly low agreement overall (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). However, qualitative inspection of the brain community topologies showed good alignment for PCC, with a topologically similar mPFC pattern that shifted topographically across subjects. To quantify this heterogeneity in mPFC, we performed the same analysis for each region separately (Figure 3). Indeed, this analysis showed that the functional topology of PCC is better maintained across subjects (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`), than mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`)(paired permutation, *p* = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`). 
 
@@ -2166,12 +2166,6 @@ We can see again that the ratios for mPFC were higher than those of PCC (permuta
 *NOTE: this part seems less relevant now that we are thresholding the partitions. Might be better to add to sliding window section*
 
 ``` {r Noise Effects: tSNR Comparison, echo=FALSE, message = FALSE, cache = TRUE}
-## Putative steps to analyze the SNR of the full time series (PCC vs mPFC)
-# Flexibility vs SNR
-# Are vertices with lower SNR switching communities more often?
-# This is pointless if thresholded maps are used, since flexibility is bound to be super low 
-SNR_vs_Flex <- sapply(Summaries, function(data) cor(data$varCoeff, data$slideFlexibility))
-
 # Compare SNR between PCC and mPFC per subject after thresholding (this filtering is relevant here because we aren't using ARI anymore)
 tempComm_PCC <- lapply(tempComm_PCC, filter, FiedlerVec != 0)
 tempComm_PFC <- lapply(tempComm_PFC, filter, FiedlerVec != 0) 
@@ -2195,6 +2189,45 @@ Even though our findings point to a stable representation of each subject's uniq
 setwd('./Variance/')
 temp <- list.files()
 Variance <- lapply(temp, read.csv)
+
+### new stuff
+# append the Rsquared values onto the current summaries
+# unfortunately this only counts on the DMN community
+appendVar <- lapply(seq(nSubj), function(subj) {left_join(Summaries[[subj]], Variance[[subj]], by = "Vertex")})
+
+# correlate tSNR with Rsquared before and after thresholds
+snrR2_cors <- list()
+
+snrR2_cors$pre_thresh <- sapply(appendVar, function(data) {
+  data %>% 
+    filter(!is.na(Rsquared)) %>%
+    select(varCoeff, Rsquared) %>%
+    cor(.$varCoeff)
+})[2, ]
+
+snrR2_cors$post_thresh <- sapply(appendVar, function(data) {
+  data %>% 
+    filter(!is.na(Rsquared), FiedlerBinary != 0.5) %>%
+    select(varCoeff, Rsquared) %>%
+    cor(.$varCoeff)
+})[2, ]
+
+# next get the mean tSNR of PCC and mPFC before/after
+snrR2_means <- list()
+snrR2_means <- sapply(appendVar, function(data) {
+  data %>% 
+    filter(!is.na(Rsquared)) %>%
+    mutate(region = ifelse(z > 0, "mPFC", "PCC")) %>%
+    group_by(region) %>% 
+    summarize(mean_tsnr = mean(varCoeff)) %>%
+    ungroup()
+})
+
+
+### end new stuff
+
+
+
 
 ### Grab some of the other measures from the overall summary
 for (i in seq(nSubj)) {
