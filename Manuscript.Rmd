@@ -1847,6 +1847,96 @@ Tstats <- sapply(All_ttests, "[[", "statistic")
 
 The average percentage of stable vertices per subject was `r round(mean(prcntStable[prcntStable < 1]), digits = 2)` (SD = `r round(sd(prcntStable[prcntStable < 1]), digits = 2)`). With these thresholded partitions, we recomputed the overall similarity of their functional organization across participants. Compared to before, there was even less overall agreement of the full maps among individuals (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). The same was true for both PCC (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`) and mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) separately, although the significance of the differences between these areas was preserved (paired permutation, *p* = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`). Figure 6 (right) shows the spatial average of the thresholded binarized partitions across all participants, denoting the proportion of times a vertex was affiliated with the DMN community. This summary conveys a common organizational principle for both communities, but also highlights the considerable variability across individuals in mPFC compared to PCC.
 
+``` {r Noise Effects: Per-subject Fiedler by R-sqd, fig.align="center", fig.width=3, fig.height=3, fig.cap = "FORMER Figure 13. Fiedler vector values are linearly related to the total variance explained by each vertex with respect to the mean DMN time series.", echo=FALSE, message = FALSE, cache = TRUE}
+setwd('./Variance/')
+temp <- list.files()
+Variance <- lapply(temp, read.csv)
+
+## append the Rsquared values onto the current summaries
+# unfortunately this only counts on the DMN community
+appendVar <- lapply(seq(nSubj), function(subj) {left_join(Summaries[[subj]], Variance[[subj]], by = "Vertex")})
+
+## correlate tSNR with Rsquared before and after thresholds
+snrR2_cors <- list()
+
+snrR2_cors$pre_thresh <- lapply(appendVar, function(data) {
+  data %>% 
+    filter(!is.na(Rsquared)) %>%
+    mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
+    group_by(region) %>%
+    dplyr::summarise(correlation = cor(varCoeff, Rsquared)) %>%
+    ungroup()
+}) %>% reduce(left_join, by = "region") 
+
+snrR2_cors$post_thresh <- lapply(appendVar, function(data) {
+  data %>% 
+    filter(!is.na(Rsquared), FiedlerBinary != 0.5) %>%
+    mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
+    group_by(region) %>%
+    dplyr::summarise(correlation = cor(varCoeff, Rsquared)) %>%
+    ungroup()
+}) %>% reduce(left_join, by = "region")
+
+## next get the mean tSNR of PCC and mPFC before/after thresholding
+# the first piece of code gets each subject's mean tSNR per region, and reduces to a single matrix
+# the second one is similar, but filtering out vertices that didn't meet the threshold
+# the third one applies summary stats to each list to create a summary table
+snrR2_means <- list()
+
+snrR2_means$pre_thresh <- lapply(appendVar, function(data) {
+  data %>% 
+    mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
+    group_by(region) %>% 
+    dplyr::summarise(mean_tsnr = mean(varCoeff)) %>%
+    ungroup()
+}) %>% reduce(left_join, by = "region")
+
+snrR2_means$post_thresh <- lapply(appendVar, function(data) {
+  data %>% 
+    filter(FiedlerBinary != 0.5) %>%
+    mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
+    group_by(region) %>% 
+    dplyr::summarise(mean_tsnr = mean(varCoeff)) %>%
+    ungroup()
+}) %>% reduce(left_join, by = "region")
+
+# and compute summary stats on each 
+snrR2_means$overall <- sapply(snrR2_means, function(x) {
+  c(rowMeans(x[, -1]), apply(x[, -1], 1, sd))
+})
+rownames(snrR2_means$overall) <- c("mPFC_mean", "PCC_mean", "mPFC_SD", "PCC_SD")
+
+# permutation pre vs post
+tsnrPermute_mPFC <- permute(as.numeric(snrR2_means$pre_thresh[1, -1]), as.numeric(snrR2_means$post_thresh[1, -1]), paired = T)
+tsnrPermute_PCC <- permute(as.numeric(snrR2_means$pre_thresh[2, -1]), as.numeric(snrR2_means$post_thresh[2, -1]), paired = T)
+
+# effect size pre vs post
+tsnrCohen_mPFC <- CohenD(as.numeric(snrR2_means$post_thresh[1, -1]), as.numeric(snrR2_means$pre_thresh[1, -1]))
+tsnrCohen_PCC <- CohenD(as.numeric(snrR2_means$post_thresh[2, -1]), as.numeric(snrR2_means$pre_thresh[2, -1]))
+
+# ##### old
+# 
+# # Compare SNR between PCC and mPFC per subject after thresholding (this filtering is relevant here because we aren't using ARI anymore)
+# tempComm_PCC <- lapply(tempComm_PCC, filter, FiedlerVec != 0)
+# tempComm_PFC <- lapply(tempComm_PFC, filter, FiedlerVec != 0) 
+# SNR_PCCvsPFC_perm <- sapply(seq_along(tempComm_PCC), function(x) {permute(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)$Pval})
+# SNR_PCCvsPFC_perm <- p.adjust(SNR_PCCvsPFC_perm, method = "BY")
+# SNR_PCCvsPFC_ES <- sapply(seq_along(tempComm_PCC), function(x) {cohenD(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)})
+# prcntSig <- mean(SNR_PCCvsPFC_perm < 0.05) * 100
+# 
+# # Get the mean SNR for each region and compare overall levels 
+# SNR_meanPCC <- sapply(tempComm_PCC, function(data) {mean(data$varCoeff)})
+# SNR_meanPFC <- sapply(tempComm_PFC, function(data) {mean(data$varCoeff)})
+# SNR_meanComp <- list(Values = data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nSubj)), SNR = c(SNR_meanPCC, SNR_meanPFC)),
+#                      Comparison = permute(SNR_meanPCC, SNR_meanPFC)$Pval,
+#                      ES = cohenD(SNR_meanPCC, SNR_meanPFC))
+# rm(SNR_meanPCC, SNR_meanPFC)
+
+
+```
+
+To discard the possibility that the higher inter-subject variability in mPFC was driven by retaining vertices with lower signal quality, we compared the mean temporal signal to noise ratio (tSNR) for each region pre and post thresholding. We used subject time series that were not demeaned, but were otherwise equivalent to the data originally used. Paired permutation analyses (5000 iterations) showed that the mean tSNR in mPFC actually significantly increased post-thresholding across subjects (Pre: mean = `r snrR2_means$overall[1, 1]`, SD = `r snrR2_means$overall[3, 1]`; Post: mean = `r snrR2_means$overall[1, 2]`, SD = `r snrR2_means$overall[3, 2]`; paired permutation p-value = `r tsnrPermute_mPFC$Pval`, Cohen's D = `r tsnrCohen_mPFC[1]`), whereas the signal quality in PCC was preserved (Pre: mean = `r snrR2_means$overall[2, 1]`, SD = `r snrR2_means$overall[4, 1]`; Post: mean = `r snrR2_means$overall[2, 2]`, SD = `r snrR2_means$overall[4, 2]`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r tsnrCohen_PCC[1]`). 
+
 ### *Partition Comparison: Day 1 vs Day 2*
 
 The relative high variability seen in the aggregate map could be due to residual noise that was not captured by the sliding window analysis, or variations in the functional organization of mPFC across days. While the sliding window analysis suggested that these partitions are stable, many of the windows contained data from both days. A stricter evaluation of subject-specificity would be to compare every subject's subdivisions produced by data from each day separately. If the variability that we observed was truly due to having captured an individual's unique organization, day to day ARI values should be consistently higher within- than between-subjects. Figure 7 shows pairwise comparisons among ten example subjects for whole brain (left), as well as for PCC and mPFC separately (right). 
@@ -2161,165 +2251,6 @@ Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 
 We can see again that the ratios for mPFC were higher than those of PCC (permutation,*p*= `r Sess_mPFCvPCC_permTest$Pval`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1. This further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that such patterns can be identified with relatively small amounts of data in spite of a reduction in the estimates. 
 
-### *Potential Noise Effects*
-
-*NOTE: this part seems less relevant now that we are thresholding the partitions. Might be better to add to sliding window section*
-
-``` {r Noise Effects: tSNR Comparison, echo=FALSE, message = FALSE, cache = TRUE}
-# Compare SNR between PCC and mPFC per subject after thresholding (this filtering is relevant here because we aren't using ARI anymore)
-tempComm_PCC <- lapply(tempComm_PCC, filter, FiedlerVec != 0)
-tempComm_PFC <- lapply(tempComm_PFC, filter, FiedlerVec != 0) 
-SNR_PCCvsPFC_perm <- sapply(seq_along(tempComm_PCC), function(x) {permute(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)$Pval})
-SNR_PCCvsPFC_perm <- p.adjust(SNR_PCCvsPFC_perm, method = "BY")
-SNR_PCCvsPFC_ES <- sapply(seq_along(tempComm_PCC), function(x) {cohenD(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)})
-prcntSig <- mean(SNR_PCCvsPFC_perm < 0.05) * 100
-
-# Get the mean SNR for each region and compare overall levels 
-SNR_meanPCC <- sapply(tempComm_PCC, function(data) {mean(data$varCoeff)})
-SNR_meanPFC <- sapply(tempComm_PFC, function(data) {mean(data$varCoeff)})
-SNR_meanComp <- list(Values = data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nSubj)), SNR = c(SNR_meanPCC, SNR_meanPFC)),
-                     Comparison = permute(SNR_meanPCC, SNR_meanPFC)$Pval,
-                     ES = cohenD(SNR_meanPCC, SNR_meanPFC))
-rm(SNR_meanPCC, SNR_meanPFC)
-```
-
-Even though our findings point to a stable representation of each subject's unique DMN organization, it is still possible that they were driven by considerable levels of signal noise often found in mPFC (its ventral segment in particular). To account for any residual noise, we computed the temporal signal to noise ratio (tSNR) for each vertex in each subject's minimally preprocessed fMRI data (i.e. mean of each vertex's time series over its standard deviation). Note that we did this for the vertices that survived the threshold. The tSNR of all vertices were averaged per region and subject (Figure 11), which showed that mPFC (mean = `r round(mean(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="mPFC"]), digits = 2)`) and PCC (mean = `r round(mean(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SNR_meanComp$Values$SNR[SNR_meanComp$Values$Region=="PCC"]), digits = 2)`) had similar tSNR (permutation, *p* = `r SNR_meanComp$Comparison`, Cohen's D = `r round(SNR_meanComp$ES, digits = 2)`). To more precisely examine this difference, we performed subject-wise comparisons of the tSNR values of all vertices between PCC and mPFC (5000 iterations each). About `r round(prcntSig, digits = 2)` percent of the comparisons proved significant at alpha = 0.05 (FDR corrected), but these differences had low effect sizes (mean Cohen's D = `r round(mean(SNR_PCCvsPFC_ES), digits = 2)`). These findings further confirm that the idiosyncrasies observed in these areas (and in mPFC in particular) are not a function of measurement noise.
-
-``` {r Noise Effects: Per-subject Fiedler by R-sqd, fig.align="center", fig.width=3, fig.height=3, fig.cap = "FORMER Figure 13. Fiedler vector values are linearly related to the total variance explained by each vertex with respect to the mean DMN time series.", echo=FALSE, message = FALSE, cache = TRUE}
-setwd('./Variance/')
-temp <- list.files()
-Variance <- lapply(temp, read.csv)
-
-### new stuff
-# append the Rsquared values onto the current summaries
-# unfortunately this only counts on the DMN community
-appendVar <- lapply(seq(nSubj), function(subj) {left_join(Summaries[[subj]], Variance[[subj]], by = "Vertex")})
-
-# correlate tSNR with Rsquared before and after thresholds
-snrR2_cors <- list()
-
-snrR2_cors$pre_thresh <- sapply(appendVar, function(data) {
-  data %>% 
-    filter(!is.na(Rsquared)) %>%
-    select(varCoeff, Rsquared) %>%
-    cor(.$varCoeff)
-})[2, ]
-
-snrR2_cors$post_thresh <- sapply(appendVar, function(data) {
-  data %>% 
-    filter(!is.na(Rsquared), FiedlerBinary != 0.5) %>%
-    select(varCoeff, Rsquared) %>%
-    cor(.$varCoeff)
-})[2, ]
-
-# next get the mean tSNR of PCC and mPFC before/after
-snrR2_means <- list()
-snrR2_means <- sapply(appendVar, function(data) {
-  data %>% 
-    filter(!is.na(Rsquared)) %>%
-    mutate(region = ifelse(z > 0, "mPFC", "PCC")) %>%
-    group_by(region) %>% 
-    summarize(mean_tsnr = mean(varCoeff)) %>%
-    ungroup()
-})
-
-
-### end new stuff
-
-
-
-
-### Grab some of the other measures from the overall summary
-for (i in seq(nSubj)) {
-  tempIndex <- Summaries[[i]]$Vertex %in% Variance[[i]]$Vertex
-  Variance[[i]]$SubjID <- rep(subjList[i], nrow(Variance[[i]]))
-  Variance[[i]]$FiedlerVec <- Summaries[[i]]$FiedlerVec[tempIndex]
-  Variance[[i]]$Flexibility <- Summaries[[i]]$slideFlexibility[tempIndex]
-  Variance[[i]]$propDMN <- Summaries[[i]]$slidePropDMN[tempIndex]
-  Variance[[i]]$varCoeff <- Summaries[[i]]$varCoeff[tempIndex]
-  Variance[[i]]$Region <- ifelse(Variance[[i]]$tempY < 0, "PCC", "mPFC")
-}
-
-
-# let's put everyone's data together and filter out according to the threshold
-allVariance <- do.call(rbind, Variance) %>%
-                  filter(FiedlerVec != 0)
-
-# get the mean and SE of the R-squared values per subject/region
-allVariance_sumarized <- aggregate(allVariance$Rsquared ~ allVariance$SubjID + allVariance$Region, FUN = 'mean')
-colnames(allVariance_sumarized) <- list("SubjID", "Region", "meanRsquared")
-allVariance_sumarized$SEM <- aggregate(allVariance$Rsquared ~ allVariance$SubjID + allVariance$Region, FUN = function(data) {sd(data)/sqrt(length(data))})[ , 3]
-
-# Create a new data frame with values restricted to mPFC (for plotting and further stats)
-mPFCVariance <- allVariance[allVariance$Region == "mPFC", ]
-
-# Get the correlations between Z-axis, R2, and tSNR for every subject (to take mean and SD in text)
-# I just came up with this, so the code should be made more parsimonious in the future (like, why bind and then split...?)
-tempSubj <- split(mPFCVariance, f = mPFCVariance$SubjID)
-# Get the correlation coefficients
-noiseCors <- data.frame(R2vtSNR = sapply(tempSubj, function(data) {cor(data$Rsquared, data$varCoeff)}),
-                        ZvtSNR = sapply(tempSubj, function(data) {cor(data$tempZ, data$varCoeff)}),
-                        ZvR2 = sapply(tempSubj, function(data) {cor(data$tempZ, data$Rsquared)}))
-rm(tempSubj)
-
-# plot
-# There is a strong linear relationship between the Fiedler vector and the R-squared values
-# These match perfectly on the brain when inspected qualitatively
-v1 <- ggplot(data = allVariance) + 
-  geom_smooth(aes(FiedlerVec, Rsquared, group = SubjID), fill = "gray70", color = "gray30", show.legend = F) + 
-  labs(x = "Fiedler Vector Values", y = "R-Squared Values") + 
-  theme_classic()
-
-# The lower the R-squared, the more likely it is for nodes to change affiliation throughout time
-v2 <- qplot(data = allVariance, Rsquared, Flexibility, color = SubjID, fill = SubjID, geom = "smooth") + theme_classic()
-
-# And of course (given the relationship with the Fiedler vector), there's a sigmoidal relationship between R-squared vals and proportion of DMN affiliation
-# only showing the upper side of the sigmoid here, as these values are restricted to the DMN community
-v3 <- qplot(data = allVariance, Rsquared, propDMN, color = SubjID, fill = SubjID, geom = "smooth") + theme_classic()
-
-# Finally, it's worth comparing the R-squared values between PCC and mPFC
-# The intuition is that the variance explained by the community might be lower for mPFC given its noise
-# And the answer is: mPFC yields significantly lower R-squares per subject and overall, as expected.
-# To formally compare this (and given the binomial distribution of R-squares in mPFC), I report the Cohen's D per subject for PCC vs mPFC
-v4 <- ggplot(data = allVariance_sumarized, aes(x = SubjID, y = meanRsquared, group = Region, color = Region)) +
-  geom_point(show.legend = F) +
-  geom_line(show.legend = F) +
-  geom_errorbar(aes(ymin = meanRsquared - SEM, ymax = meanRsquared + SEM)) +
-  scale_color_manual(values = Cols[seq(2)]) +
-  ylim(0,0.5) +
-  labs(x = "Subject", y = "Mean R-squared") +
-  theme_classic() +
-  theme(axis.text.x = element_blank()) 
-
-v5 <- qplot(data = allVariance, Region, Rsquared, fill = Region, geom = "boxplot") + theme_classic()
-Rsq_PCCvsPFC_Wilcox <- sapply(Variance, function(data) {wilcox.test(data$Rsquared[data$Region == "PCC"], data$Rsquared[data$Region == "mPFC"])$p.value})
-Rsq_PCCvsPFC_Wilcox <- p.adjust(Rsq_PCCvsPFC_Wilcox, method = "BY")
-prcntSig <- (sum(Rsq_PCCvsPFC_Wilcox < 0.05) / nSubj) * 100
-Rsq_PCCvsPFC_ES <- sapply(Variance, function(data) {cohenD(data$Rsquared[data$Region == "PCC"], data$Rsquared[data$Region == "mPFC"])})
-
-# This begs the question of a "gradient of noise" along the z-axis on mPFC
-# Not really, but the coefficient of variation derived from minimally preprocessed data does show a strong trend
-# Namely, the more ventral, the lower the SNR
-# v6 <- ggplot(data = allVariance, aes(Rsquared, tempZ, fill = Region)) +
-#         geom_point(color = "black", pch = 21, alpha = 0.1) + 
-#         scale_fill_manual(values = Cols[seq(2)]) +
-#         theme_classic()
-# v7 <- ggplot(data = allVariance, aes(varCoeff, tempZ, fill = Region)) +
-#         geom_point(color = "black", pch = 21) + 
-#         scale_fill_manual(values = Cols[seq(2)]) +
-#         theme_classic()
-
-#v1
-
-
-
-```
-
-To further interrogate the potential effect of noise in our results, we computed the variance explained by activity from each DMN vertex on the mean time series of the DMN community. If the signal quality issues persisted after preprocessing the data, we expected that noisy vertices would have the least explicative power on the activity of the DMN community as a whole. This also implied lower $R^2$ values for mPFC. Indeed, we found that for each subject, $R^2$ values tended to be higher for PCC (`r prcntSig` percent of Wilcoxon ranksum tests across subjects had *p* values < 0.001; mean Cohen's D = `r round(mean(Rsq_PCCvsPFC_ES), digits = 2)`). These results suggest that, overall, vertices in mPFC tended to be less in synchrony with the activity of the DMN community as a whole. Furthermore, the level of tSNR showed a moderate correlation with $R^2$ values across participants (mean *r* = `r round(mean(noiseCors$R2vtSNR), digits = 2)`; SD = `r round(sd(noiseCors$R2vtSNR), digits = 2)`), meaning that noisier vertices were less in synchrony with the general activity of the DMN.
-
-Given this trend, we asked whether there is a "gradient of noise" along the z-axis of mPFC, such that more ventral vertices would both be noisier and explain the least amount of DMN variance. Here we found that while $R^2$ are somewhat correlated with dorsal-ventral placement across subjects (mean *r* = `r round(mean(noiseCors$ZvR2), digits = 2)`; SD = `r round(sd(noiseCors$ZvR2), digits = 2)`), there is no clear relationship with the z-axis across subjects (Figure 12). Specifically, low $R^2$ are evenly distributed along this axis, denoting a degree of orthogonality between these features. Conversely, tSNR showed a strong linear relationship with the position of the vertex along this axis (mean *r* = `r round(mean(noiseCors$ZvtSNR), digits = 2)`; SD = `r round(sd(noiseCors$ZvtSNR), digits = 2)`). These results contextualize the degree of synchrony of mPFC vertices in terms of potential noise. While still an important factor, it is unlikely that the degree of within-subject pattern stability observed here could be due mostly to highly structured mPFC noise.
-
-
 ### *Correlation vs community detection in mPFC*
 
 ``` {r Correlation vs community detection: compute, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
@@ -2628,52 +2559,6 @@ ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) +
   theme_classic(base_size = 14)
 ```
 
-``` {r Noise Effects: tSNR Comparison (Fig. 12), fig.align="center", fig.width=3, fig.height=3, fig.cap = "WEIRD: Mean tSNR for mPFC and PCC across participants. This measure was derived from the minimally preprocessed fMRI data from the HCP, and thus shows the base level of reltive noise in each region.", echo=FALSE, message = FALSE}
-# Plot the mPFC SNR vs PCC SNR for each subject (one figure containing all subjects)
-snrmeanComp_plot <- ggplot(data = SNR_meanComp$Values, aes(Region, SNR, fill = Region)) +
-  geom_boxplot(show.legend = F) +
-  scale_fill_manual(values = Cols[seq(2)]) +
-  labs(x = "", y = "tSNR") +
-  theme(text = element_text(size=35)) +
-  theme_classic()
-snrmeanComp_plot
-```
-
-<!--
-``` {r Noise Effects: Mean R-sqd mPFC and PCC (Fig. 13), fig.align="center", fig.width=6, fig.height=4, fig.cap = "Differences in mean R-squared values for each region per participant. The figure shows that PCC vertices tend to be more coupled with the overall dynamics of DMN across subjects.", echo=FALSE, message = FALSE}
-#v4
-```
--->
-
-``` {r Noise Effects: R-sqd vs tSNR (Fig. 13), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Vertex tSNR values across all subjects are correlated with their position along the z-axis, with vmPFC showing the lowest tSNR (left). However, R-square values do not show this strong relationship (right), suggesting that the coupling of each vertex is not necessarily influenced by signal noise.", echo=FALSE, message = FALSE}
-# grid.arrange(v6, v7, ncol = 2)
-# par(mfrow = c(1,2))
-# smoothScatter(allVariance[allVariance$Region == "mPFC",]$Rsquared, allVariance[allVariance$Region == "mPFC",]$tempZ,
-#               xlab = "R-squared Value",
-#               ylab = "Z-Coordinate")
-# 
-# smoothScatter(allVariance[allVariance$Region == "mPFC",]$varCoeff, allVariance[allVariance$Region == "mPFC",]$tempZ,
-#               xlab = "Coefficient of Variation (SNR)",
-#               ylab = "")
-
-# ALTERNATIVE IDEA FOR A FIGURE: BRAIN MAPS WITH THESE VALUES. THAT SAID, R2 MAPS LOOK THE SAME AS FV ONES, SO...
-s1 <- ggplot(data = mPFCVariance, aes(varCoeff, tempZ)) +
-  geom_bin2d(bins = 250, show.legend = F) +
-  scale_fill_continuous(low = "grey30", high = "grey70") +
-  geom_density2d(color = Cols[2]) +
-  labs(x = "tSNR", y = "Z-Coordinate") +
-  theme_classic()
-
-s2 <- ggplot(data = mPFCVariance, aes(Rsquared, tempZ)) +
-  geom_bin2d(bins = 250, show.legend = F) +
-  scale_fill_continuous(low = "grey30", high = "grey70") +
-  geom_density2d(color = Cols[2]) +
-  labs(x = "R-squared value", y = "Z-Coordinate") +
-  xlim(c(0,1)) +
-  theme_classic()
-
-grid.arrange(s1, s2, ncol = 2)
-```
 
 ``` {r Correlation vs community detection (Fig. 14), fig.align="center", fig.width = 4, fig.height = 4, fig.cap = "Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector. There is high agreement within method (diagonal quadrants), but both methods suggest similar partitions (off diagonal quadrants).", echo=FALSE, message = FALSE}
 Foo <- "Fighters"
