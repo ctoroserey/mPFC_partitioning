@@ -2,10 +2,10 @@
 title: 'Individual heterogeneity in the functional topography of the default-mode network in medial prefrontal cortex'
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
-  word_document: 
-    reference_docx: Style_reference_draft.docx
   pdf_document: 
     keep_tex: true
+  word_document: 
+    reference_docx: Style_reference_draft.docx
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 
 ```{r Libraries and functions, include = FALSE, fig.align="center", fig.width=6, fig.height=4, echo=FALSE}
 
-Cols <- c("aquamarine4","#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
+Cols <- c("aquamarine4", "#D9541A", rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
 
 # In case I want to visualize stuff in the brain
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv')[,2:6]
@@ -2349,216 +2349,123 @@ include_graphics("./Images/method_figure.png")
 
 ## Figures
 
-```{r Meta-analysis ROIs (Fig. 1), out.width="50%", fig.align = "center", fig.cap= "Proportion of times each ROI was reported in each literature (top), as well as the common and unique brain regions associated with DMN and subjective value (bottom). DMN regions defined by Yeo et al. (2011) in blue, which encompass areas of considerable overlap between DMN and SV. Literature-specific regions (7m in yellow and 25 in red) were identified from a permutation analysis of chi-squared tests comparing these literatures."}
+```{r Meta-analysis ROIs (Fig. 1), out.width="50%", fig.align = "center", fig.cap= "A: Proportion of times each ROI was reported in each literature. B: common and unique brain regions associated with DMN and subjective value. DMN regions defined by Yeo et al. (2011) in blue, which encompass areas of considerable overlap between DMN and SV. Literature-specific regions (bilateral 7m and right v23 in yellow, and bilateral 25 in red) were identified from a permutation analysis of chi-squared tests comparing these literatures."}
 # Change to inflated eventually
 include_graphics("./Images/ROIS4.png")
 ```
 
-```{r Template partition (Fig. 2), out.width="50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m)."}
+```{r Template partition (Fig. 2), out.width="50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m, bordered)."}
 include_graphics("./Images/FB_FV_example.png")
 ```
 
-``` {r Partition comparison: all 2 (Fig. 4), fig.align="center", out.width = "40%", fig.cap = "Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. PCC is better aligned across individuals than mPFC.", echo=FALSE, message = FALSE}
-par(xpd = T)
-corrplot(RI_PCC,
-         is.corr = F, 
-         method = "color",
-         type = "lower", 
-         tl.pos = "n", 
-         tl.cex = 0.1, 
-         #cl.lim = c(0,1),
-         cl.length = 3,
-         #addgrid.col = "grey99",
-         cl.pos = "r",
-         mar = c(1,1,2,0))
-corrplot(RI_PFC, 
-         is.corr = F, 
-         method = "color", 
-         type = "upper", 
-         tl.pos = "n", 
-         tl.cex = 0.1,
-         cl.pos = "n",
-         #addgrid.col = "grey90",
-         mar = c(1,1,2,0), 
-         add = T)
-segments(0.5,0.5,0.5,100.5, lwd = 2)
-segments(0.5,0.5,100.5,0.5, lwd = 2)
-segments(0.5,100.5,100.5,100.5, lwd = 2)
-segments(100.5,0.5,100.5,100.5, lwd = 2)
-mtext(expression(bold("Subject Partitions")), line = 3)
-mtext(expression(bold("Subject Partitions")), side = 2, line = -0.8)
-mtext(expression(bold("mPFC")), line = 2, at = par("usr")[1]+0.73*diff(par("usr")[1:2]), col = "steelblue4")
-mtext(expression(bold("PCC")), side = 1, line = 4, at = par("usr")[1]+0.18*diff(par("usr")[1:2]), col = "steelblue4")
+``` {r Partition comparison: all 2 (Fig. 3), fig.align="center", out.width = "50%", fig.cap = "Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. PCC is better aligned across individuals than mPFC.", echo=FALSE, message = FALSE}
+# code to produce the plot
+# par(xpd = T)
+# corrplot(abs(RI_PCC), # absolute for display purposes only, as it avoids the couple of negative ARIs and evens out the color bar
+#          is.corr = F, 
+#          method = "color",
+#          type = "lower", 
+#          tl.pos = "n", 
+#          tl.cex = 0.1, 
+#          cl.lim = c(0,1),
+#          cl.length = 3,
+#          #addgrid.col = "grey99",
+#          cl.pos = "r",
+#          mar = c(1,1,2,0))
+# corrplot(RI_PFC, 
+#          is.corr = F, 
+#          method = "color", 
+#          type = "upper", 
+#          tl.pos = "n", 
+#          tl.cex = 0.1,
+#          cl.pos = "n",
+#          #addgrid.col = "grey90",
+#          mar = c(1,1,2,0), 
+#          add = T)
+# segments(0.5,0.5,0.5,100.5, lwd = 2)
+# segments(0.5,0.5,100.5,0.5, lwd = 2)
+# segments(0.5,100.5,100.5,100.5, lwd = 2)
+# segments(100.5,0.5,100.5,100.5, lwd = 2)
+# mtext(expression(bold("Subject Partitions")), line = 3)
+# mtext(expression(bold("Subject Partitions")), side = 2, line = -0.8)
+# mtext(expression(bold("mPFC")), line = 2, at = par("usr")[1]+0.73*diff(par("usr")[1:2]), col = "steelblue4")
+# mtext(expression(bold("PCC")), side = 1, line = 4, at = par("usr")[1]+0.18*diff(par("usr")[1:2]), col = "steelblue4")
 
+include_graphics("./Images/similarity_all.png")
 
 ```
 
-``` {r Stability per subject: PCC vs mPFC (Fig 5), fig.align="center", fig.width=5, fig.height=3, fig.cap = "Mean agreement between partitions from each sliding window and the map produced with the whole data per subject, for mPFC and PCC separately (left), and the distribution of standard deviations along the time series per subject (right). There was strong (at least 50 percent after adjusting for chance) and stable agreement in both regions, but higher for PCC.", echo=FALSE, message = FALSE}
-
-# # plots
-# SC_PCCPFC_plot <- ggplot(data = SC_PCC)
-# SC_PCCPFC_plot <- SC_PCCPFC_plot + geom_line(aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[2], alpha = 0.3, show.legend = F) +
-#   geom_smooth(aes(x = Window, y = Index), color = Cols[2], fill = Cols[2]) +
-#   ylim(0,1) + 
-#   labs(y = "ARI") +
-#   theme(text = element_text(size=35)) +
-#   geom_line(data = SC_PFC, aes(x = Window, y = Index, group = as.factor(SubjID)), color = Cols[1], alpha = 0.3, show.legend = F) +
-#   geom_smooth(data = SC_PFC, aes(x = Window, y = Index), color = Cols[1], fill = Cols[1]) +
+``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 5), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines display each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
+# code to generate plot
+# Fiedler Vector x proportion of times a vertex was affiliated with DMN
+# SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
+#   geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
+#   #geom_line(aes(FiedlerVec, FittedVals), alpha = 1, size = 3) +
+#   geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 3) +
+#   labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
+#   scale_y_continuous(limits = c(0,1)) +
 #   theme_classic()
 
-
-SC_PCCPFC_mean_plot <- ggplot(data = SC_PCCPFC_summary, aes(x=as.factor(Region), y=Index, fill = as.factor(Region))) + 
-  geom_boxplot(show.legend = F) + 
-  scale_fill_manual(values = Cols[seq(2)]) +
-  ylim(0,1) +
-  labs(x = "", y = "") +
-  theme(text = element_text(size=35), axis.text.y = element_text(size=40)) +
-  theme_classic() 
-
-
-SC_PCCPFC_sd_plot <- ggplot(data = SC_PCCPFC_summary, aes(x=SD, fill = as.factor(Region))) + 
-  scale_fill_manual(values = Cols[seq(2)]) +
-  geom_density(color = "black", alpha = 0.7, show.legend = F) + 
-  xlim(0,1) +
-  labs(x = "SD") +
-  theme(text = element_text(size=35)) +
-  theme_classic() 
-
-
-grid.arrange(SC_PCCPFC_mean_plot, SC_PCCPFC_sd_plot, ncol = 2)
+include_graphics("./Images/SW_props.png")
 
 ```
 
-``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 6), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines display each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
-# Fiedler Vector x proportion of times a vertex was affiliated with DMN
-SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
-  geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
-  #geom_line(aes(FiedlerVec, FittedVals), alpha = 1, size = 3) +
-  geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 3) +
-  labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
-  scale_y_continuous(limits = c(0,1)) +
-  theme_classic()
+\bigskip
 
-SC_FVvPDMN_plot
-```
+```{r Thresholded maps (Fig 7), out.width = "50%", fig.align = "center", fig.cap= "A: Thresholded Fiedler vector maps for subject 100307 (top), and its binarized form (bottom). Values that did not meet the threshold were set to zero on the Fiedler vector, and 0.5 on the binarized maps (giving rise to a third community of high-variability vertices). B: Spatial mean of the binarized maps across all participants, indicating the proportion of DMN affiliations per vertex in our sample. This aggregate map shows the common organizational principle of the DMN and non-DMN communities, while also pinpointing the relatively high level of variability in mPFC."}
 
-```{r Thresholded maps (Fig 7), out.width = "100%", fig.align = "center", fig.cap= "A: Thresholded Fiedler vector maps for subject 100307 (top), and its binarized form (bottom). Values that did not meet the threshold were set to zero on the Fiedler vector, and 0.5 on the binarized maps (giving rise to a third community of high-variability vertices). B: Spatial mean of the binarized maps across all participants, indicating the proportion of DMN affiliations per vertex in our sample. This aggregate map shows the common organizational principle of the DMN and non-DMN communities, while also pinpointing the relatively high level of variability in mPFC."}
-# Change to inflated eventually
 include_graphics("./Images/thresholded.png")
+
 ```
 
-``` {r Partition comparison: halves (Fig. 8), fig.align="center", out.width = "60%", fig.cap = "Similarity matrices for 10 example participants showing pattern agreement across days for the whole brain (left), and for PCC and mPFC separately (right). These figures show high agreement within (but not between) subjects, with mPFC again showing higher heterogeneity in the group.", echo=FALSE, message = FALSE}
-# plots
-par(mfrow=c(1,2))
-corrplot(RI_all_between_halves_plot, 
-         is.corr = F, 
-         method = "color",
-         addgrid.col = "grey90",
-         tl.pos = "n", 
-         tl.col = "black",
-         tl.cex = 0.1,
-         cl.pos = "n",
-         #cl.lim = c(0,1),
-         cl.length = 3,
-         mar = c(1.1,1.1,1.1,1.1))
-# segments(0.5,0.5,0.5,20.5, lwd = 2)
-# segments(0.5,0.5,20.5,0.5, lwd = 2)
-# segments(0.5,20.5,20.5,20.5, lwd = 2)
-# segments(20.5,0.5,20.5,20.5, lwd = 2)
-mtext(expression(bold("Subjects (Day 1 and Day 2)")), line = 1)
-mtext(expression(bold("Subjects (Day 1 and Day 2)")), side = 2, line = 3)
-corrplot(RI_PCC_halves_plot, 
-         is.corr = F,     
-         method = "color",
-         type = "lower", 
-         tl.pos = "n", 
-         #cl.lim = c(0,1),
-         cl.pos = "r",
-         addgrid.col = "grey90",
-         cl.length = 3)
-corrplot(RI_PFC_halves_plot, 
-         is.corr = F, 
-         method = "color",
-         type = "upper", 
-         tl.pos = "n", 
-         cl.pos = "n", 
-         addgrid.col = "grey90",
-         add = T)
-mtext(expression(bold("Subjects (Day 1 and Day 2)")), line = 1)
-mtext(expression(bold("mPFC")), line = -0.15, at = par("usr")[1]+0.8*diff(par("usr")[1:2]), col = "steelblue4")
-mtext(expression(bold("PCC")), side = 1, line = 0.6, at = par("usr")[1]+0.09*diff(par("usr")[1:2]), col = "steelblue4")
-```
+``` {r Partition comparison: halves and runs (Fig. 8), fig.align="center", out.width = "100%", fig.cap = "Left: Similarity matrix for 10 example participants (2 days of scans each), showing pattern agreement across days and subjects for PCC and mPFC separately. Middle: ratio of within-subject ARI to between-subject mean ARI for all individuals across days suggests idiosyncrasies in community arrangement for both PCC and mPFC (ratios > 1, solid line), with higher subject-specificity in the latter. Right: within-to-between subject mean ARI ratios for each subject again show higher idiosyncratic organization for mPFC.", echo=FALSE, message = FALSE}
+### code for plots in this fig
 
-``` {r Partition comparison: halves ratios (Fig. 9), fig.align="center", fig.width=3, fig.height=3, fig.cap = "mPFC yields higher within-subject agreement than between subjects, as evidenced by a high within/between subject mean ARI. PCC also shows some level of topographical idiosyncrasy (ratio > 1), but significantly lower than mPFC.", echo=FALSE, message = FALSE}
-# plot
-ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) + 
-  geom_boxplot(show.legend = F) +
-  scale_fill_manual(values = Cols[seq(2)]) + 
-  ylim(0, 10) +
-  geom_hline(yintercept = 1) +
-  labs(y = "ARI Ratio", x = "") + 
-  theme_classic(base_size = 14)
-```
+## similarity matrix
+# corrplot(abs(RI_PCC_halves_plot), # absolute to get rid of that annoying -0.02 that messes up the limits. This is just for example.
+#          is.corr = F,     
+#          method = "color",
+#          type = "lower", 
+#          tl.pos = "n", 
+#          cl.lim = c(0,1),
+#          cl.pos = "r",
+#          addgrid.col = "grey90",
+#          cl.length = 3)
+# corrplot(RI_PFC_halves_plot, 
+#          is.corr = F, 
+#          method = "color",
+#          type = "upper", 
+#          tl.pos = "n", 
+#          cl.pos = "n", 
+#          addgrid.col = "grey90",
+#          add = T)
+#mtext(expression(bold("Subjects (Day 1 and Day 2)")), line = 1)
+#mtext(expression(bold("mPFC")), line = -0.15, at = par("usr")[1]+0.8*diff(par("usr")[1:2]), col = "steelblue4")
+#mtext(expression(bold("PCC")), side = 1, line = 0.6, at = par("usr")[1]+0.09*diff(par("usr")[1:2]), col = "steelblue4")
 
-``` {r Partition comparison: session similarity matrices (Fig. 10), fig.align="center", out.width = "60%", fig.cap = "Similarity matrices showing pattern agreement across sessions for the whole brain (left), and for PCC and mPFC separately (right), for the same 10 example subjects. The general pattern from the daily analysis is preserved, with marked individuality for mPFC and PCC, but higher for the former.", echo=FALSE, message = FALSE}
-# plot
-par(mfrow=c(1,2))
-corrplot(RI_all_between_sess_plot, 
-         is.corr = F, 
-         method = "color", 
-         tl.pos = "n", 
-         tl.cex = 0.5,
-         tl.col = "black", 
-         #cl.lim = c(-0.03,1),
-         cl.pos = "n",
-         cl.length = 3,
-         mar = c(1.1,1.1,1.1,1.1), 
-         addgrid.col = "grey90")
-# segments(0.5,0.5,0.5,40.5, lwd = 2)
-# segments(0.5,0.5,40.5,0.5, lwd = 2)
-# segments(0.5,40.5,40.5,40.5, lwd = 2)
-# segments(40.5,0.5,40.5,40.5, lwd = 2)
-mtext(expression(bold("Subjects (Session)")), line = 1)
-mtext(expression(bold("Subjects (Session)")), side = 2, line = 3)
-corrplot(RI_PCC_sess_plot, 
-         is.corr = F, 
-         method = "color", 
-         type = "lower", 
-         tl.pos = "n", 
-         tl.cex = 0.5,
-         tl.col = "black", 
-         #cl.lim = c(0,1),
-         cl.length = 3,
-         cl.pos = "r", 
-         addgrid.col = "grey90")
-# segments(0.5,0.5,0.5,20.5, lwd = 2)
-# segments(0.5,0.5,20.5,0.5, lwd = 2)
-# segments(0.5,20.5,20.5,20.5, lwd = 2)
-# segments(20.5,0.5,20.5,20.5, lwd = 2)
-corrplot(RI_PFC_sess_plot, 
-         is.corr = F, 
-         method = "color", 
-         type = "upper", 
-         tl.pos = "n", 
-         tl.col = "black", 
-         cl.pos = "n", 
-         addgrid.col = "grey90",
-         add = T)
-mtext(expression(bold("Subjects (Session)")), line = 1)
-mtext(expression(bold("mPFC")), line = 0, at = par("usr")[1]+0.8*diff(par("usr")[1:2]), col = "steelblue4")
-mtext(expression(bold("PCC")), side = 1, line = 1, at = par("usr")[1]+0.09*diff(par("usr")[1:2]), col = "steelblue4")
-```
+## ARI for days
+# ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) + 
+#   geom_boxplot(show.legend = F) +
+#   scale_fill_manual(values = Cols[seq(2)]) + 
+#   ylim(0, 20) +
+#   geom_hline(yintercept = 1) +
+#   labs(y = "ARI Ratio", x = "") + 
+#   theme_classic(base_size = 14)
 
-``` {r Partition comparison: session ratios (Fig. 11), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Whole group ratio between within- and between-subject ARI for mPFC and PCC based on sessions. Consistent with the daily analysis, both regions show idiosyncrasy, with mPFC being significantly more subject-specific.", echo=FALSE, message = FALSE}
-ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) + 
-  geom_boxplot(show.legend = F) +
-  scale_fill_manual(values = Cols[seq(2)]) + 
-  ylim(0, NA) +
-  geom_hline(yintercept = 1) +
-  labs(y = "ARI Ratio", x = "") + 
-  theme_classic(base_size = 14)
-```
+## ARI for session
+# ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) + 
+#   geom_boxplot(show.legend = F) +
+#   scale_fill_manual(values = Cols[seq(2)]) + 
+#   ylim(0, 20) +
+#   geom_hline(yintercept = 1) +
+#   labs(y = "ARI Ratio", x = "") + 
+#   theme_classic(base_size = 14)
 
+
+include_graphics("./Images/ratios.png")
+
+
+```
 
 ``` {r Correlation vs community detection (Fig. 14), fig.align="center", fig.width = 4, fig.height = 4, fig.cap = "Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector. There is high agreement within method (diagonal quadrants), but both methods suggest similar partitions (off diagonal quadrants).", echo=FALSE, message = FALSE}
 Foo <- "Fighters"
@@ -2607,5 +2514,6 @@ include_graphics("./Images/braga_comparison.png")
 ```
 
 \newpage
+
 ## References
 
