@@ -26,7 +26,7 @@ labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(
 
 # general options
 threshMaps <- TRUE # Whether to apply subject-wise thresholds on maps or not
-feedback <- FALSE # show permutation progress?
+permuting <- FALSE # show permutation progress?
 
 # Libraries used for the whole process
 library(tidyverse)
@@ -1355,28 +1355,33 @@ nRegions_sv <- do.call(rbind, studyList_sv) %>% count
 nRegions_dmn <- do.call(rbind, studyList_dmn) %>% count
 nRegions_all <- left_join(nRegions_sv, nRegions_dmn, by = "X1")
  
-# reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
-nPerms <- 1000 
-
-# For each permutation, reassign the study labels, maintaining the original number of studies per condition
-nullDist <- mclapply(seq(nPerms), function(data) {metaPerm()})
-
-# Now do the same for the actual data, to see how it compares to the null dist
-tmpDF <- data.frame(Parcel = gsub("_", "", Yeo_labels),
-                    SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
-                    DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
-                    propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
-                    propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
-
-# Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
-tmpDF$Chi_squared <- apply(tmpDF[, 2:3], 1, function(data) {
-  round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
-  })
-tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
-
-# ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
-significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
-
+# optional because it can take a long time to run
+if (permuting) {
+  
+  # reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
+  nPerms <- 1000 
+  
+  # For each permutation, reassign the study labels, maintaining the original number of studies per condition
+  nullDist <- mclapply(seq(nPerms), function(permutation) {metaPerm(perm = permutation)})
+  nullDist <- do.call(rbind, nullDist)
+  
+  # Now do the same for the actual data, to see how it compares to the null dist
+  tmpDF <- data.frame(Parcel = gsub("_", "", Yeo_labels),
+                      SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
+                      DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
+                      propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
+                      propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
+  
+  # Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
+  tmpDF$Chi_squared <- apply(tmpDF[, 2:3], 1, function(data) {
+    round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
+    })
+  tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
+  
+  # ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
+  significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
+  
+}
 # results!
 # 25 bilateral (prportion sv = L: 0.42, R: 0.39; proportion DMN = L: 0.18, R: 0.16, Chi = L: 12.91, R: 12.83, both p = 0.01)
 # 7m bilateral (prportion sv = L: 0.17, R: 0.15; proportion DMN = L: 0.36, R: 0.40, Chi = L: 10.07, R: 18.89, L: p < 0.05, R: p < 0.0001)
@@ -2393,20 +2398,33 @@ include_graphics("./Images/similarity_all.png")
 
 \bigskip
 
-``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 5), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines display each subject's association, while the black line shows the fit from a mixed effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded.", echo=FALSE, message = FALSE}
-# code to generate plot
-# Fiedler Vector x proportion of times a vertex was affiliated with DMN
-SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
-  geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
-  geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 2) +
-  geom_vline(xintercept = c(-0.014, 0.013), linetype = "dashed", color = Cols[2]) +
-  labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
-  scale_y_continuous(limits = c(0,1)) +
-  theme_classic()
+``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 5), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each subject, we produced partitions for each 20 minute sliding window (1 min shift, ~84 TRs) throughout their full time series (median number of windows = 37). B: Proportion of times each vertex was affiliated with the DMN community across windows (up), and the continuous Fiedler vector map for the current subject using their full time series (down). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DMN affiliations. Grey lines display each subject's association, while the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded.", echo=FALSE, message = FALSE}
+# code to generate plots
 
-SC_FVvPDMN_plot
+# # time series
+# # this one uses the actual subject's loaded time series (not included due to space)
+# n <- 4 # n of vertices to include
+# tr <- 4800 
+# ts <- data.matrix(t1[sample(59000, n), 1:tr])
+# df <- tibble(vertex = rep(seq(n), each = tr),
+#              Time = floor(rep(seq(0, tr, length.out = tr), n)),
+#              Signal = matrix(ts, ncol = 1) + rep(seq(-1, 1, length.out = n), each = tr)) %>%
+#   ggplot(data = df, aes(Time, Signal, group = vertex, color = as.character(vertex))) +
+#     geom_line(show.legend = F, lwd = 0.2, alpha = 0.6) +
+#     theme_classic()
+# 
+# # Fiedler Vector x proportion of times a vertex was affiliated with DMN
+# SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
+#   geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
+#   geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 2) +
+#   geom_vline(xintercept = c(-0.014, 0.013), linetype = "dashed", color = Cols[2]) +
+#   labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
+#   scale_y_continuous(limits = c(0,1)) +
+#   theme_classic()
+# 
+# SC_FVvPDMN_plot
 
-#include_graphics("./Images/SW_props.png")
+include_graphics("./Images/SW_props.png")
 
 ```
 
