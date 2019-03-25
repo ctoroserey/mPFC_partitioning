@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 
 ```{r Libraries and functions, include = FALSE, fig.align="center", fig.width=6, fig.height=4, echo=FALSE}
 
-Cols <- c("aquamarine4", "#D9541A", rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
+Cols <- c("aquamarine4", "#D9541A", rgb(190,190,190,100, maxColorValue = 255)) 
 
 # In case I want to visualize stuff in the brain
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv')[,2:6]
@@ -43,6 +43,37 @@ library(parallel)
 library(corrplot)
 library(DescTools)
 library(knitr)
+
+
+# produce one permutation instance of the meta-analysis (so it can be fed to mclapply for quicker results)
+metaPerm <- function(list1 = studyList_sv, list2 = studyList_dmn, labels = Yeo_labels, perm = 1) {
+  
+  # print every 100th permutation just to have a general sense of how far we are
+  if ((perm %% 100) == 0) {sprintf("Permutation %s", perm)}
+  
+  # combine study lists
+  allStudies <- c(studyList_sv, studyList_dmn)
+  
+  # Sample all the studies and divide into 2 groups
+  randPerm <- sample(allStudies)
+  tmpSV <- randPerm[seq(length(list1))]
+  tmpDMN <- randPerm[-seq(length(list1))]
+  
+  # Count the number of times each region was reported in the literature
+  tmpDF <- data.frame(Parcel = gsub("_", "", labels),
+                      SV = sapply(labels, function(roi) {length(grep(roi, tmpSV))}),
+                      DMN = sapply(labels, function(roi) {length(grep(roi, tmpDMN))}))
+  
+  # Perform the prop test for each pair and get the max chi-squared stat
+  maxStat <- max(
+    apply(tmpDF[, 2:3], 1, function(data) {
+      prop.test(data, c(length(tmpSV), length(tmpDMN)))$statistic
+    }
+    ), na.rm = T)
+  
+  return(maxStat)
+  
+}
 
 
 ## Cohen's D for 2 groups
@@ -1267,50 +1298,45 @@ We evaluated the performance of the spectral partitioning algorithm in compariso
 ``` {r Meta-analysis permutation, echo=FALSE, message = FALSE, cache = TRUE}
 # This version is literally what I had selected originally, plus 25, OFC, 10v, and RSC
 Yeo_labels <- c("L_25_ROI",
-                "L_OFC_ROI",
-                "L_10v_ROI",
-                "R_25_ROI",
-                "R_OFC_ROI",
-                "R_10v_ROI",
-                "L_s32_ROI",
-                "L_RSC_ROI",
-                "R_RSC_ROI",
-                "R_8Ad_ROI",
-                "R_9p_ROI",
-                "R_23d_ROI",
-                "R_d23ab_ROI",
-                "R_31a_ROI",
-                "R_31pv_ROI",
-                "R_31pd_ROI",
-                "R_7m_ROI",
-                "R_v23ab_ROI",
-                "R_p24_ROI",
-                "R_d32_ROI",
-                "R_9m_ROI",
-                "R_p32_ROI",
-                "R_a24_ROI",
-                "R_10r_ROI",
-                "R_10d_ROI",
-                "L_8Ad_ROI",
-                "L_9p_ROI",
-                "L_23d_ROI",
-                "L_d23ab_RO",
-                "L_31a_ROI",
-                "L_31pv_ROI",
-                "L_31pd_ROI",
-                "L_7m_ROI",
-                "L_v23ab_ROI",
-                "L_p24_ROI",
-                "L_d32_ROI",
-                "L_9m_ROI",
-                "L_p32_ROI",
-                "L_a24_ROI",
-                "L_10r_ROI",
-                "L_10d_ROI",
-                "R_s32_ROI",
-                "R_9a_ROI",
-                "L_p10p_ROI",
-                "L_PCV_ROI")
+              "L_OFC_ROI",
+              "L_10v_ROI",
+              "R_25_ROI",
+              "R_OFC_ROI",
+              "R_10v_ROI",
+              "L_s32_ROI",
+              "L_RSC_ROI",
+              "R_RSC_ROI",
+              "R_23d_ROI",
+              "R_d23ab_ROI",
+              "R_31a_ROI",
+              "R_31pv_ROI",
+              "R_31pd_ROI",
+              "R_7m_ROI",
+              "R_v23ab_ROI",
+              "R_p24_ROI",
+              "R_d32_ROI",
+              "R_9m_ROI",
+              "R_p32_ROI",
+              "R_a24_ROI",
+              "R_10r_ROI",
+              "R_10d_ROI",
+              "L_23d_ROI",
+              "L_d23ab_RO",
+              "L_31a_ROI",
+              "L_31pv_ROI",
+              "L_31pd_ROI",
+              "L_7m_ROI",
+              "L_v23ab_ROI",
+              "L_p24_ROI",
+              "L_d32_ROI",
+              "L_9m_ROI",
+              "L_p32_ROI",
+              "L_a24_ROI",
+              "L_10r_ROI",
+              "L_10d_ROI",
+              "R_s32_ROI",
+              "R_9a_ROI",
+              "L_PCV_ROI") 
 
 # Permutation analysis
 # Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
@@ -1328,54 +1354,29 @@ studyList_dmn <- lapply(templist, readr::read_csv, col_names = F, col_types = co
 nRegions_sv <- do.call(rbind, studyList_sv) %>% count
 nRegions_dmn <- do.call(rbind, studyList_dmn) %>% count
 nRegions_all <- left_join(nRegions_sv, nRegions_dmn, by = "X1")
-  
+ 
+# reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
+nPerms <- 1000 
+
 # For each permutation, reassign the study labels, maintaining the original number of studies per condition
-# allStudies <- c(studyList_sv, studyList_dmn)
-# nPerms <- 100 # reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
-# nullDist <- numeric()
-# 
-# for (i in seq(nPerms)) {
-# 
-#   # provide feedback only if requested (if TRUE, it will show up in the doc or pdf file)
-#   if (feedback) {
-#     if(i %in% c(nPerms*0.25, nPerms*0.5, nPerms*0.75, nPerms*0.95)) {print(paste("Completed", i/nPerms, "percent of the permutation..."))}
-#   }
-#   
-#   # Sample all the studies and divide into 2 groups
-#   randPerm <- sample(allStudies)
-#   tmpSV <- randPerm[seq(length(studyList_sv))]
-#   tmpDMN <- randPerm[-seq(length(studyList_sv))]
-# 
-#   # Count the number of times each region was reported in the literature
-#   tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
-#                       SV = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpSV))}),
-#                       DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, tmpDMN))}))
-# 
-#   # Perform the prop test for each pair and get the max chi-squared stat
-#   nullDist[i] <- max(
-#                   apply(tmpDF[,2:3], 1, function(data) {
-#                     prop.test(data, c(length(tmpSV), length(tmpDMN)))$statistic
-#                     }
-#                   ), na.rm = T)
-# 
-# }
-# 
-# # Now do the same for the actual data, to see how it compares to the null dist
-# tmpDF <- data.frame(Parcel = gsub("_","", Yeo_labels),
-#                     SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
-#                     DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
-#                     propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
-#                     propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
-# 
-# # Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
-# tmpDF$Chi_squared <- apply(tmpDF[,2:3], 1, function(data) {
-#   round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
-#   })
-# tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
-# 
-# # ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
-# significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
-  
+nullDist <- mclapply(seq(nPerms), function(data) {metaPerm()})
+
+# Now do the same for the actual data, to see how it compares to the null dist
+tmpDF <- data.frame(Parcel = gsub("_", "", Yeo_labels),
+                    SV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}),
+                    DMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}),
+                    propSV = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_sv))}) / length(studyList_sv),
+                    propDMN = sapply(Yeo_labels, function(roi) {length(grep(roi, studyList_dmn))}) / length(studyList_dmn))
+
+# Perform the prop test for each pair and get the max chi-squared stat + pvalue based on the computed null distribution
+tmpDF$Chi_squared <- apply(tmpDF[, 2:3], 1, function(data) {
+  round(prop.test(data, c(length(studyList_sv), length(studyList_dmn)))$statistic, digits = 2)
+  })
+tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
+
+# ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
+significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
+
 # results!
 # 25 bilateral (prportion sv = L: 0.42, R: 0.39; proportion DMN = L: 0.18, R: 0.16, Chi = L: 12.91, R: 12.83, both p = 0.01)
 # 7m bilateral (prportion sv = L: 0.17, R: 0.15; proportion DMN = L: 0.36, R: 0.40, Chi = L: 10.07, R: 18.89, L: p < 0.05, R: p < 0.0001)
@@ -1385,7 +1386,7 @@ nRegions_all <- left_join(nRegions_sv, nRegions_dmn, by = "X1")
 ```
 
 
-``` {r ROI computation (overlapping: old), echo=FALSE, message = FALSE}
+``` {r ROI computation (overlapping: DELETE), echo=FALSE, message = FALSE}
 #TO DO: CHANGE THIS SO IT'S BASED ON STUDYLIST_SV/DMN, COUNTING JUST LIKE IN THE PERMUTATION ABOVE
 ## ROI definition
 # First, load the raw count csv files
@@ -2338,15 +2339,6 @@ We would like to thank Dan Sussman for initial guidance on community detection a
 | ROIs                 | `r str_remove(Yeo_labels, "_ROI")` |
 
 
-<!---
-```{r Method (Figure 1), out.width = "100%", fig.align = "center", fig.cap= "Summary of the partitioning scheme and its evaluation. Each connectome if transformed into a normalized Laplacian matrix, whose eigenvector associated with the second-to-lowest eigenvalue assigns negative or positive values to each vertex. These continuous maps are binarized by sign, and compared within and between subjects using the chance-correcting Adjusted Rand Index (ARI)."}
-# Change to inflated eventually
-include_graphics("./Images/method_figure.png")
-```
--->
-
-\bigskip
-
 ## Figures
 
 ```{r Meta-analysis ROIs (Fig. 1), out.width="50%", fig.align = "center", fig.cap= "A: Proportion of times each ROI was reported in each literature. B: common and unique brain regions associated with DMN and subjective value. DMN regions defined by Yeo et al. (2011) in blue, which encompass areas of considerable overlap between DMN and SV. Literature-specific regions (bilateral 7m and right v23 in yellow, and bilateral 25 in red) were identified from a permutation analysis of chi-squared tests comparing these literatures."}
@@ -2354,9 +2346,13 @@ include_graphics("./Images/method_figure.png")
 include_graphics("./Images/ROIS4.png")
 ```
 
+\bigskip
+
 ```{r Template partition (Fig. 2), out.width="50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m, bordered)."}
 include_graphics("./Images/FB_FV_example.png")
 ```
+
+\bigskip
 
 ``` {r Partition comparison: all 2 (Fig. 3), fig.align="center", out.width = "50%", fig.cap = "Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. PCC is better aligned across individuals than mPFC.", echo=FALSE, message = FALSE}
 # code to produce the plot
@@ -2395,18 +2391,22 @@ include_graphics("./Images/similarity_all.png")
 
 ```
 
-``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 5), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines display each subject's association, while the black line shows the fit from a mixed effects logistic regression.", echo=FALSE, message = FALSE}
+\bigskip
+
+``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 5), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Relationship between the magnitude of Fiedler vector values and the proportion of affiliations of a vertex with DMN throughout 37 sliding windows. Grey lines display each subject's association, while the black line shows the fit from a mixed effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded.", echo=FALSE, message = FALSE}
 # code to generate plot
 # Fiedler Vector x proportion of times a vertex was affiliated with DMN
-# SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
-#   geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
-#   #geom_line(aes(FiedlerVec, FittedVals), alpha = 1, size = 3) +
-#   geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 3) +
-#   labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
-#   scale_y_continuous(limits = c(0,1)) +
-#   theme_classic()
+SC_FVvPDMN_plot <- ggplot(data = allSummaries) +
+  geom_smooth(aes(FiedlerVec, slidePropDMN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
+  geom_line(data = SC_FVvPDMN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 2) +
+  geom_vline(xintercept = c(-0.014, 0.013), linetype = "dashed", color = Cols[2]) +
+  labs(x = "Fiedler Vector Values", y = "Proportion of DMN Affiliations") +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_classic()
 
-include_graphics("./Images/SW_props.png")
+SC_FVvPDMN_plot
+
+#include_graphics("./Images/SW_props.png")
 
 ```
 
@@ -2417,6 +2417,8 @@ include_graphics("./Images/SW_props.png")
 include_graphics("./Images/thresholded.png")
 
 ```
+
+\bigskip
 
 ``` {r Partition comparison: halves and runs (Fig. 8), fig.align="center", out.width = "100%", fig.cap = "Left: Similarity matrix for 10 example participants (2 days of scans each), showing pattern agreement across days and subjects for PCC and mPFC separately. Middle: ratio of within-subject ARI to between-subject mean ARI for all individuals across days suggests idiosyncrasies in community arrangement for both PCC and mPFC (ratios > 1, solid line), with higher subject-specificity in the latter. Right: within-to-between subject mean ARI ratios for each subject again show higher idiosyncratic organization for mPFC.", echo=FALSE, message = FALSE}
 ### code for plots in this fig
@@ -2467,6 +2469,8 @@ include_graphics("./Images/ratios.png")
 
 ```
 
+\bigskip
+
 ``` {r Correlation vs community detection (Fig. 14), fig.align="center", fig.width = 4, fig.height = 4, fig.cap = "Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector. There is high agreement within method (diagonal quadrants), but both methods suggest similar partitions (off diagonal quadrants).", echo=FALSE, message = FALSE}
 Foo <- "Fighters"
 corrplot(allHalfCombs, 
@@ -2494,6 +2498,8 @@ mtext(expression(bold("Correlation")), side = 2, line = 2, at = par("usr")[1]+0.
 
 ```
 
+\bigskip
+
 ``` {r Correlation vs community detection: comparison plot (Fig. 15), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Day 1 vs Day 2 correlation coefficients for every method, as well as between methods. Community detection through spectral partitioning provides the most stable inter-day estimates, even though both methods show good level of agreement.", echo=FALSE, message = FALSE}
 # Day 1 vs Day 2 Spatial Correlation Comparison
 prepostComp_plot <- ggplot(data = prepostComp, aes(Approach, Correlation, fill = Approach)) +
@@ -2506,6 +2512,8 @@ prepostComp_plot
 
 ```
 
+\bigskip
+
 ```{r BandB comparison (Figure 16), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between maps produced by seed-based connectivity based on Braga and Buckner's (2017) criterion, and those produced by spectral partitioning. Networks A and B were produced by carefully selecting a DLPFC seed (pointed by the green arrows). In each case, our DMN and non-DMN networks map remarkably well to their proposed functional organization."}
 
 # Change to inflated eventually
@@ -2513,7 +2521,6 @@ include_graphics("./Images/braga_comparison.png")
 
 ```
 
-\newpage
+\newpage 
 
 ## References
-
