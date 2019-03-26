@@ -2310,13 +2310,37 @@ Visual inspection of these networks shows a remarkable similarity between our DM
 
 ## Discussion
 
+A considerable amount of meta-analytic work has been dedicated to pinpointing the spatial embedding of behavioral constructs in medial prefrontal cortex (mPFC), revealing both dissociable and overlapping activation across psychological phenomena [@DelaVega2016; @Kragel2018; @Hiser2018]. In particular, the effects elicited by the subjective value (SV) of an option and the default mode network (DMN) have been suggested to be inseparable in this area, an overlap that partially extends to posterior cingulate cortex (PCC) [@Acikalin2017; @Bartra2013; @Clithero2014; @Laird2009]. However, recent studies have shown considerable variability of the brain's functional topography across individuals, emphasizing the importance of capturing its organization at the individual subject level, and pointing to limitations in aggregative estimations [@Braga2017; @Gordon2017; @Gratton2018a; @Kong2018; @Laumann2015; @Tobyne2018]. Therefore, determining the distinct functional mapping of psychological processes (and the potential extent of their overlap) first requires: 1) understanding and quantifying the degree of heterogeneity in the intrinsic functional organization of this area in a large group of individuals; and 2) a method to reliably and precisely capture it in isolated subjects.
+
+Here we address these challenges by using spectral partitioning, a graph-theoretic clustering algorithm, to subdivide areas of overlap into DMN and non-DMN in 100 individuals from the Human Connectome Project. Our results show that the intrinsic functional topography of mPFC and PCC can be reliably partitioned into at least two idiosyncratically arranged networks that can be obscured when averaged across subjects. These sub-networks were stable over time and across test-retest days using moderate amounts of fMRI data (up to 30 min per day), and resembled an organizational scheme recently observed in a handful of subjects [@Braga2017]. We also show that spectral partitioning is capable of identifying these sub-networks in isolated individuals better than more direct seed-based functional connectivity approaches. 
+
+
+
+Outline:
+
+- Summarize the results
+- Ours are not the first to show variability, but previous studies have focused on a relatively small number of subjects and often rely on qualitative assessment of these differences. They also use parcellations for networks, whereas we focused on individual vertices to gain spatial finesse. Also, to the best of our knowledge we are the first to quantify the organizational heterogeneity of these areas in the human brain. 
+- We are also not the first to show functional subdivision of DMN [@Kernbach2018] (but that's using group averages on parcellated data), or this particular individualized pattern of subdivision (braga). Our results are complementary in the sense that we show similar outcomes in 100 subjects. The major discrepancy is that we assign meaning to the communities based on their coverage of regions identified through a meta-analysis.
+- Talk about SP as a way to identify an individual's partition: deterministic, with simple diagnostics, and requires less data requirements.
+- The main gap is mapping behavior to functional organization, but we will do that with behavioral manipulations of subjective value in the future. Instead, we focus on understanding the importance of individualized mapping in these areas first, as a baseline.
+- Clinical implications: individualized targets, and more accurate estimation of impacts based on assessment of individual patients. Similarly, our approach focuses on individual estimations without group priors, so it's well fit to address the problem of low n in clinical research. Also, SP can produce these effects with moderate amounts of data. Previous results suggest impractical amounts.
+
+- Limitations
+  - community detection ground truth
+  - other algorithms (benefit of SP is that it's deterministic, allows for diagnostics, and discourages extremely large/small communities)
+  - bipartition: we focus on that since we tried to capture what belongs to DMN and non-DMN. This intuition can be generalized to other behaviors. SP can be expanded to extract additional communities in combination with k-means and the identification of the first non-zero eigenvalue in the low-high rank.
+  - Small search space: working at the vertex-level makes it computationally difficult to produce estimates at the whole-brain level. 
+
+
+
+
+
 For clinical implications, see Hiser & Koenigs 2018. In short, being able to identify functional idiosyncrasies without much data can yield important insights in diagnosis (meh, we always say that..) of a variety of psychological diseases associated with mPFC. It would be more interesting to identify the repercussions of damage in mPFC per individual. They mention that subgenual vmPFC is a common target for deep brain stimulation (or TMS) as a depression treatment. The refinement of the technique is thus coupled to being able to identify personalized functional topologies. They list a number of results related to mPFC functional connectivity too. In the end, their suggestions for clinical implications of mPFC studies rely on the individual measure of functional expanse. (note that social-relevant areas in their meta analysis look similar to our patterns, and the emotion part to Barbas' latest)
 
 It will also be good to note that there is concurrent debate on the ground truth of community detection. In other fields, identifying a community structure is not necessarily associated with the true organization of the network. What happens is that you might find a tangential grouping that gives you information different from your original goal [@Clauset2004]. In our case, however, averaging everyone's partitions produces organizational maps that resemble those from previous work (e.g. Margulies).
 
 Talk about how there are other community detection algorithms, and that modularity and SP over and underfit, respectively. However, SP eigenmaps have been found to provide relevant functional information. In addition, both modularity and SP rely on connectivity strength, and thus is amenable to the correlative nature of functional connectivity.
 
-Interhemispheric differences? citing Mackey and Petrides
 
 And write a portion on the lack of subcortical reward-related regions (i.e. striatum). Say something like 'incorporating the ventral striatum did not refine these partitions through either method. This could be due to the lack of signal modulation of this area at rest, and should be examined through behavioral manipulations of value in the future. Instead, here we focus on capturing the intrinsic functional heterogeneity of mPFC as a way to pave the path to refined analyses aimed at disentangling DMN and SV'. It is worth noting that the SV-only area from the meta-analysis tends to land in non-DMN, although it ends up in no-ones land when thresholding the maps.
 
@@ -2489,44 +2513,43 @@ include_graphics("./Images/ratios.png")
 
 \bigskip
 
-``` {r Correlation vs community detection (Fig. 14), fig.align="center", fig.width = 4, fig.height = 4, fig.cap = "Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector. There is high agreement within method (diagonal quadrants), but both methods suggest similar partitions (off diagonal quadrants).", echo=FALSE, message = FALSE}
-Foo <- "Fighters"
-corrplot(allHalfCombs, 
-         #title = "Comparing All Community and Correlation mPFC Partitions \n Across All Subjects",
-         method = "color", 
-         #tl.col = "black",
-         #tl.cex = 0.6,
-         addgrid.col = "grey90",
-         tl.pos = "n",
-         cl.pos = "r",
-         cl.length = 3,
-         mar = c(1,2,2,0))
-segments(0.5,0.5,0.5,40.5, lwd = 2)
-segments(0.5,0.5,40.5,0.5, lwd = 2)
-segments(0.5,40.5,40.5,40.5, lwd = 2)
-segments(40.5,0.5,40.5,40.5, lwd = 2)
-segments(0.5,20.5,40.5,20.5, lwd = 2)
-segments(20.5,0.5,20.5,40.5, lwd = 2)
-mtext(expression(bold("Subject Partitions (Day 1 and Day 2)")), line = 3, at = par("usr")[1]+0.45*diff(par("usr")[1:2]))
-mtext(expression(bold("Subject Partitions (Day 1 and Day 2)")), side = 2, line = 3)
-mtext(expression(bold("Fiedler")), line = 1.5, at = par("usr")[1]+0.68*diff(par("usr")[1:2]))
-mtext(expression(bold("Correlation")), line = 1.5, at = par("usr")[1]+0.23*diff(par("usr")[1:2]))
-mtext(expression(bold("Fiedler")), side = 2, line = 2, at = par("usr")[1]+0.25*diff(par("usr")[1:2]))
-mtext(expression(bold("Correlation")), side = 2, line = 2, at = par("usr")[1]+0.68*diff(par("usr")[1:2]))
+``` {r Correlation vs community detection (Fig. 14), fig.align="center", fig.cap = "A: Correlation matrix comparing the inter-day spatial stability of maps derived from seed-based functional connectivity (PCC-based) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector. There is high agreement within method (diagonal quadrants), but both methods suggest similar partitions (off-diagonal quadrants). B: Day 1 vs Day 2 correlation coefficients for every method, as well as between methods. Community detection through spectral partitioning provides the most stable inter-day estimates, even though both methods show good level of agreement.", echo = FALSE, message = FALSE}
+# code to produce the plots
 
-```
+# correlation matrix
+# corrplot(allHalfCombs, 
+#          #title = "Comparing All Community and Correlation mPFC Partitions \n Across All Subjects",
+#          method = "color", 
+#          #tl.col = "black",
+#          #tl.cex = 0.6,
+#          addgrid.col = "grey90",
+#          tl.pos = "n",
+#          cl.pos = "r",
+#          cl.length = 3,
+#          mar = c(1,2,2,0))
+# segments(0.5,0.5,0.5,40.5, lwd = 2)
+# segments(0.5,0.5,40.5,0.5, lwd = 2)
+# segments(0.5,40.5,40.5,40.5, lwd = 2)
+# segments(40.5,0.5,40.5,40.5, lwd = 2)
+# segments(0.5,20.5,40.5,20.5, lwd = 2)
+# segments(20.5,0.5,20.5,40.5, lwd = 2)
+# mtext(expression(bold("Subject Partitions (Day 1 and Day 2)")), line = 3, at = par("usr")[1]+0.45*diff(par("usr")[1:2]))
+# mtext(expression(bold("Subject Partitions (Day 1 and Day 2)")), side = 2, line = 3)
+# mtext(expression(bold("Fiedler")), line = 1.5, at = par("usr")[1]+0.68*diff(par("usr")[1:2]))
+# mtext(expression(bold("Correlation")), line = 1.5, at = par("usr")[1]+0.23*diff(par("usr")[1:2]))
+# mtext(expression(bold("Fiedler")), side = 2, line = 2, at = par("usr")[1]+0.25*diff(par("usr")[1:2]))
+# mtext(expression(bold("Correlation")), side = 2, line = 2, at = par("usr")[1]+0.68*diff(par("usr")[1:2]))
+# 
+# # Day 1 vs Day 2 Spatial Correlation Comparison
+# prepostComp_plot <- ggplot(data = prepostComp, aes(Approach, Correlation, fill = Approach)) +
+#   geom_boxplot(show.legend = F) +
+#   labs(x = "", y = "Correlation Coefficient") +
+#   ylim(0,1) +
+#   theme(text = element_text(size=35)) +
+#   theme_classic()
+# prepostComp_plot
 
-\bigskip
-
-``` {r Correlation vs community detection: comparison plot (Fig. 15), fig.align="center", fig.width=3, fig.height=3, fig.cap = "Day 1 vs Day 2 correlation coefficients for every method, as well as between methods. Community detection through spectral partitioning provides the most stable inter-day estimates, even though both methods show good level of agreement.", echo=FALSE, message = FALSE}
-# Day 1 vs Day 2 Spatial Correlation Comparison
-prepostComp_plot <- ggplot(data = prepostComp, aes(Approach, Correlation, fill = Approach)) +
-  geom_boxplot(show.legend = F) +
-  labs(x = "", y = "Correlation Coefficient") +
-  ylim(0,1) +
-  theme(text = element_text(size=35)) +
-  theme_classic()
-prepostComp_plot
+include_graphics("./Images/commvscorr.png")
 
 ```
 
