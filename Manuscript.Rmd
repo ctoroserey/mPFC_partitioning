@@ -7,7 +7,7 @@ output:
   word_document: 
     reference_docx: Style_reference_draft.docx
   html_document: default
-bibliography: mPFC_paper.bib
+bibliography: Bibliography/mPFC_paper.bib
 header-includes:
     - \usepackage{setspace}\doublespacing
 ---
