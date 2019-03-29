@@ -2492,12 +2492,23 @@ include_graphics("./Images/braga_comparison.png")
 
 ## Supplemental Materials
 
+``` {r Subdivide search space into hemi-region for table, echo = FALSE, message = FALSE} 
+# based on a subject's data, create a region vector for PCC and mPFC
+# then split by region and hemisphere into a list (length = 4), and retain the unique (and stripped) labels for display
+searchSpace <- Summaries[[1]] %>%
+                  mutate(region = ifelse(y < 0, "PCC", "mPFC"),
+                         Label = str_remove(substr(Label, 3, 20), "_ROI")) %>%
+                  select(Hemisphere, region, Label) %>% # unneeded, but makes it easier to examine the df
+                  split(list(.$Hemisphere, .$region)) %>%
+                  lapply(., function(x) {unique(x$Label)})
 
-### *Table 1. Regions of interest from Glasser et al. (2016). Prefixes indicate hemispheric location (e.g. R = right).*
-| Literature           | Significant Brain Regions                 |
-| :------------------- | ----------------------------------------: |
-| ROIs                 | `r str_remove(Yeo_labels, "_ROI")` |
+```
 
+### *Table 1. Parcels from Glasser et al. (2016) contained in the search space.*
+| Hemisphere  |            mPFC        |          PCC          |
+| :---------- | :--------------------: | --------------------: |
+| Left        | `r searchSpace$L.mPFC` | `r searchSpace$L.PCC` |
+| Right       | `r searchSpace$R.mPFC` | `r searchSpace$R.PCC` |
 
 \newpage 
 
