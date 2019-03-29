@@ -1300,7 +1300,7 @@ We evaluated the performance of the SP algorithm in comparison to a simpler part
 ### *Meta-analysis*
 
 ``` {r Meta-analysis permutation, echo=FALSE, message = FALSE, cache = TRUE}
-# This version is literally what I had selected originally, plus 25, OFC, 10v, and RSC
+# Glasser parcels contained in Yeo's 17-net DMN and limbic networks on the medial cortical wall
 Yeo_labels <- c("L_25_ROI",
               "L_OFC_ROI",
               "L_10v_ROI",
@@ -1363,7 +1363,7 @@ nRegions_all <- left_join(nRegions_sv, nRegions_dmn, by = "X1")
 if (permuting) {
   
   # reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
-  nPerms <- 1000 
+  nPerms <- 5000 
   
   # For each permutation, reassign the study labels, maintaining the original number of studies per condition
   nullDist <- mclapply(seq(nPerms), function(permutation) {metaPerm(perm = permutation)})
@@ -1382,82 +1382,24 @@ if (permuting) {
     })
   tmpDF$Pval <- 1 - ecdf(nullDist)(tmpDF$Chi_squared) # probability of finding a chi-squared stat at least as large as the observed under a permuted null distribution
   
-  # ROIs that survived the threshold based on Chi-squared value (>95th quantile from null distribution -> 8.43)
+  # ROIs that survived the threshold based on Chi-squared value 
   significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
   
 }
 # results!
-# 25 bilateral (prportion sv = L: 0.42, R: 0.39; proportion DMN = L: 0.18, R: 0.16, Chi = L: 12.91, R: 12.83, both p = 0.01)
-# 7m bilateral (prportion sv = L: 0.17, R: 0.15; proportion DMN = L: 0.36, R: 0.40, Chi = L: 10.07, R: 18.89, L: p < 0.05, R: p < 0.0001)
-# v23 right (proportion sv = 0.16; proportion DMN = 0.36, chi = 11.51, p = 0.01)
-# null 95th-q chi <- 9.11 (varies; this was done ith 100 but resembles the 5k one)
+# 25 bilateral (prportion sv = L: 0.42, R: 0.39; proportion DMN = L: 0.18, R: 0.16, Chi = L: 12.91, R: 12.83, both p = 0.005)
+# 7m bilateral (prportion sv = L: 0.17, R: 0.15; proportion DMN = L: 0.36, R: 0.40, Chi = L: 10.07, R: 18.89, L: p = 0.02, R: p < 0.0001)
+# v23ab right (proportion sv = 0.16; proportion DMN = 0.36, chi = 11.51, p = 0.01)
+# v23ab left (proportion sv = 0.16; proportion DMN = 0.32, chi = 8.25, p = 0.06)
+# null 95th-q chi <- 8.87 (varies; this was done ith 100 but resembles the 5k one)
 
 ```
 
 
-``` {r ROI computation (overlapping: DELETE), echo=FALSE, message = FALSE}
-#TO DO: CHANGE THIS SO IT'S BASED ON STUDYLIST_SV/DMN, COUNTING JUST LIKE IN THE PERMUTATION ABOVE
-## ROI definition
-# First, load the raw count csv files
-valCounts <- read.csv2('decCounts.csv', sep = ",")
-dmnCounts <- read.csv2('dmnCounts.csv', sep = ",")
-
-# Then, get the means of the counts per domain, both within/outside the search space
-# This is to get a broad estimate of the average report amounts in the literature
-tempBoot <- bootstrap(valCounts$Counts)
-BV <- round(mean(tempBoot))
-BVquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
-tempBoot <- bootstrap(dmnCounts$Counts)
-BD <- round(mean(tempBoot))
-BDquant <- round(quantile(tempBoot, c(0.025, 0.975)), digits = 2)
-rm(tempBoot)
-
-# Now select only the ROIs from Yeo et al (TEMP)
-valCounts <- getCoords(Labels = Yeo_labels, Coords = valCounts)$Coords
-dmnCounts <- getCoords(Labels = Yeo_labels, Coords = dmnCounts)$Coords
-
-# Now, for every ROI, do a prop test to check if the proportion of reports is significantly greater
-# than the mean report over the number of studies (i.e. sample-based null probability, which could be changed to perm)
-for (i in seq(valCounts$Counts)) {
-  indx <- valCounts$Counts[i]
-  tempTest <- prop.test(indx, 27, alternative = "greater", p = BV/27)
-  valCounts$Chi[i] <- tempTest$statistic
-  valCounts$pVal[i] <- tempTest$p.value
-}
-for (i in seq(dmnCounts$Counts)) {
- indx <- dmnCounts$Counts[i]
- tempTest <- prop.test(indx, 77, alternative = "greater", p = BD/77)
- dmnCounts$Chi[i] <- tempTest$statistic
- dmnCounts$pVal[i] <- tempTest$p.value
-}
-# Retain only the significant parcels
-t1 <- valCounts$Label[valCounts$pVal < 0.05]
-t2 <- dmnCounts$Label[dmnCounts$pVal < 0.05]
-# Remove hemispheric references
-t1 <- unique(substring(t1,2))
-t2 <- unique(substring(t2,2))
-# Labels to put in text
-dmnLbls <- gsub("ROI","", t2)
-dmnLbls <- gsub("_","", dmnLbls)
-valLbls <- gsub("ROI","", t1)
-valLbls <- gsub("_","", valLbls)
-
-#bothLbls <- dmnLbls[dmnLbls %in% valLbls] # This part is just for reference, as the labels are loaded from a file
-# final overlap
-# And get the set of overlapping areas between literatures
-# This is missing some cingulate and PFC areas, and adds V2.
-# However, we can say that we are filling in the gap for completeness,
-# and removing V2 because it's demonstrably irrelevant.
-#bothLbls <- unique(c(t1[t1 %in% t2], t2[t2 %in% t1]))
-# You could also try to permute the allocation of reports per literature,
-# and then perform a chi-squared per parcel. Get the max stat per iteration.
-# Now you have your null distribution.
-
-```
 
 We performed a coordinate-based meta-analysis to identify subregions of mPFC and PCC that were preferentially associated with the DMN or SV literatures. Volumetric coordinates from a set of DMN and SV studies were projected onto a cortical surface, and mapped to discrete parcels from a multimodal cortical parcellation [@Glasser2016] to produce a list of brain areas reported per study. The `r length(Yeo_labels)` parcels considered were limited to the medial portion of the default mode and limbic networks defined by the Yeo et al.'s [-@Yeo2011] 17-network parcellation. Unique areas were identified by first permuting the domain labels across studies (DMN or SV) to create a null distribution for the maximum chi-squared statistic in the search space (see Methods for details). The null distribution was used to identify regions that were reported significantly more often reported in one literature or the other. 
 
-Figure 1 shows the proportion of times every parcel was reported in each literature, as well as the significant differences between domains. The 95th percentile of the permuted chi-squared distribution was 9.11. Based on this threshold, area 7m in PCC/precuneus was the only parcel to show a preferential affiliation to DMN bilaterally (Left: observed $\chi^2$ = 10.07, *p* = 0.034; Right: observed $\chi^2$ = 18.89, *p* < 0.0001). The adjacent area v23 exhibited a similar effect, albeit only unilaterally (Right: observed $\chi^2$ = 11.51, *p* = 0.018; **TODO: ADD LEFT**). There appeared to be a bilateral preference toward valuation effects in area 25 (Left: observed $\chi^2$ = 12.91, *p* = 0.014; Right: observed $\chi^2$ = 12.83, *p* = 0.014); however, closer inspection suggested this effect was driven by subcortical foci centered in adjacent ventral striatum. No toher parcels were preferentially implicated in valuation relative to DMN. We therefore selected area 7m as an interpretable, bilateral reference point for labeling DMN and non-DMN communities in the analyses that follow. We note that area 7m has been found to not partake in DMN in previous work [@AndrewsHanna2010]. However, we adhere to the nomenclature established by [@Glasser2016], whose area 7m is positioned considerably more ventrally and is well contained within canonical DMN.
+Figure 1 shows the proportion of times every parcel was reported in each literature, as well as the significant differences between domains. The 95th percentile of the permuted chi-squared distribution was 8.87. Based on this threshold, area 7m in PCC/precuneus was the only parcel to show a preferential affiliation to DMN bilaterally (Left: observed $\chi^2$ = 10.07, *p* = 0.029; Right: observed $\chi^2$ = 18.89, *p* < 0.001). The adjacent area v23 exhibited a similar effect, albeit only unilaterally (Right: observed $\chi^2$ = 11.51, *p* = 0.011; Left: observed $\chi^2$ = 8.25, *p* = 0.067). There appeared to be a bilateral preference toward valuation effects in area 25 (Left: observed $\chi^2$ = 12.91, *p* = 0.005; Right: observed $\chi^2$ = 12.83, *p* = 0.005); however, closer inspection suggested this effect was driven by subcortical foci centered in adjacent ventral striatum. No toher parcels were preferentially implicated in valuation relative to DMN. We therefore selected area 7m as an interpretable, bilateral reference point for labeling DMN and non-DMN communities in the analyses that follow. We note that area 7m has been found to not partake in DMN in previous work [@AndrewsHanna2010]. However, we adhere to the nomenclature established by [@Glasser2016], whose area 7m is positioned considerably more ventrally and is well contained within canonical DMN.
 
 ### *Partition Comparison: Full Datasets*
 
@@ -2514,6 +2456,20 @@ searchSpace <- Summaries[[1]] %>%
 | Left        | `r searchSpace$L.mPFC` | `r searchSpace$L.PCC` |
 | Right       | `r searchSpace$R.mPFC` | `r searchSpace$R.PCC` |
 
+\bigskip
+
+```{r Extra examples (supplemental fig 1), out.width = "50%", fig.align = "center", fig.cap = "Additional examples of individualized partitionings, with their binarized forms. A common organizational principle is visible, even though it shifts topographically across individuals."}
+include_graphics("./Images/extra_examples.png")
+```
+
+\bigskip
+
+```{r ARI Comparison (supplemental fig 2), out.width = "50%", fig.align = "center", fig.cap = "Example of a day-to-day comparison using ARI for two subjects (100307 and 100408). This reflects how qualitatively similar, individual-specific partitionings can have relatively low values, and how partitionings across individuals are much closer to chance (i.e. 0)"}
+include_graphics("./Images/ARI_comparison.png")
+```
+
 \newpage 
 
 ## References
+
+
