@@ -2,10 +2,10 @@
 title: 'Individual heterogeneity in functional topography of the default-mode network in medial prefrontal cortex'
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
-  word_document: 
-    reference_docx: Style_reference_draft.docx
   pdf_document: 
     keep_tex: true
+  word_document: 
+    reference_docx: Style_reference_draft.docx
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -1733,7 +1733,7 @@ SW_PCCvPFC_ES <- cohenD(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC
 
 ```
 
-**This analysis showed that the mean ARI along each subject's time series was high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), with significantly higher ARI for PCC (paired permutation, *p* = `r SW_PCCvPFC_permuteTest$Pval`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). These results suggest that some nodes were considerably variable in time, despite overall stability in the community arrangement.**
+**This analysis showed that the mean ARI along each subject's time series was high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), with significantly higher ARI for PCC (paired permutation, *p* = `r ifelse(SW_PCCvPFC_permuteTest$Pval < 0.001, "< 0.001", paste("=", SW_PCCvPFC_permuteTest$Pval))`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). These results suggest that some nodes were considerably variable in time, despite overall stability in the community arrangement.**
 
 There is precedent in thhe literature for the idea that the magnitude (and not just the sign) of the Fiedler vector values conveys important information about the role of each node in the network [@Gkantsidis2003; @Tian2018]. Therefore, we asked whether the magnitude of these eigenvector values was associated with the stability of nodes in time. Specifically, we estimated the proportion of DMN affiliations per node as a function of Fiedler vector values, using a logistic mixed effects model (Figure 4). The model yielded a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDMN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDMN_modelSummary$coefficients[2,2], digits = 2)`, *p* < 0.001), meaning that vertices with **higher absolute Fiedler vector values** were more persistent in their relationship with their corresponding community over time. We refer to this proportion of affiliations over time as the stability of a given node.
 
