@@ -1058,7 +1058,7 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
     } else if (Index == "Cor") {
       for (subj in seq(nSubjects)) {
         for (subj2 in seq(nSubjects)) {
-          indexMatrix[subj,subj2] <- cor(allVecs[, subj], allVecs[, subj2])
+          indexMatrix[subj,subj2] <- cor(allVecs[, subj], allVecs[, subj2], method = "spearman")
         }
       }
     }
@@ -1079,7 +1079,7 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
       }
     } else if (Index == "Cor") {
       for (subj in seq(nSubjects)) {
-        indexMatrix$Index[subj] <- cor(Data[[subj]][, MOI_indx[1]], Data[[subj]][, MOI_indx[2]])
+        indexMatrix$Index[subj] <- cor(Data[[subj]][, MOI_indx[1]], Data[[subj]][, MOI_indx[2]], method = "spearman")
       }
     }
     
@@ -1259,7 +1259,7 @@ mdDay <- mean(Densities$Density[grep("Day", Densities$Type)])
 mdSess <- mean(Densities$Density[grep("Session", Densities$Type)])
 ```
 
-All network analyses were performed using the igraph package [@G.2006] in R 3.4.1 [@RTeam2018]. To establish each subject's network, we selected all the vertices contained within the mPFC/PCC search space (n = 4,801 per subject; mPFC = 2854, PCC = 1947) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, in which the nodes were surface vertices and the edges were the correlations among them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). **TODO: recompute corrCounts so it also stores the # of pos/neg correlations turned to 0, as well as the number of TRs per subject (add to fMRI deets)**. Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. The proportion of remaining edges (i.e. network density) was high for all individuals(mean = `r round(mdAll, digits = 2)`, SD = `r round(sddAll, digits = 3)`). We generated and analyzed network weight matrices at four levels: 1) for each run separately (1200 TRs each); 2) for the concatenated time series for the two runs on each day (2400 TRs total); 3) for each subject's full dataset (4800 TRs total); and 4) on each step of a sliding window analysis (see Partition Evaluation for more details).
+All network analyses were performed using the igraph package [@G.2006] in R 3.4.1 [@RTeam2018]. To establish each subject's network, we selected all the vertices contained within the mPFC/PCC search space (n = 4,801 per subject; mPFC = 2854, PCC = 1947) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, in which the nodes were surface vertices and the edges were the correlations among them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). **TODO: recompute corrCounts so it also stores the # of pos/neg correlations turned to 0, as well as the number of TRs per subject (add to fMRI deets)**. Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. The proportion of remaining edges (i.e. network density) was high for all individuals(mean = `r round(mdAll, digits = 2)`, SD = `r round(sddAll, digits = 3)`). We generated and analyzed network weight matrices at four levels: (1) for each run separately (1200 TRs each); (2) for the concatenated time series for the two runs on each day (2400 TRs total); (3) for each subject's full dataset (4800 TRs total); and (4) on each step of a sliding window analysis (see Partition Evaluation for more details).
 
 ### *Community Detection*
 
@@ -1276,7 +1276,7 @@ In order to evaluate the convergent validity of the resulting partitionings acro
 
 ### *Partition Evaluation*
 
-In order to evaluate the stability and topographical heterogeneity of the communities within and across individuals, we chose the adjusted rand index (ARI) as a reference metric of agreement between two partitionings [@Hubert1985]. The base of the ARI is computed by the formula
+In order to evaluate the stability and topographical heterogeneity of the communities within and across individuals, we chose the adjusted rand index (ARI) as a reference metric of agreement between two partitionings [@Hubert1985], which was calculated using the "mcclust" package in R [@Arno2012]. The base of the ARI is computed by the formula
 
 $$\frac{a + b}{a + b + c + d}$$
 
@@ -1833,45 +1833,16 @@ Tstats <- sapply(All_ttests, "[[", "statistic")
 
 ```
 
-The average percentage of stable vertices per subject was `r round(mean(prcntStable[prcntStable < 1]), digits = 2)` (SD = `r round(sd(prcntStable[prcntStable < 1]), digits = 2)`). With these thresholded partitions, we recomputed the overall similarity of their functional organization across participants. Compared to before, there was even less overall agreement of the full maps among individuals (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). The same was true for both PCC (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`) and mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) separately, although the significance of the differences between these areas was preserved (paired permutation, *p* = `r Overall_PCCvsPFC_permTest$Pval`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`). Figure 6 (right) shows the spatial average of the thresholded binarized partitions across all participants, denoting the proportion of times a vertex was affiliated with the DMN community. This summary conveys a common organizational principle for both communities, but also highlights the considerable variability across individuals in mPFC compared to PCC.
+The average proportion of stable vertices per subject was `r round(mean(prcntStable[prcntStable < 1]), digits = 2)` (SD = `r round(sd(prcntStable[prcntStable < 1]), digits = 2)`). With these thresholded partitions, we recomputed the overall similarity of their functional organization across participants. Compared to before, there was even **less overall agreement** of the full maps among individuals (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). The same was true for both PCC (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`) and mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) separately, although the significance of the differences between these areas was preserved (paired permutation, *p* `r ifelse(Overall_PCCvsPFC_permTest$Pval == 0, "< 0.001", paste("=", Overall_PCCvsPFC_permTest$Pval))`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`). Figure 5 (bottom) shows the spatial average of the thresholded binarized partitions across all participants, denoting the proportion of times a vertex was affiliated with the DMN community. This summary illustrates the common organizational layout of both communities, but also highlights the considerable variability across individuals, especially in mPFC.
 
 ``` {r Noise Effects: Per-subject Fiedler by R-sqd, fig.align="center", fig.width=3, fig.height=3, fig.cap = "FORMER Figure 13. Fiedler vector values are linearly related to the total variance explained by each vertex with respect to the mean DMN time series.", echo=FALSE, message = FALSE, cache = TRUE}
-setwd('./Variance/')
-temp <- list.files()
-Variance <- lapply(temp, read.csv)
-
-## append the Rsquared values onto the current summaries
-# unfortunately this only counts on the DMN community
-appendVar <- lapply(seq(nSubj), function(subj) {left_join(Summaries[[subj]], Variance[[subj]], by = "Vertex")})
-
-## correlate tSNR with Rsquared before and after thresholds
-snrR2_cors <- list()
-
-snrR2_cors$pre_thresh <- lapply(appendVar, function(data) {
-  data %>% 
-    filter(!is.na(Rsquared)) %>%
-    mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
-    group_by(region) %>%
-    dplyr::summarise(correlation = cor(varCoeff, Rsquared)) %>%
-    ungroup()
-}) %>% reduce(left_join, by = "region") 
-
-snrR2_cors$post_thresh <- lapply(appendVar, function(data) {
-  data %>% 
-    filter(!is.na(Rsquared), FiedlerBinary != 0.5) %>%
-    mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
-    group_by(region) %>%
-    dplyr::summarise(correlation = cor(varCoeff, Rsquared)) %>%
-    ungroup()
-}) %>% reduce(left_join, by = "region")
-
 ## next get the mean tSNR of PCC and mPFC before/after thresholding
 # the first piece of code gets each subject's mean tSNR per region, and reduces to a single matrix
 # the second one is similar, but filtering out vertices that didn't meet the threshold
 # the third one applies summary stats to each list to create a summary table
-snrR2_means <- list()
+snr_means <- list()
 
-snrR2_means$pre_thresh <- lapply(appendVar, function(data) {
+snr_means$pre_thresh <- lapply(Summaries, function(data) {
   data %>% 
     mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
     group_by(region) %>% 
@@ -1879,7 +1850,7 @@ snrR2_means$pre_thresh <- lapply(appendVar, function(data) {
     ungroup()
 }) %>% reduce(left_join, by = "region")
 
-snrR2_means$post_thresh <- lapply(appendVar, function(data) {
+snr_means$post_thresh <- lapply(Summaries, function(data) {
   data %>% 
     filter(FiedlerBinary != 0.5) %>%
     mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
@@ -1889,45 +1860,27 @@ snrR2_means$post_thresh <- lapply(appendVar, function(data) {
 }) %>% reduce(left_join, by = "region")
 
 # and compute summary stats on each 
-snrR2_means$overall <- sapply(snrR2_means, function(x) {
+snr_means$overall <- sapply(snr_means, function(x) {
   c(rowMeans(x[, -1]), apply(x[, -1], 1, sd))
 })
-rownames(snrR2_means$overall) <- c("mPFC_mean", "PCC_mean", "mPFC_SD", "PCC_SD")
+rownames(snr_means$overall) <- c("mPFC_mean", "PCC_mean", "mPFC_SD", "PCC_SD")
 
 # permutation pre vs post
-tsnrPermute_mPFC <- permute(as.numeric(snrR2_means$pre_thresh[1, -1]), as.numeric(snrR2_means$post_thresh[1, -1]), paired = T)
-tsnrPermute_PCC <- permute(as.numeric(snrR2_means$pre_thresh[2, -1]), as.numeric(snrR2_means$post_thresh[2, -1]), paired = T)
+tsnrPermute_mPFC <- permute(as.numeric(snr_means$pre_thresh[1, -1]), as.numeric(snr_means$post_thresh[1, -1]), paired = T)
+tsnrPermute_PCC <- permute(as.numeric(snr_means$pre_thresh[2, -1]), as.numeric(snr_means$post_thresh[2, -1]), paired = T)
+tsnrPermute_Post <- permute(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$post_thresh[2, -1]))
 
 # effect size pre vs post
-tsnrCohen_mPFC <- CohenD(as.numeric(snrR2_means$post_thresh[1, -1]), as.numeric(snrR2_means$pre_thresh[1, -1]))
-tsnrCohen_PCC <- CohenD(as.numeric(snrR2_means$post_thresh[2, -1]), as.numeric(snrR2_means$pre_thresh[2, -1]))
-
-# ##### old
-# 
-# # Compare SNR between PCC and mPFC per subject after thresholding (this filtering is relevant here because we aren't using ARI anymore)
-# tempComm_PCC <- lapply(tempComm_PCC, filter, FiedlerVec != 0)
-# tempComm_PFC <- lapply(tempComm_PFC, filter, FiedlerVec != 0) 
-# SNR_PCCvsPFC_perm <- sapply(seq_along(tempComm_PCC), function(x) {permute(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)$Pval})
-# SNR_PCCvsPFC_perm <- p.adjust(SNR_PCCvsPFC_perm, method = "BY")
-# SNR_PCCvsPFC_ES <- sapply(seq_along(tempComm_PCC), function(x) {cohenD(tempComm_PCC[[x]]$varCoeff, tempComm_PFC[[x]]$varCoeff)})
-# prcntSig <- mean(SNR_PCCvsPFC_perm < 0.05) * 100
-# 
-# # Get the mean SNR for each region and compare overall levels 
-# SNR_meanPCC <- sapply(tempComm_PCC, function(data) {mean(data$varCoeff)})
-# SNR_meanPFC <- sapply(tempComm_PFC, function(data) {mean(data$varCoeff)})
-# SNR_meanComp <- list(Values = data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nSubj)), SNR = c(SNR_meanPCC, SNR_meanPFC)),
-#                      Comparison = permute(SNR_meanPCC, SNR_meanPFC)$Pval,
-#                      ES = cohenD(SNR_meanPCC, SNR_meanPFC))
-# rm(SNR_meanPCC, SNR_meanPFC)
-
-
+tsnrCohen_mPFC <- CohenD(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$pre_thresh[1, -1]))
+tsnrCohen_PCC <- CohenD(as.numeric(snr_means$post_thresh[2, -1]), as.numeric(snr_means$pre_thresh[2, -1]))
+tsnrCohen_Post <- CohenD(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$post_thresh[2, -1]))
 ```
 
-To discard the possibility that the higher inter-subject variability in mPFC was driven by retaining vertices with lower signal quality, we compared the mean temporal signal to noise ratio (tSNR) for each region pre and post thresholding. We used subject time series that were not demeaned, but were otherwise equivalent to the data originally used. Paired permutation analyses (5000 iterations) showed that the mean tSNR in mPFC actually significantly increased post-thresholding across subjects (Pre: mean = `r snrR2_means$overall[1, 1]`, SD = `r snrR2_means$overall[3, 1]`; Post: mean = `r snrR2_means$overall[1, 2]`, SD = `r snrR2_means$overall[3, 2]`; paired permutation p-value = `r tsnrPermute_mPFC$Pval`, Cohen's D = `r tsnrCohen_mPFC[1]`), whereas the mean signal quality in PCC was unaffected (Pre: mean = `r snrR2_means$overall[2, 1]`, SD = `r snrR2_means$overall[4, 1]`; Post: mean = `r snrR2_means$overall[2, 2]`, SD = `r snrR2_means$overall[4, 2]`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r tsnrCohen_PCC[1]`). 
+To test the possibility that the higher inter-subject variability in mPFC was driven merely by lower signal quality in the retained vertices, we quantified the mean temporal signal to noise ratio (tSNR) for each region, both before and after thresholding. We calculated tSNR using time series that were not demeaned, but were otherwise equivalent to the data originally used. Paired permutation analyses (5000 iterations) showed that the mean tSNR in mPFC significantly increased after thresholding across subjects (Pre: mean = `r round(snr_means$overall[1, 1], digits = 2)`, SD = `r round(snr_means$overall[3, 1], digits = 2)`; Post: mean = `r round(snr_means$overall[1, 2], digits = 2)`, SD = `r round(snr_means$overall[3, 2], digits = 2)`; paired permutation p-value `r ifelse(tsnrPermute_mPFC$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_mPFC$Pval))`, Cohen's D = `r round(tsnrCohen_mPFC[1], digits = 2)`), whereas the mean signal quality in PCC was unaffected (Pre: mean = `r round(snr_means$overall[2, 1], digits = 2)`, SD = `r round(snr_means$overall[4, 1], digits = 2)`; Post: mean = `r round(snr_means$overall[2, 2], digits = 2)`, SD = `r round(snr_means$overall[4, 2], digits = 2)`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r tsnrCohen_PCC[1]`). In fact, tSNR after thresholding was significantly higher for mPFC (permutation p-value `r ifelse(tsnrPermute_Post$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_Post$Pval))`, Cohen's D = `r round(tsnrCohen_Post[1], digits = 2)`). **(TBD: in terms of tSNR variability (sd) within region, it is true  that mPFC > PCC, both before and after the threshold (mPFC: pre mean sd = 33.96, post mean sd = 30.15; PCC: pre mean sd = 15.28, post mean sd = 14.59))**
 
 ### *Partition Comparison: Day 1 vs Day 2*
 
-The relative high variability seen in the aggregate map could be due to variations in the functional organization of mPFC across days. While the sliding window analysis suggested that these partitions are stable, many of the windows contained data from both days. A stricter evaluation of subject-specificity would be to compare every subject's subdivisions produced by data from each day separately. If the variability that we observed was truly due to having captured an individual's unique organization, day to day ARI values should be consistently higher within- than between-subjects. Figure 7 shows pairwise comparisons among ten example subjects for whole brain (left), as well as for PCC and mPFC separately (right). 
+The relatively high variability seen in the aggregate map could reflect at least three factors: (1) measurement noise, (2) dynamic variation in mPFC network organization, and (3) stable patterns of functional organization that differ across individuals. To evaluate the third possibility, we examined the test/re-test reliability of mPFC/PCC community structure across separate days of testing. If the variability we observed were truly due to having captured an individual's unique organization, day to day ARI values should be consistently higher within- than between-individuals. Figure 6 shows pairwise comparisons among ten example subjects for PCC and mPFC separately (left). 
 
 ``` {r Partition comparison: halves, echo=FALSE, message = FALSE, cache = TRUE}
 # Load data
@@ -2095,13 +2048,13 @@ unthreshComm_PFC_halves_plot <- lapply(Summaries_halves_unthresh[bestindx], "[",
 unthreshComm_PFC_halves <- lapply(Summaries_halves_unthresh, "[", i = !posteriorIndx, j =)
 ```
 
-Once again we found low alignment across subjects for PCC (mean = `r round(mean(Halves_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[2]]), digits = 2)`) and mPFC (mean = `r round(mean(Halves_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[2]]), digits = 2)`), but both areas showed relatively high levels of agreement within subjects (PCC: mean = `r round(mean(Halves_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[1]]), digits = 2)`; mPFC: mean = `r round(mean(Halves_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[1]]), digits = 2)`). However, a coarse comparison of mean ARIs neglects the degree to which subject-wise partitions were indeed idiosyncratic. Therefore, we divided everyone's within-subject ARI by the mean ARI of their between-subject comparison. This ratio denotes the relative specificity of their partition, such that partitions that align well across subjects should yield ratios close to 1, while unique and stable partitions would produce high ratios. Given what we know about these general regions, we expected PCC to be well aligned both within and between subjects. On the other hand, we hypothesized low agreement of mPFC partitions across participants, but with considerable stability across days and sessions within subject.
+Once again we found low alignment across individuals for PCC (mean = `r round(mean(Halves_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[2]]), digits = 2)`) and mPFC (mean = `r round(mean(Halves_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[2]]), digits = 2)`), but both areas showed comparatively high levels of within-individual agreement (PCC: mean = `r round(mean(Halves_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[1]]), digits = 2)`; mPFC: mean = `r round(mean(Halves_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[1]]), digits = 2)`). We calculated an index of relative specificity by computing the ratio of each individual’s across-day (within-participant) ARI to the mean of all between-participant ARI values involving that individual. **The index is expected to take on a value near 1 if partitionings are well aligned across individuals and/or are subject to a common level of measurement noise. It is expected to exceed 1 insofar as functional network organization is reliable and individual-specific. This index is intended to factor out the potential effects of measurement noise, as they are asumed to be constant for each region (TBD, not sure if needed).** 
 
-Figure 8 shows these ARI ratios for PCC and mPFC for all subjects. As expected, we found that while both regions had good specificity (i.e. ratios > 1), the ratios for mPFC (median = `r round(median(Halves_RIRatios_PFC), digits = 2)`; SD = `r round(sd(Halves_RIRatios_PFC), digits = 2)`) were significantly higher than those for PCC (median = `r round(median(Halves_RIRatios_PCC), digits = 2)`; SD = `r round(sd(Halves_RIRatios_PCC), digits = 2)`) when compared with a paired permutation test (*p* = `r Halves_mPFCvPCC_permTest$Pval`; Cohen's D = `r round(Halves_mPFCvPCC_ES, digits = 2)`). These test/retest results suggest that the topographic variability seen in mPFC is reliably rooted in subject-specific organization, and not an inability to capture its topology.
+Figure 6 shows these ARI ratios for PCC and mPFC for all individuals As expected, we found that while both regions showed evidence for specificity (i.e. ratios > 1), the ratios for mPFC (median = `r round(median(Halves_RIRatios_PFC), digits = 2)`; SD = `r round(sd(Halves_RIRatios_PFC), digits = 2)`) were significantly higher than those for PCC (median = `r round(median(Halves_RIRatios_PCC), digits = 2)`; SD = `r round(sd(Halves_RIRatios_PCC), digits = 2)`) when compared with a paired permutation test (*p* `r ifelse(Halves_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Halves_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Halves_mPFCvPCC_ES, digits = 2)`) **(TBD: test against 1. I think it might be worth doing it for PCC's sake, as mPFC's numbers + figure already convey its idiosyncrasy very well. If we do it here, we'll do it for the run-specific analysis too)**. These test/retest results suggest that the topographic variability seen in mPFC arises at least in part from stable and subject-specific organizational patterns.
 
-### *Partition Comparison: Session based*
+### *Partition Comparison: Run based*
 
-We extended the analysis of daily data by examining whether the organization of the DMN could be extracted using session data only. It is worth noting that the length of each session (approx. 14 mins long) falls below the stability threshold for fMRI-based modularity estimations [@Gordon2017]. Nonetheless, high ARI ratios with reduced data could signify the ability to localize a subject's DMN organization with fMRI sessions that are easier to fit along with other study sessions of interest.
+We extended the analysis of per-day data by examining whether the organization of the DMN could be extracted using per-run data only. The duration of each run (approximately 14 mins long) falls below a previously suggested stability threshold for fMRI-based modularity estimations [@Gordon2017]. Nonetheless, high ARI ratios would indicate that the SP algorithm can reliably estimate individual-specific patterns of DMN organization from only a single run of data.
 
 ``` {r Partition comparison: session similarity matrices, echo=FALSE, message = FALSE, cache = TRUE}
 # Load data
@@ -2186,7 +2139,7 @@ RI_PFC_sess_plot <- RI_PFC_sess[bestindx, bestindx]
 RI_PCC_sess_plot <- RI_PCC_sess[bestindx, bestindx]
 ```
 
-Computing SP on networks from individual sessions showed that we can still coarsely capture a subject's unique organizational pattern (Figure 9), even though the overall levels of agreement decreased (PCC between subjects: mean = `r round(mean(Sess_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[2]]), digits = 2)`; PCC within subjects: mean = `r round(mean(Sess_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[1]]), digits = 2)`; mPFC between subjects: mean = `r round(mean(Sess_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[2]]), digits = 2)`; mPFC within subjects: mean = `r round(mean(Sess_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[1]]), digits = 2)`). We again computed each subject's ARI ratio in order to quantify the specificity of these partitions, but this time using the mean ARI acros sessions (Figure 10). 
+Run-specific SP results could still capture a subject's unique organizational pattern to some degree, even though the overall levels of agreement decreased (PCC between subjects: mean = `r round(mean(Sess_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[2]]), digits = 2)`; PCC within subjects: mean = `r round(mean(Sess_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[1]]), digits = 2)`; mPFC between subjects: mean = `r round(mean(Sess_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[2]]), digits = 2)`; mPFC within subjects: mean = `r round(mean(Sess_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[1]]), digits = 2)`). We again computed each subject's ARI ratio in order to quantify the specificity of these partitions, this time using the mean across-run (within-participant) ARI in the denominator of the ratio (Figure 6). 
 
 ``` {r Partition comparison: session ratios, echo=FALSE, message = FALSE, cache = TRUE}
 ## Brain storming:
@@ -2235,9 +2188,7 @@ Sess_mPFCvPCC_permTest <- permute(Sess_RIRatios_PFC, Sess_RIRatios_PCC, paired =
 Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 ```
 
-
-
-We can see again that the ratios for mPFC were higher than those of PCC (permutation,*p*= `r Sess_mPFCvPCC_permTest$Pval`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1. This further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that such patterns can be identified with small amounts of data in spite of a reduction in the estimates. 
+Ratios for mPFC were higher than those of PCC (permutation *p* = `r ifelse(Sess_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Sess_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1 (mPFC: median = `r round(median(Sess_RIRatios_PFC), digits = 2)`, SD = `r round(sd(Sess_RIRatios_PFC), digits = 2)`; PCC: median = `r round(median(Sess_RIRatios_PCC), digits = 2)`, SD = `r round(sd(Sess_RIRatios_PCC), digits = 2)`). This result further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that information about such patterns can be extracted from relatively small amounts of data. 
 
 ### *Correlation vs community detection in mPFC*
 
@@ -2280,15 +2231,15 @@ prepostComp_permTest <- permute(tempComm, tempCor, paired = T)
 prepostComp_ES <- cohenD(tempComm, tempCor)
 ```
 
-The computational demands of our approach escalate quickly as the number of vertices increases. We thus explored the possible advantage to using community detection over a simple seed-based functional connectivity analysis from PCC. Given that other groups have found the spatial distribution of the DMN to be considerably stable within individuals [@Laumann2015; @Gordon2017; @Braga2017; @Kong2018], we examined whether maps generated with spectral partitioning were more similar per subject across days than those computed from seed-based correlations. First, we computed each individual's mean time series of all the vertices contained within PCC, and correlated it with the activity of every mPFC. Since correlation values are continuous, we compared them to their respective unbinarized Fiedler vector maps. We performed pairwise spatial Pearson correlations among maps computed for each day and method from all subjects. For `r nrow(unCorrParticipants %>% filter(Corrs < 0))` subjects, the maps produced with one of the days' datasets insufficiently covered area 7m, and so the community labeling was reversed (for one additional subject, both daily maps were reverted). ARI is robust to these labeling issues, but this produced strong negative correlations of the Fiedler vector for these subjects, even though the topography was highly similar. We thus visually inspected these subjects (n = 7) and reverted the labeling when it was clear that the topologies aligned across days. Figure 11 shows that these pairwise comparisons resemble those from the day-to-day comparisons above, and suggests good alingment between methods, but particularly high agreement within subject and method.
+The computational demands of our approach escalate quickly as the number of vertices increases. We thus explored the possible advantage of community detection relative to a simple seed-based functional connectivity analysis for estimating the individual-specific functional topography of mPFC. We examined whether maps generated with SP were more similar per participant across days than those computed from seed-based correlations. We generated a seed time-series by averaging all vertices in the PCC region of our search space, and calculated its correlation with the activity of each vertex in mPFC **(TBD: limiting this to 7m as a seed. I think it makes sense, especially since we're saying that PCC (1) is also subdivided to some extent, and (2) also shifts across individuals to some extent. Alternatively, you wouldn't use 7m as a seed unless you just wanted to find DMN. Full PCC is what a traditional analysis might have done.)**. We compared the map of correlation values in mPFC to the map of unbinarized Fiedler vector values. We performed pairwise spatial Spearman correlations among maps computed for each day and method from all subjects. For `r nrow(unCorrParticipants %>% filter(Corrs < 0))` subjects, the maps produced with one of the days' datasets insufficiently covered area 7m, and so the community labeling was reversed (for one additional subject, both daily maps were reverted). ARI is robust to these labeling issues, but this produced strong negative correlations of the Fiedler vector for these subjects, even though the topography was highly similar. We thus visually inspected these subjects (n = 7) and reverted the labeling when it was clear that the topologies aligned across days. Figure 7 (left) shows that these pairwise comparisons resemble those from the day-to-day comparisons above, and suggests good alignment between methods, but particularly high agreement within subject and method.
 
-Figure 12 shows the overall degree of similarity across days for patterns dervied using community detection, seed-based correlation, and across methods (i.e. day one community detection versus day two seed-based correlation). While both approaches are very consistent, community detection displayed a significantly higher ARI across days than a simple correlation (paired permutation *p* < 0.001; Cohen's D = `r round(prepostComp_ES, digits = 2)`). It is worth noting that the cross-method agreement is fair, meaning that both approaches show similar topological features. These findings suggest that graph-theoretic community detection algorithms provide a better way to detect stable functional topologies.
+Figure 7 (right) shows the test/re-test reliability across days for patterns dervied using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher ARI across days than a simple correlation (paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", prepostComp_permTest$Pval))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair, signifying that the two approaches identified similar topographic features but also systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies.
 
 ### *Similarities with other work*
 
-The thresholded partitions in our work qualitatively resembled the topographical arrangement of networks A and B proposed by Braga and Buckner [-@Braga2017]. We explored this similarity by reproducing their seed-based connectivity approach in three of our subjects. In their work, Braga and Buckner selected individual vertices along the dorsolateral prefrontal cortex (DLPFC) that produced these two anticorrelated networks. Therefore, we hypothesized that if the communities we identified on the medial wall matched their proposed networks, we should be able to find seed vertices in DLPFC that can reproduce them. The whole-brain seed-based functional connectivity maps for these subjects are juxtaposed to their spectral partitioning counterparts on figure 13.
+The thresholded partitions in our work qualitatively resembled the topographical arrangement of DMN sub-networks A and B proposed by Braga and Buckner [-@Braga2017]. We explored this similarity by reproducing their seed-based connectivity approach in three of our subjects. In their work, Braga and Buckner selected individual vertices along the dorsolateral prefrontal cortex (DLPFC) that produced two anticorrelated networks. Therefore, we hypothesized that if the communities we identified on the medial wall matched their proposed networks, we should be able to find seed vertices in DLPFC that can reproduce them. The whole-brain seed-based functional connectivity maps for these subjects are juxtaposed to their spectral partitioning counterparts on figure 9.
 
-Visual inspection of these networks shows a remarkable similarity between our DMN and non-DMN communities and their networks A and B. These qualitative results are important, as here we reinforce the idea that canonical DMN can be reliably subdivide at the individual level. Further, it shows the potential of community detection methods to automatically extract these partitions without the need to rely on group data. One way in which our results are at odds with those from Braga and Buckner is the functional labeling of these sub-networks. Based on our criteria, network B would more closely identify with DMN (per 7m affiliation), while we currently do not have enough evidence to label network A. These discrepancies should be addressed with explicit behavioral manipulations in the future.
+Visual inspection of these networks shows a remarkable similarity between our DMN and non-DMN communities and the previously reported sub-networks A and B. Our search space does not comprise a number of diagnostic areas used in identifying netowrk A, such as the temporo-parietal junction and parahippocampal area [@Braga2019]. Lack of signal from these areas could drive the small discrepancies in the topography between our work and theirs. Nevertheless, these qualitative similarities are important, as they collectively suggest there may exist a true functional partitioning of canonical DMN regions into two distinct communities. Results from the present investigation suggest that the topographic organization of the communities is variable across a large sample of participants, especially in mPFC, and that the SP algorithm is a useful and reliable tool for identifying the two communities in individuals.
 
 ## Discussion
 
@@ -2303,8 +2254,9 @@ Outline:
 - Summarize the results
 - Ours are not the first to show variability across individuals, but previous studies have focused on a relatively small number of subjects and often rely on qualitative assessment of these differences. They also use parcellations for networks, whereas we focused on individual vertices to gain spatial finesse. Also, to the best of our knowledge we are the first to quantify the organizational heterogeneity of these areas in the human brain. 
 - We are also not the first to show functional subdivision of DMN [@Kernbach2018] (but that's using group averages on parcellated data), or this particular individualized pattern of subdivision (braga). Our results are complementary in the sense that we show similar outcomes in 100 subjects. The major discrepancy is that we assign meaning to the communities based on their coverage of regions identified through a meta-analysis.
-- Stability within subject has also been showsn before (Gratton2018b). This work was done using parcellations and oversampling though.
+- Stability within subject has also been shown before. This work was done using either parcellations and oversampling though. [@Laumann2015; @Gordon2017; @Braga2017; @Gratton2018b; @Kong2018]
 - Talk about SP as a way to identify an individual's partition: deterministic, with simple diagnostics, and requires less data requirements.
+- Similarity with B&B: One way in which our results are at odds with those from Braga and Buckner is the functional labeling of these sub-networks. Based on our criteria, network B would more closely identify with DMN (per 7m affiliation), while we currently do not have enough evidence to label network A. These discrepancies should be addressed with explicit behavioral manipulations in the future. Also our search space is limited compared to theirs, thus making the patterns only partially similar.
 - The main gap is mapping behavior to functional organization, but we will do that with behavioral manipulations of subjective value in the future. Instead, we focus on understanding the importance of individualized mapping in these areas first, as a baseline.
 - Clinical implications: individualized targets, and more accurate estimation of impacts based on assessment of individual patients. Similarly, our approach focuses on individual estimations without group priors, so it's well fit to address the problem of low n in clinical research. Also, SP can produce these effects with moderate amounts of data. Previous results suggest impractical amounts.
 
@@ -2315,7 +2267,7 @@ Outline:
   - Small search space: working at the vertex-level makes it computationally difficult to produce estimates at the whole-brain level. 
 
 
-
+<!--
 
 
 For clinical implications, see Hiser & Koenigs 2018. In short, being able to identify functional idiosyncrasies without much data can yield important insights in diagnosis (meh, we always say that..) of a variety of psychological diseases associated with mPFC. It would be more interesting to identify the repercussions of damage in mPFC per individual. They mention that subgenual vmPFC is a common target for deep brain stimulation (or TMS) as a depression treatment. The refinement of the technique is thus coupled to being able to identify personalized functional topologies. They list a number of results related to mPFC functional connectivity too. In the end, their suggestions for clinical implications of mPFC studies rely on the individual measure of functional expanse. (note that social-relevant areas in their meta analysis look similar to our patterns, and the emotion part to Barbas' latest)
@@ -2334,21 +2286,12 @@ In terms of noise, there are a handful of things to keep in mind. First is that 
 So what's the advantage of this work over previous ones? Gratton, Gordon, and Kong have already found some degree of subject stability and intersubject variability. Ours complements these findings by looking at the vertex level, not just mean parcel activity (this made sense for them, as they were looking at the whole brain). Also, most of these analyses rely on a small set of oversampled subjects (i.e. MSC). Here we extend this to 100, giving credit to individualize examinations even without oversampling. 
 
 Make sure to emphasize that the high overlap between sliding windows makes it more likely that differences are due to noise in the signal, and not strong variability. Like, you wouldn't expect the actual network distribution to shift that much after shifting the time series by 1 minute.
-
+-->
 
 \newpage
 ## Acknowledgements
 
-We would like to thank Dan Sussman for initial guidance on community detection and evaluation methods. Data were provided [in part] by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
-
-
-## Supplemental Materials
-
-
-### *Table 1. Regions of interest from Glasser et al. (2016). Prefixes indicate hemispheric location (e.g. R = right).*
-| Literature           | Significant Brain Regions                 |
-| :------------------- | ----------------------------------------: |
-| ROIs                 | `r str_remove(Yeo_labels, "_ROI")` |
+We would like to thank Dan Sussman for initial guidance on community detection and evaluation methods. This work was supported by grants from the National Science Foundation (BCS-1755757 and BCS-1625552) and the Office of Naval Research (MURI awards N00014-16-1-2832 and N00014-17-1-2304). Data were provided [in part] by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
 
 
 ## Figures
@@ -2544,6 +2487,16 @@ include_graphics("./Images/commvscorr.png")
 include_graphics("./Images/braga_comparison.png")
 
 ```
+
+
+## Supplemental Materials
+
+
+### *Table 1. Regions of interest from Glasser et al. (2016). Prefixes indicate hemispheric location (e.g. R = right).*
+| Literature           | Significant Brain Regions                 |
+| :------------------- | ----------------------------------------: |
+| ROIs                 | `r str_remove(Yeo_labels, "_ROI")` |
+
 
 \newpage 
 
