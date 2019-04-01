@@ -5,7 +5,6 @@ write(paste("Analyzing data for subject", SubjID), stdout())
 library(igraph)
 library(data.table)
 library(parallel)
-library(tidyverse)
 
 # Normalization approach suggested in network textbook (equation 7.10)
 fisherTanh <- function(Data = padjMatrix){
@@ -133,12 +132,14 @@ labelCoords_vertex <- read.table('labelCoords_vertex.csv', sep = ",", header = T
 # load data
 write("Loading data", stdout())
 Data <- fread(paste("./tseries/", SubjID, "_timeSeries.csv", sep = ""), header = F)
+Data <- data.matrix(Data)
 
 # append the ROI label to each vertex
 dimnames(Data) <- list(labelCoords_vertex$Label, seq(ncol(Data)))
 
 # select ROIs
-indx <- sapply(yeoLbls, function(lbl) {grep(lbl, rownames(Data))}) %>% reduce(c)
+indx <- sapply(yeoLbls, function(lbl) {grep(lbl, rownames(Data))})
+indx <- do.call(c, indx)
 
 # reduce time series to onle search space
 nVerts <- length(indx)
