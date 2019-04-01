@@ -2,10 +2,10 @@
 title: 'Individual heterogeneity in functional topography of the default-mode network in medial prefrontal cortex'
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
-  pdf_document: 
-    keep_tex: true
   word_document: 
     reference_docx: Style_reference_draft.docx
+  pdf_document: 
+    keep_tex: true
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -1241,26 +1241,36 @@ With these lists, we tested for parcels that were significantly more strongly as
 
 ### *fMRI Data*
 
-Our fMRI analyses used resting-state fMRI data from the Human Connectome Project [@VanEssen2012] Q6 release (n = `r nSubj`, randomly sampled from the total pool of 469 available subjects). Each subject's data was acquired over two days at Washington University in St. Louis on a Siemens CONNECTOM Skyra MRI scanner (Siemens, Erlangen, Germany). Four resting state runs (TR = 0.720 s, TE = 33.1 ms, FA = 52°, multiband factor = 8, 72 slices, 2 mm isotropic voxels) each comprised 1200 time points(14 min 33 s) for a total of 4800 time points. Two runs were acquired on each day, with the phase encoding direction set to left-right for one run and right-left for the other. Only subjects with both left-right and right-left phase encoding were included (i.e. subjects with four rsfMRI sessions). In addition, only datasets with either low motion levels (under 1.5mm) or under 0.5 mm mean framewise displacement (FD) were used. See [@VanEssen2012] for more details about the data acquisition protocol.
+``` {r fMRI data descriptives} 
+# load file with the n of TRs and density data
+corrCounts <- read.csv('corrCounts.csv')
+```
+Our fMRI analyses used resting-state fMRI data from the Human Connectome Project [@VanEssen2012] Q6 release (n = `r nSubj`, randomly sampled from the total pool of 469 available subjects). Each subject's data was acquired over two days at Washington University in St. Louis on a Siemens CONNECTOM Skyra MRI scanner (Siemens, Erlangen, Germany). Four resting state runs (TR = 0.720 s, TE = 33.1 ms, FA = 52°, multiband factor = 8, 72 slices, 2 mm isotropic voxels) each comprised up to 1200 time points(14 min 33 s) for a total of up to 4800 time points (median = `r median(corrCounts$nTR)`, minimum = `r min(corrCounts$nTR)`). Two runs were acquired on each day, with the phase encoding direction set to left-right for one run and right-left for the other. Only subjects with both left-right and right-left phase encoding were included (i.e. subjects with four rsfMRI sessions). In addition, only datasets with either low motion levels (under 1.5 mm) or under 0.5 mm mean framewise displacement (FD) were used. See [@VanEssen2012] for more details about the data acquisition protocol.
 
 Data initially underwent the HCP minimal preprocessing pipeline [@Glasser2013], which included gradient nonlinearity correction, motion correction, EPI distortion correction, temporal denoising based on independent components (FIX, [@Griffanti2014; @Salimi-Khorshidi2014]), high-pass filtering (0.0005 Hz threshold), and MNI152-based normalization. Data were further preprocessed using an in-house pipeline described previously [@Tobyne2017]. Steps included linear interpolation across timepoints with over 0.5 mm of framewise displacement, band-pass filtering (allowed frequencies ranged from 0.009 and 0.08 Hz), temporal denoising and high-motion censoring by deletion, as well as mean greyordinate signal regression [@Burgess2016]. Volumes that displayed an FD of over 0.5 mm were considered as spikes and removed from the subject's dataset, and subjects whose spike counts were above 5% of their total data were excluded from analyses. Finally, data acquired on the same day (i.e. left-right and right-left phase encoding session) were temporally demeaned. Each subject's brain was comprised of 32k standard HCP greyordinates per hemisphere (combined in a CIFTI file). We retained only the cortical surfaces, which resulted in 59,412 total surface vertices per subject. 
 
 ### *Network Definition*
 
-```{r Density calculation, out.width="60%", fig.align = "center"}
+```{r Density calculation}
 # Load density data
-setwd('./Densities/')
-temp <- list.files()
-Densities <- do.call(rbind, lapply(temp, read.csv))
+corrCounts <- corrCounts %>%
+  mutate(prcntNS = NonSignificant / Total,
+         prcntPos = SignificantPos / (Total - NonSignificant),
+         prcntNeg = SignificantNeg / (Total - NonSignificant),
+         density = 1 - prcntNS)
 
-# Get the mean density for all data, daily scans, and sessions
-mdAll <- mean(Densities$Density[grep("Overall", Densities$Type)])
-sddAll <- sd(Densities$Density[grep("Overall", Densities$Type)])
-mdDay <- mean(Densities$Density[grep("Day", Densities$Type)])
-mdSess <- mean(Densities$Density[grep("Session", Densities$Type)])
+# density descriptives
+mdAll <- mean(corrCounts$density)
+sddAll <- sd(corrCounts$density)
+
+# prcnt pos/neg
+mPos <- round(mean(corrCounts$prcntPos), digits = 2)
+sdPos <-round(sd(corrCounts$prcntPos), digits = 2)
+mNeg <- round(mean(corrCounts$prcntNeg), digits = 2)
+sdNeg <-round(sd(corrCounts$prcntNeg), digits = 2)
 ```
 
-All network analyses were performed using the igraph package [@G.2006] in R 3.4.1 [@RTeam2018]. To establish each subject's network, we selected all the vertices contained within the mPFC/PCC search space (n = 4,801 per subject; mPFC = 2854, PCC = 1947) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, in which the nodes were surface vertices and the edges were the correlations among them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). **TODO: recompute corrCounts so it also stores the # of pos/neg correlations turned to 0, as well as the number of TRs per subject (add to fMRI details)**. Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. The proportion of remaining edges (i.e. network density) was high for all individuals(mean = `r round(mdAll, digits = 2)`, SD = `r round(sddAll, digits = 3)`). We generated and analyzed network weight matrices at four levels: (1) for each run separately (1200 TRs each); (2) for the concatenated time series for the two runs on each day (2400 TRs total); (3) for each subject's full dataset (4800 TRs total); and (4) on each step of a sliding window analysis (see Partition Evaluation for more details).
+All network analyses were performed using the igraph package [@G.2006] in R 3.4.1 [@RTeam2018]. To establish each subject's network, we selected all the vertices contained within the mPFC/PCC search space (n = 4,801 per subject; mPFC = 2854, PCC = 1947) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, in which the nodes were surface vertices and the edges were the correlations among them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). The proportion of remaining edges (i.e. network density) was high for all individuals (mean = `r round(mdAll, digits = 2)`, SD = `r round(sddAll, digits = 3)`), and was mostly composed of positive correlations (positive: mean = `r mPos`, sd = `r sdPos`; negative: mean = `r mNeg`, sd = `r sdNeg`). Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. We generated and analyzed network weight matrices at four levels: (1) for each run separately (1200 TRs each); (2) for the concatenated time series for the two runs on each day (2400 TRs total); (3) for each subject's full dataset (4800 TRs total); and (4) on each step of a sliding window analysis (see Partition Evaluation for more details).
 
 ### *Community Detection*
 
@@ -1272,7 +1282,7 @@ L = I - D^{-\frac{1}{2}}WD^{-\frac{1}{2}}
 
 Where $I$ is the identity matrix, $D$ is a diagonal matrix containing the strength of each vertex (i.e. the sum of its transformed correlation values with every other vertex), and $W$ is the network weight matrix. This resulted in a matrix wherein each entry was the normalized value of the connection (from 0 to 1) between any two vertices relative to their combined connectivity strength, and with ones along the diagonal. The transformation ensures that every row sums to zero. We then computed the eigenvalues and eigenvectors of the normalized Laplacian, and used the eigenvector associated with the second-to-lowest eigenvalue to divide the network into two. This vector (traditionally called the 'Fiedler vector') provides a set of positive and negative values and is binarized by sign [@Fiedler1975]. This method partitions the network into two similarly-sized communities, and guarantees that they share at least one edge [@Chung1999]. In this way, SP avoids producing communities that are too small to be physiologically meaningful (for example, small sets of vertices that are spuriously correlated due to measurement noise). Given that this data-driven method does not label the two communities or establish correspondence across participants, we defined each individual's "DMN" community as that which contained the DMN-specific PCC parcel identified in our meta-analysis. The high density of these networks ensured that spectral partitioning did not face the issues associated with its use in sparse networks [@Fortunato2016].
 
-In order to evaluate the convergent validity of the resulting partitionings across community-detection methods, we also estimated these communities using the more traditional approach of modularity maximization, based on the algorithm from Clauset et al. [-@Clauset2004]. **(TODO: rephrase) This method maximizes a quality function that compares the strength of the connection between any two vertices against a null model of their probability of being randomly connected to any other vertex in the network. The method heuristically iterates through many possible combinations of vertices, and selects the clustering that maximizes the network's modularity.** Unlike SP, modularity can fractionate a network into more than two communities. We assumed that if the partitionings from the bounded and unbounded community detection methods showed high levels of agreement, we could gain confidence in that we were indeed fractioning the search space into an adequate number of communities. We also diagnosed our choice of two communities by reporting the rank (from lowest to largest) of the first eigenvalue produced by SP to be non-zero. This eigenvalue serves as an estimator of the optimal number of communities in a network [@Chung1999], such that a rank of two in our partitions justifies limiting the number of communities to two.
+In order to evaluate the convergent validity of the resulting partitionings across community-detection methods, we also estimated these communities using the more traditional approach of modularity maximization, based on the algorithm from Clauset et al. [-@Clauset2004]. This method compares the strength of the connection between any two vertices to their probability of being randomly connected to any other vertex in the network. The method heuristically iterates through many possible combinations of vertices, and selects the partitioning that maximizes the network's so-called modularity. Unlike SP, modularity can fractionate a network into more than two communities. We assumed that if the partitionings from the bounded and unbounded community detection methods showed high levels of agreement, we could gain confidence in that we were indeed fractioning the search space into an adequate number of communities. We also diagnosed our choice of two communities by reporting the rank (from lowest to largest) of the first eigenvalue produced by SP to be non-zero. This eigenvalue serves as an estimator of the optimal number of communities in a network [@Chung1999], such that a rank of two in our partitions justifies limiting the number of communities to two.
 
 
 ### *Partition Evaluation*
