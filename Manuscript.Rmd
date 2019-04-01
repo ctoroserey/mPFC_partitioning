@@ -2,10 +2,10 @@
 title: 'Individual heterogeneity in functional topography of the default-mode network in medial prefrontal cortex'
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
-  word_document: 
-    reference_docx: Style_reference_draft.docx
   pdf_document: 
     keep_tex: true
+  word_document: 
+    reference_docx: Style_reference_draft.docx
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -1270,7 +1270,7 @@ mNeg <- round(mean(corrCounts$prcntNeg), digits = 2)
 sdNeg <-round(sd(corrCounts$prcntNeg), digits = 2)
 ```
 
-All network analyses were performed using the igraph package [@G.2006] in R 3.4.1 [@RTeam2018]. To establish each subject's network, we selected all the vertices contained within the mPFC/PCC search space (n = 4,801 per subject; mPFC = 2854, PCC = 1947) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, in which the nodes were surface vertices and the edges were the correlations among them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). The proportion of remaining edges (i.e. network density) was high for all individuals (mean = `r round(mdAll, digits = 2)`, SD = `r round(sddAll, digits = 3)`), and was mostly composed of positive correlations (positive: mean = `r mPos`, sd = `r sdPos`; negative: mean = `r mNeg`, sd = `r sdNeg`). Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. We generated and analyzed network weight matrices at four levels: (1) for each run separately (1200 TRs each); (2) for the concatenated time series for the two runs on each day (2400 TRs total); (3) for each subject's full dataset (4800 TRs total); and (4) on each step of a sliding window analysis (see Partition Evaluation for more details).
+All network analyses were performed using the igraph package [@G.2006] in R 3.4.1 [@RTeam2018]. To establish each subject's network, we selected all the vertices contained within the mPFC/PCC search space (n = 4,801 per subject; mPFC = 2854, PCC = 1947) and computed the Pearson correlation of the time series for every pair of vertices. This produced a weighted network for each subject, in which the nodes were surface vertices and the edges were the correlations among them. Next, we applied Fisher's r to z transformation, and performed a two-sided significance test to identify strong correlations. The resulting p-values were corrected for multiple comparisons (FDR < 0.05), and edges with non-significant correlations were turned to 0 (all other edges retained their respective z-values). The proportion of remaining edges (i.e. network density) was high for all individuals (mean = `r round(mdAll, digits = 2)`, SD = `r round(sddAll, digits = 3)`), which were mostly composed of positive correlations (positive: mean = `r mPos`, sd = `r sdPos`; negative: mean = `r mNeg`, sd = `r sdNeg`). Next, we took the exponential of these values so that all weights were positive while maintaining the ordinal ranks of the original correlation distribution. Values of 1 of this transformed distribution were returned to 0 in order to avoid the inclusion of these edges in the network analyses. We generated and analyzed network weight matrices at four levels: (1) for each run separately (1200 TRs each); (2) for the concatenated time series for the two runs on each day (2400 TRs total); (3) for each subject's full dataset (4800 TRs total); and (4) on each step of a sliding window analysis (see Partition Evaluation for more details).
 
 ### *Community Detection*
 
