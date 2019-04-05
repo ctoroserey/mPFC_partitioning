@@ -277,41 +277,51 @@ partoverCorrMat <- function(ROI = 'R_7m_ROI', lbels = verts[[1]]){
 # This takes either a matrix of correlation values (vectors too, but manually compute pvals)
 # Normalization approach suggested in network textbook (equation 7.20)
 # This transformation is approximately normal with mean 0 and sd = sqrt(1 / (n - 3))
-fisherTanh <- function(Data = padjMatrix){
+fisherTanh <- function(Data = padjMatrix, preThresh = NA){
   
   transformed <- list()
   
-  # tanh
-  transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
-  
-  # p-vals
-  if (is.matrix(Data)) {
-    z.vec <- transformed$tanhZ[upper.tri(transformed$tanhZ)]
-    n <- dim(Data)[1]
-  } else if (is.vector(Data)) {
-    z.vec <- transformed$tanhZ
-    n <- length(Data)
-  }
-  transformed$pvals <- 2 * pnorm(abs(z.vec), 0 , sqrt(1 / (n - 3)), lower.tail = F) # no lower tail, but absolute Zs = two tailed
-  
-  # adjust pvals
-  transformed$adjustPvals <- p.adjust(transformed$pvals, "BH")
-  
-  if (is.matrix(Data)) {
-    # get pvals and their adjustment into a symetric matrix form
-    # regular
-    tempMat <- matrix(0, dim(Data)[1], dim(Data)[2])
-    tempMat[upper.tri(tempMat)] <- transformed$pvals
-    tempMat[lower.tri(tempMat)] <- transformed$pvals
-    dimnames(tempMat) <- list(rownames(Data), rownames(Data))
-    transformed$pvals <- tempMat
+  if (is.numeric(preThresh)) {
+    Data[Data == 1] <- 0.999
+    Data[Data < preThresh] <- 0
+    transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
+  } else {
+    # tanh
+    Data[Data == 1] <- 0.999
+    transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
     
-    # adjusted
-    tempMat <- matrix(0, dim(Data)[1], dim(Data)[2])
-    tempMat[upper.tri(tempMat)] <- transformed$adjustPvals
-    tempMat[lower.tri(tempMat)] <- transformed$adjustPvals
-    dimnames(tempMat) <- list(rownames(Data), rownames(Data))
-    transformed$adjustPvals <- tempMat
+    # p-vals
+    if (is.matrix(Data)) {
+      z.vec <- transformed$tanhZ[upper.tri(transformed$tanhZ)]
+      n <- dim(Data)[1]
+    } else if (is.vector(Data)) {
+      z.vec <- transformed$tanhZ
+      n <- length(Data)
+    }
+    transformed$pvals <- 2 * pnorm(abs(z.vec), 0 , sqrt(1 / (n-3)), lower.tail=F)
+    
+    # adjust pvals
+    transformed$adjustPvals <- p.adjust(transformed$pvals, "BH")
+    
+    if (is.matrix(Data)) {
+      # get pvals and their adjustment into a symetric matrix form
+      # regular
+      tempMat <- matrix(0, dim(Data)[1], dim(Data)[2])
+      tempMat[upper.tri(tempMat)] <- transformed$pvals
+      tempMat[lower.tri(tempMat)] <- transformed$pvals
+      dimnames(tempMat) <- list(rownames(Data), rownames(Data))
+      transformed$pvals <- tempMat
+      
+      # adjusted
+      tempMat <- matrix(0, dim(Data)[1], dim(Data)[2])
+      tempMat[upper.tri(tempMat)] <- transformed$adjustPvals
+      tempMat[lower.tri(tempMat)] <- transformed$adjustPvals
+      dimnames(tempMat) <- list(rownames(Data), rownames(Data))
+      transformed$adjustPvals <- tempMat
+      
+      # retain only the significant adjusted pval Z scores
+      transformed$tanhZ[transformed$adjustPvals > 0.05] <- 0
+    }
   }
   
   return(transformed)
@@ -470,7 +480,7 @@ plotROItoVertex <- function(Data = R_7m_allCorr, ROI = 'R_7m_ROI', ColRange = Co
 ## Run a fastgreedy modularity community detection on ROIs
 # This function relies on having the timeSeries data uploaded, and labelCoords_vertex 
 # Extras dictates whether the community object + correlation matrix should also be extracted
-communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "vertex", thresh = F, extras = F) {
+communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "vertex", extras = F) {
   
   print(paste('Computing modularity based on', Type))
   
@@ -482,9 +492,7 @@ communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "v
     corrMat <- cor(t(Data))
     corrMatrix <- corrMat
     transfMat <- fisherTanh(Data = corrMat)
-    if (thresh == T) {
-      transfMat$tanhZ[transfMat$adjustPvals > 0.05] <- 0
-    }
+    
     corrMat <- transfMat$tanhZ
     
     diag(transfMat$tanhZ) <- 0    
@@ -541,11 +549,6 @@ communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "v
       # transform to Fisher's (think of thresholding)
       transfMat <- fisherTanh(Data = corrMat)
       
-      # Determine if edges should be thresholded or not
-      if (thresh == T) {
-        transfMat$tanhZ[transfMat$adjustPvals > 0.05] <- 0
-      }
-      
       # Store Fisher transformed vals for graphing
       corrMat <- transfMat$tanhZ
       
@@ -593,11 +596,6 @@ communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "v
       
       # transform to Fisher's (think of thresholding)
       transfMat <- fisherTanh(Data = corrMat)
-      
-      # Determine if edges should be thresholded or not
-      if (thresh == T) {
-        transfMat$tanhZ[transfMat$adjustPvals > 0.05] <- 0
-      }
       
       # Store Fisher transformed vals for graphing
       corrMat <- transfMat$tanhZ
@@ -1295,7 +1293,7 @@ Where $a$ is the number of pairs of nodes that were grouped together in both par
 
 We performed a number of comparisons among partitions. First, we computed the degree of agreement between SP and modularity per subject to validate the resulting functional patterns. Modularity and SP have been previously found to show overfitting and underfitting tendencies, respectively, in their community detection performance in a diverse number of network types [@Ghasemian2018]. Alignment between the two algorithms would therefore give us confidence in the validity of the resulting partitionings. Next, we compared the partitionings derived from each individual's full time series across subjects, and report the mean pairwise ARI for the group. We then performed the same evaluation for PCC and mPFC separately, and examined whether there were mean differences in overall agreement within these regions by performing a paired permutation analysis (5000 iterations) on all pairwise ARI comparisons across subjects. Given that the functional heterogeneity of brain areas is unevenly distributed across the cortex [@Mueller2013a], we performed all subsequent analyses on PCC and mPFC separately.
 
-To estimate the degree of stability of these partitions per individual we performed a sliding window analysis (20 min windows, 1 min increments, mean number of windows per subject = 37), comparing each window's resulting partition against the partition derived from the whole subject's data. A 20-min window is typically adequate for identifying stable community features in brain networks [@Gordon2017]. We assessed whether the magnitude of the Fiedler vector value for a given vertex (for the full subject-level data set) was associated with the stability of that vertex’s sub-network assignment across time windows. To do this, we fit a mixed effects logistic regression model, in which the dependent variable was the proportion of times each vertex participated in the DMN community across windows, and the explanatory variables included a random effect of subject and a fixed effect of the Fiedler vector value for that vertex (derived from their full time series). Based on this relationship, we identified a threshold Fiedler vector value for each subject, such that above-threshold vertices were persistently associated with either DMN or non-DMN more than 95% of the time.
+To estimate the degree of stability of these partitions per individual we performed a sliding window analysis (20 min windows, 1 min increments, mean number of windows per subject = 37), comparing each window's resulting partition against the partition derived from the whole subject's data. A 20-min window is typically adequate for identifying stable community features in brain networks [@Gordon2017]. We assessed whether the magnitude of the Fiedler vector value for a given vertex (for the full subject-level data set) was associated with the stability of that vertex’s sub-network assignment across time windows. To do this, we fit a mixed effects logistic regression model, in which the dependent variable was the proportion of times each vertex participated in the DMN community across windows, and the explanatory variables included a random effect of subject and a fixed effect of the Fiedler vector value for that vertex (derived from their full time series). Based on this relationship, we identified a threshold Fiedler vector value for each subject, such that above-threshold vertices were persistently associated with either DMN or non-DMN more than 99% of the time.
 
 We then estimated the level of agreement between network partitions estimated using data from individual days (with 2 days per participant). If the functional organization estimated by SP is indeed individual-specific, we should see higher agreement within individual (test/re-test across days) than across individuals. We tested this idea by computing the ratio of the mean ARI within and between individuals. Ratios close to one denoted similar within-participant and across-participant alignment, whereas ratios considerably higher than one suggested that partitions were more similar within-participant than across participants. We then extended this idea by computing the overall agreement across individual runs (4 per subject). Similar to the day-based analysis, we assessed whether run-level data showed higher agreement within-subject than between subjects. 
 
@@ -1535,13 +1533,16 @@ Next, we examined how similar the partitions were across subjects by computing t
 ### *Pattern variability over time*
 
 
-``` {r Stability per subject: Overall, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Variability per subject: Overall, echo=FALSE, message = FALSE, cache = TRUE}
 # Load files
 setwd('./Sliding_window/')
 temp <- list.files(pattern = '*Comparisons.csv')
 SC <- lapply(temp, read.csv2)
 temp <- list.files(pattern = '*Values.csv')
 SVals <- lapply(temp, read.csv2)
+
+# concatenate all proportion of DMN affiliations per node to produce (1) a histogram for fig 4C, and (2) % of node affiliated with either community > 99% over time
+allPropDMN <- sapply(Summaries, "[[", "slidePropDMN")
 
 # Do a mixed effects GLM (binomial, quasi unavailable on glmer) to estimate the relationship between Fiedler vec and propDMN
 SC_FVvPDMN_model <- glmer(slidePropDMN ~ FiedlerVec + (1 | SubjID), family = "binomial", data = allSummaries)
@@ -1579,70 +1580,12 @@ SC_sd_plot <- ggplot(data = SC_summary, aes(x=SD)) +
   theme(text = element_text(size=35)) +
   theme_classic() 
 
-## PLAYING WITH AR AND MA PROCESSES
-# tempSC <- do.call(rbind, SC)
-# tempSC <- SC_PFC
-# tempSC$SubjID <- as.factor(tempSC$SubjID)
-# test <- numeric()
-# intercepts <- numeric()
-# coefficients <- numeric()
-# 
-# for (i in seq(100)) {
-#   temp <- arima(SC[[i]]$Index, c(1,0,0), method = "ML")
-#   test <- c(test, temp$residuals)
-#   intercepts[i] <- temp$coef[2]
-#   coefficients[i] <- temp$coef[1] 
-# }
-# 
-# tempSC$Res <- test
-# 
-# ggplot(data = tempSC, aes(Window, Res, group = SubjID, color = SubjID)) +
-#   geom_line(show.legend = F, alpha = 0.5) +
-#   theme_classic()
-# 
-# ggplot(data = tempSC, aes(Res, group = SubjID, color = SubjID)) +
-#   geom_density(alpha = 0.5, show.legend = F) +
-#   theme_classic()
-# 
-# 
-# test <- aggregate(SC_PCC$Index, by = list(SC_PFC$SubjID), arima, order = c(10,0,0), method = "ML")
-# intercepts <- numeric()
-# coefficients <- numeric()
-# for(i in seq(100)) {
-#   intercepts[i] <- test$x[[i]]['intercept']
-#   coefficients[i] <- test$x[[i]]['ar1']
-# }
-# 
-# plot(intercepts)
 
-# AND WITH MORE SIMILARITY MATRICES
-# THE POINT HERE IS THAT I TOOK THE ARI SIMILARITY MATRIX OF ALL THE SLIDING WINDOWS PER SUBJECT AND AVERAGED ACROSS SUBJECTS
-# THIS PRODUCES A MATRIX WHERE YOU CAN TELL THE AUTOCORRELATED NATURE OF THE DATA IF UNCLUSTERED, BUT OTHERWISE THERE ARE MARKED DAY CLUSTERS
-# simMatrices <- list()
-# nrun <- 1
-# for (subj in SVals) {
-#   nWins <- ncol(subj)
-#   if (nWins != 37) {
-#     print("Fewer than 37 windows...")
-#   } else {
-#     tempMat <- matrix(NA, nWins, nWins)
-#     for (i in seq(nWins)) {
-#       for(j in seq(nWins)) {
-#         tempMat[i,j] <- arandi(subj[,i], subj[,j], adjust = T)
-#       }
-#     }
-#     simMatrices[[nrun]] <- tempMat
-#     nrun <- nrun + 1
-#   }
-# }
-# 
-# meanMatrices <- Reduce("+", simMatrices) / length(simMatrices)
-# corrplot(meanMatrices, method = "color", is.corr = F, cl.lim = c(0,1))
 ```
 
 In order to estimate the degree of stability of these partitions in time, we performed a sliding window analysis on each subject's full time series (20 min windows shifting by 1 min), comparing the partitioning derived from each window with the partitioning computed using the entire time series (Figure 4). 
 
-``` {r Stability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Variability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
 ## Check stability for PCC and mPFC separately
 # Get the sliding values for PCC and PFC separately
 tempSW_PCC <- lapply(SVals, "[", i = posteriorIndx, j =)
@@ -1656,8 +1599,8 @@ for (subj in seq(nSubj)) {
   tempPFC <- numeric()
   nWins <- ncol(tempSW_PCC[[subj]])
   for (Win in seq(nWins)) {
-    tempPCC[Win] <- arandi(tempComm_PCC[[subj]]$FiedlerBinary, tempSW_PCC[[subj]][,Win], adjust = T)
-    tempPFC[Win] <- arandi(tempComm_PFC[[subj]]$FiedlerBinary, tempSW_PFC[[subj]][,Win], adjust = T)
+    tempPCC[Win] <- arandi(tempComm_PCC[[subj]]$FiedlerBinary, tempSW_PCC[[subj]][, Win], adjust = T)
+    tempPFC[Win] <- arandi(tempComm_PFC[[subj]]$FiedlerBinary, tempSW_PFC[[subj]][, Win], adjust = T)
   }
   dfPCC <- data.frame(SubjID = rep(subjList[subj], nWins),
                       Window = seq(nWins),
@@ -1685,18 +1628,17 @@ SW_PCCvPFC_ES <- cohenD(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC
 
 ```
 
-**This analysis showed that the mean ARI along each subject's time series was high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), with significantly higher ARI for PCC (paired permutation, *p* = `r ifelse(SW_PCCvPFC_permuteTest$Pval < 0.001, "< 0.001", paste("=", SW_PCCvPFC_permuteTest$Pval))`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). These results suggest that some nodes were considerably variable in time, despite overall stability in the community arrangement.**
+This analysis showed that the mean ARI along each subject's time series was high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), with significantly higher ARI for PCC (paired permutation, *p* = `r ifelse(SW_PCCvPFC_permuteTest$Pval < 0.001, "< 0.001", paste("=", SW_PCCvPFC_permuteTest$Pval))`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). However, only `r round(mean(allPropDMN < 0.01 | allPropDMN > 0.99), digits = 4) * 100` percent of the nodes across participants belonged to either community over 99% of the time. These results suggest that even though there is considerable stability in these partitionings, there is variability left to account for.
 
-There is precedent in thhe literature for the idea that the magnitude (and not just the sign) of the Fiedler vector values conveys important information about the role of each node in the network [@Gkantsidis2003; @Tian2018]. Therefore, we asked whether the magnitude of these eigenvector values was associated with the stability of nodes in time. Specifically, we estimated the proportion of DMN affiliations per node as a function of Fiedler vector values, using a logistic mixed effects model (Figure 4). The model yielded a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDMN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDMN_modelSummary$coefficients[2,2], digits = 2)`, *p* < 0.001), meaning that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community over time. We refer to this proportion of affiliations over time as the stability of a given node.
+There is precedent in the literature for the idea that the magnitude (and not just the sign) of the Fiedler vector values conveys important information about the role of each node in the network [@Gkantsidis2003; @Tian2018]. Therefore, we asked whether the magnitude of these eigenvector values was associated with the stability of nodes in time. Specifically, we estimated the proportion of DMN affiliations per node as a function of Fiedler vector values, using a logistic mixed effects model (Figure 4). The model yielded a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDMN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDMN_modelSummary$coefficients[2,2], digits = 2)`, *p* < 0.001), meaning that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community over time. We refer to this proportion of affiliations over time as the stability of a given node.
 
 ``` {r Threshold values}
 # Get a FV threshold for each subject based on mean vertex stability
-# Run the function safely, because some noisy subjects have no relationship between stability and FV
 # Note, the mean resulting threshold is similar to the group's 25th and 75th quantiles
 TFV <- safely(threshFV)
 tempList <- lapply(Summaries, TFV)
 
-# Store thre FV thresholds for all subject 
+# Store the FV thresholds for all subject 
 threshDF <- data_frame(SubjID = substring(subjList, 1, 6),
                        Lower = NA,
                        Upper = NA)
@@ -1728,7 +1670,7 @@ rm(tempList)
 
 ```
 
-These analyses show that the original pattern identified with the full dataset is stable in time, and that there is potential value in thresholding the Fiedler vector as a means to identify idiosyncratic and reliable DMN and non-DMN vertices. We therefore thresholded each subject's Fiedler vector to produce these refined maps. We estimated this threshold by selecting the smallest absolute Fiedler vector value that yielded a stability of 95%, for positive (mean = `r threshDescriptives[3]`, SD = `r threshDescriptives[4]`) and negative (mean = `r threshDescriptives[1]`, SD = `r threshDescriptives[2]`) values separately. Individuals without such stable nodes (n = `r nUnstable`) were not thresholded, and were included in the subsequent analyses in unthresholded form. Sub-threshold vertices were set to zero in Fiedler vector maps and 0.5 in the binarized maps so that they would not bias the calculation of averages. Figure 5 shows the thresholded partitioning for the same individual shown in Figure 2. The maps used in all subsequent analyses were thresholded by this individualized criterion.
+These analyses suggest that the original pattern identified with the full dataset is stable in time, and that there is potential value in thresholding the Fiedler vector as a means to identify idiosyncratic and reliable DMN and non-DMN vertices. We therefore thresholded each subject's Fiedler vector to produce these refined maps. We estimated this threshold by selecting the smallest absolute Fiedler vector value that yielded a stability of 99%, for positive (mean = `r threshDescriptives[3]`, SD = `r threshDescriptives[4]`) and negative (mean = `r threshDescriptives[1]`, SD = `r threshDescriptives[2]`) values separately. Individuals without such stable nodes (n = `r nUnstable`) were not thresholded, and were included in the subsequent analyses in unthresholded form. Sub-threshold vertices were set to zero in Fiedler vector maps and 0.5 in the binarized maps so that they would not bias the calculation of averages. Figure 5 shows the thresholded partitioning for the same individual shown in Figure 2. The maps used in all subsequent analyses were thresholded by this individualized criterion.
 
 ### *Partition Comparison: Thresholded Full Datasets*
 ``` {r Partition comparison: all thresholded, echo=FALSE, message = FALSE, cache = TRUE}
@@ -1786,7 +1728,7 @@ Tstats <- sapply(All_ttests, "[[", "statistic")
 
 ```
 
-The average proportion of stable vertices per subject was `r round(mean(prcntStable[prcntStable < 1]), digits = 2)` (SD = `r round(sd(prcntStable[prcntStable < 1]), digits = 2)`). With these thresholded partitions, we recomputed the overall similarity of their functional organization across participants. Compared to before, there was even **less overall agreement** of the full maps among individuals (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). The same was true for both PCC (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`) and mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) separately, although the significance of the differences between these areas was preserved (paired permutation, *p* `r ifelse(Overall_PCCvsPFC_permTest$Pval == 0, "< 0.001", paste("=", Overall_PCCvsPFC_permTest$Pval))`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`). Figure 5 (bottom) shows the spatial average of the thresholded binarized partitions across all participants, denoting the proportion of times a vertex was affiliated with the DMN community. This summary illustrates the common organizational layout of both communities, but also highlights the considerable variability across individuals, especially in mPFC.
+The average proportion of stable vertices per subject was `r round(mean(prcntStable[prcntStable < 1]), digits = 2)` (SD = `r round(sd(prcntStable[prcntStable < 1]), digits = 2)`). With these thresholded partitions, we recomputed the overall similarity of their functional organization across participants. Compared to before, there was even less overall agreement of the full maps among individuals (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). The same was true for both PCC (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`) and mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) separately, although the significance of the differences between these areas was preserved (paired permutation, *p* `r ifelse(Overall_PCCvsPFC_permTest$Pval == 0, "< 0.001", paste("=", Overall_PCCvsPFC_permTest$Pval))`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`). Figure 5 (bottom) shows the spatial average of the thresholded binarized partitions across all participants, denoting the proportion of times a vertex was affiliated with the DMN community. This summary illustrates the common organizational layout of both communities, but also highlights the considerable variability across individuals, especially in mPFC.
 
 ``` {r Noise Effects: Per-subject Fiedler by R-sqd, fig.align="center", fig.width=3, fig.height=3, fig.cap = "FORMER Figure 13. Fiedler vector values are linearly related to the total variance explained by each vertex with respect to the mean DMN time series.", echo=FALSE, message = FALSE, cache = TRUE}
 ## next get the mean tSNR of PCC and mPFC before/after thresholding
@@ -1829,7 +1771,7 @@ tsnrCohen_PCC <- CohenD(as.numeric(snr_means$post_thresh[2, -1]), as.numeric(snr
 tsnrCohen_Post <- CohenD(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$post_thresh[2, -1]))
 ```
 
-To test the possibility that the higher inter-subject variability in mPFC was driven merely by lower signal quality in the retained vertices, we quantified the mean temporal signal to noise ratio (tSNR) for each region, both before and after thresholding. We calculated tSNR using time series that were not demeaned, but were otherwise equivalent to the data originally used. Paired permutation analyses (5000 iterations) showed that the mean tSNR in mPFC significantly increased after thresholding across subjects (Pre: mean = `r round(snr_means$overall[1, 1], digits = 2)`, SD = `r round(snr_means$overall[3, 1], digits = 2)`; Post: mean = `r round(snr_means$overall[1, 2], digits = 2)`, SD = `r round(snr_means$overall[3, 2], digits = 2)`; paired permutation p-value `r ifelse(tsnrPermute_mPFC$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_mPFC$Pval))`, Cohen's D = `r round(tsnrCohen_mPFC[1], digits = 2)`), whereas the mean signal quality in PCC was unaffected (Pre: mean = `r round(snr_means$overall[2, 1], digits = 2)`, SD = `r round(snr_means$overall[4, 1], digits = 2)`; Post: mean = `r round(snr_means$overall[2, 2], digits = 2)`, SD = `r round(snr_means$overall[4, 2], digits = 2)`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r tsnrCohen_PCC[1]`). In fact, tSNR after thresholding was significantly higher for mPFC (permutation p-value `r ifelse(tsnrPermute_Post$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_Post$Pval))`, Cohen's D = `r round(tsnrCohen_Post[1], digits = 2)`). **(TBD: in terms of tSNR variability (sd) within region, it is true  that mPFC > PCC, both before and after the threshold (mPFC: pre mean sd = 33.96, post mean sd = 30.15; PCC: pre mean sd = 15.28, post mean sd = 14.59))**
+To test the possibility that the higher inter-subject variability in mPFC was driven merely by lower signal quality in the retained vertices, we quantified the mean temporal signal to noise ratio (tSNR) for each region, both before and after thresholding. We calculated tSNR using time series that were not demeaned, but were otherwise equivalent to the data originally used. In terms of tSNR variability within each region, mPFC had overall greater standard deviation both before and after the threshold (mPFC: pre-threshold mean SD = 33.96, post-threshold mean SD = 30.15; PCC: pre-threshold mean SD = 15.28, post-threshold mean SD = 14.59). However, paired permutation analyses (5000 iterations) showed that the mean tSNR in mPFC significantly increased after thresholding across subjects (Pre: mean = `r round(snr_means$overall[1, 1], digits = 2)`, SD = `r round(snr_means$overall[3, 1], digits = 2)`; Post: mean = `r round(snr_means$overall[1, 2], digits = 2)`, SD = `r round(snr_means$overall[3, 2], digits = 2)`; paired permutation p-value `r ifelse(tsnrPermute_mPFC$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_mPFC$Pval))`, Cohen's D = `r round(tsnrCohen_mPFC[1], digits = 2)`), whereas the mean signal quality in PCC was unaffected (Pre: mean = `r round(snr_means$overall[2, 1], digits = 2)`, SD = `r round(snr_means$overall[4, 1], digits = 2)`; Post: mean = `r round(snr_means$overall[2, 2], digits = 2)`, SD = `r round(snr_means$overall[4, 2], digits = 2)`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r tsnrCohen_PCC[1]`). In fact, tSNR after thresholding was significantly higher for mPFC (permutation p-value `r ifelse(tsnrPermute_Post$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_Post$Pval))`, Cohen's D = `r round(tsnrCohen_Post[1], digits = 2)`).
 
 ### *Partition Comparison: Day 1 vs Day 2*
 
@@ -1975,9 +1917,16 @@ Halves_RIRatios_PFC <- sapply(seq(nSubj), function(i) {withinSubjVals[[i]] / mea
 Halves_RIRatios_summary <- data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nSubj)),
                                       RI = c(Halves_RIRatios_PCC, Halves_RIRatios_PFC))
 
-# Stats
+
+## Stats
+# one-sample signed rank per region
+Halves_PCC_ratioTest <- wilcox.test(Halves_RIRatios_PCC, mu = 1, alternative = "greater")
+Halves_PFC_ratioTest <- wilcox.test(Halves_RIRatios_PFC, mu = 1, alternative = "greater")
+
+# between regions
 Halves_mPFCvPCC_permTest <- permute(Halves_RIRatios_PFC, Halves_RIRatios_PCC, paired = T, statType = median)
 Halves_mPFCvPCC_ES <- cohenD(Halves_RIRatios_PFC, Halves_RIRatios_PCC)
+
 
 # Select a submatrix with the best-performing subjects to show on the matrix figures
 # These will be also displayed on the session matrix
@@ -1995,15 +1944,13 @@ RI_PCC_halves_plot <- RI_PCC_halves[bestindx, bestindx]
 Correlation_halves_plot <- Correlation_halves[bestindx] 
 
 # Save unthresholded subjects for comparing and plotting against correlation maps
-# this comment is temporary, just to force the cache to update
-Foo <- "Fighters"
 unthreshComm_PFC_halves_plot <- lapply(Summaries_halves_unthresh[bestindx], "[", i = !posteriorIndx, j =)
 unthreshComm_PFC_halves <- lapply(Summaries_halves_unthresh, "[", i = !posteriorIndx, j =)
 ```
 
 Once again we found low alignment across individuals for PCC (mean = `r round(mean(Halves_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[2]]), digits = 2)`) and mPFC (mean = `r round(mean(Halves_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[2]]), digits = 2)`), but both areas showed comparatively high levels of within-individual agreement (PCC: mean = `r round(mean(Halves_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PCCComparison[[1]]), digits = 2)`; mPFC: mean = `r round(mean(Halves_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Halves_PFCComparison[[1]]), digits = 2)`). We calculated an index of relative specificity by computing the ratio of each individual’s across-day (within-participant) ARI to the mean of all between-participant ARI values involving that individual. The index is expected to take on a value near 1 if partitionings are well aligned across individuals and/or are subject to a common level of measurement noise. It is expected to exceed 1 insofar as functional network organization is reliable and individual-specific. This index is intended to factor out the potential effects of measurement noise, as they are asumed to be constant for each region.
 
-Figure 6 shows these ARI ratios for PCC and mPFC for all individuals As expected, we found that while both regions showed evidence for specificity (i.e. ratios > 1), the ratios for mPFC (median = `r round(median(Halves_RIRatios_PFC), digits = 2)`; IQR = `r quantile(Halves_RIRatios_PFC, 0.25)` - `r quantile(Halves_RIRatios_PFC, 0.75)`) were significantly higher than those for PCC (median = `r round(median(Halves_RIRatios_PCC), digits = 2)`; IQR = `r quantile(Halves_RIRatios_PCC, 0.25)` - `r quantile(Halves_RIRatios_PCC, 0.75)`) when compared with a paired permutation test (*p* `r ifelse(Halves_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Halves_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Halves_mPFCvPCC_ES, digits = 2)`) **(TBD: test against 1. I think it might be worth doing it for PCC's sake, as mPFC's numbers + figure already convey its idiosyncrasy very well. If we do it here, we'll do it for the run-specific analysis too)**. These test/retest results suggest that the topographic variability seen in mPFC arises at least in part from stable and subject-specific organizational patterns.
+Figure 6 shows these ARI ratios for PCC and mPFC for all individuals. A signed-rank test showed evidence for specificity (i.e. ratios > 1) in both mPFC (median = `r round(median(Halves_RIRatios_PFC), digits = 2)`; IQR = `r quantile(Halves_RIRatios_PFC, 0.25)` - `r quantile(Halves_RIRatios_PFC, 0.75)`; V = `r Halves_PFC_ratioTest$statistic`, *p* `r ifelse(Halves_PFC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Halves_PFC_ratioTest$p.value))`) and PCC (median = `r round(median(Halves_RIRatios_PCC), digits = 2)`; IQR = `r quantile(Halves_RIRatios_PCC, 0.25)` - `r quantile(Halves_RIRatios_PCC, 0.75)`; V = `r Halves_PCC_ratioTest$statistic`, *p* `r ifelse(Halves_PCC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Halves_PCC_ratioTest$p.value))`). Moreover, the ratios for mPFC  were significantly higher than those for PCC when compared with a paired permutation test (*p* `r ifelse(Halves_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Halves_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Halves_mPFCvPCC_ES, digits = 2)`). These test/retest results suggest that the topographic variability seen in mPFC arises at least in part from stable and subject-specific organizational patterns.
 
 ### *Partition Comparison: Run based*
 
@@ -2092,7 +2039,7 @@ RI_PFC_sess_plot <- RI_PFC_sess[bestindx, bestindx]
 RI_PCC_sess_plot <- RI_PCC_sess[bestindx, bestindx]
 ```
 
-Run-specific SP results could still capture a subject's unique organizational pattern to some degree, even though the overall levels of agreement decreased (PCC between subjects: mean = `r round(mean(Sess_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[2]]), digits = 2)`; PCC within subjects: mean = `r round(mean(Sess_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[1]]), digits = 2)`; mPFC between subjects: mean = `r round(mean(Sess_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[2]]), digits = 2)`; mPFC within subjects: mean = `r round(mean(Sess_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[1]]), digits = 2)`). We again computed each subject's ARI ratio in order to quantify the specificity of these partitions, this time using the mean across-run (within-participant) ARI in the denominator of the ratio (Figure 6). 
+Run-specific SP results could still capture a subject's unique organizational pattern to some degree, even though the overall levels of agreement decreased (PCC between subjects: mean = `r round(mean(Sess_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[2]]), digits = 2)`; PCC within subjects: mean = `r round(mean(Sess_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[1]]), digits = 2)`; mPFC between subjects: mean = `r round(mean(Sess_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[2]]), digits = 2)`; mPFC within subjects: mean = `r round(mean(Sess_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[1]]), digits = 2)`). We again computed each subject's ARI ratio in order to quantify the specificity of these partitions, this time using the mean across-run (within-participant) ARI in the denominator of the ratio (Figure 6, right). 
 
 ``` {r Partition comparison: session ratios, echo=FALSE, message = FALSE, cache = TRUE}
 ## Brain storming:
@@ -2141,7 +2088,7 @@ Sess_mPFCvPCC_permTest <- permute(Sess_RIRatios_PFC, Sess_RIRatios_PCC, paired =
 Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 ```
 
-Ratios for mPFC were higher than those of PCC (permutation *p* = `r ifelse(Sess_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Sess_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1 (mPFC: median = `r round(median(Sess_RIRatios_PFC), digits = 2)`, SD = `r round(sd(Sess_RIRatios_PFC), digits = 2)`; PCC: median = `r round(median(Sess_RIRatios_PCC), digits = 2)`, SD = `r round(sd(Sess_RIRatios_PCC), digits = 2)`). This result further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that information about such patterns can be extracted from relatively small amounts of data. 
+** TODO: median, IQR, and one sample test. Ratios for mPFC were higher than those of PCC (permutation *p* = `r ifelse(Sess_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Sess_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`), but both were mostly above 1 (mPFC: median = `r round(median(Sess_RIRatios_PFC), digits = 2)`, SD = `r round(sd(Sess_RIRatios_PFC), digits = 2)`; PCC: median = `r round(median(Sess_RIRatios_PCC), digits = 2)`, SD = `r round(sd(Sess_RIRatios_PCC), digits = 2)`). This result further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that information about such patterns can be extracted from relatively small amounts of data.**
 
 ### *Correlation vs community detection in mPFC*
 
@@ -2252,14 +2199,14 @@ We would like to thank Dan Sussman for initial guidance on community detection a
 
 ## Figures
 
-```{r Meta-analysis ROIs (Fig. 1), out.width="50%", fig.align = "center", fig.cap= "A: Proportion of times each ROI was reported in each literature. B: common and unique brain regions associated with DMN and subjective value. DMN regions defined by Yeo et al. (2011) in blue, which encompass areas of considerable overlap between DMN and SV. Literature-specific regions (bilateral 7m and right v23 in yellow, and bilateral 25 in red) were identified from a permutation analysis of chi-squared tests comparing these literatures."}
+```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "A: Proportion of times each ROI was reported in each literature. B: common and unique brain regions associated with DMN and subjective value. DMN regions defined by Yeo et al. (2011) in blue, which encompass areas of considerable overlap between DMN and SV. Literature-specific regions (bilateral 7m and right v23 in yellow, and bilateral 25 in red) were identified from a permutation analysis of chi-squared tests comparing these literatures."}
 # Change to inflated eventually
 include_graphics("./Images/ROIS4.png")
 ```
 
 \bigskip
 
-```{r Template partition (Fig. 2), out.width="50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m, bordered)."}
+```{r Template partition (Fig. 2), out.width = "50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DMN community (as indicated by coverage of area 7m, bordered)."}
 include_graphics("./Images/FB_FV_example.png")
 ```
 
@@ -2329,6 +2276,9 @@ include_graphics("./Images/similarity_all.png")
 #   theme_classic()
 # 
 # SC_FVvPDMN_plot
+#
+# # histogram on 4 C
+# hist(allPropDMN)
 
 include_graphics("./Images/SW_props.png")
 
@@ -2437,7 +2387,7 @@ include_graphics("./Images/commvscorr.png")
 
 \bigskip
 
-```{r BandB comparison (Figure 16), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between maps produced by seed-based connectivity based on Braga and Buckner's (2017) criterion, and those produced by spectral partitioning. Networks A and B were produced by carefully selecting a DLPFC seed (pointed by the green arrows). In each case, our DMN and non-DMN networks map remarkably well to their proposed functional organization."}
+```{r BandB comparison (Figure 16), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between maps produced by seed-based connectivity based on Braga and Buckner's (2019) criterion, and those produced by spectral partitioning. Networks A and B were produced by selecting seeds in diagnostic TPJ, DLPFC and PHC. In each case, our DMN and non-DMN networks map well to their proposed functional organization, albeit with some discrepancies on network A/non-DMN."}
 
 # Change to inflated eventually
 include_graphics("./Images/braga_comparison.png")
