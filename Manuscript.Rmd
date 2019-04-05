@@ -2,10 +2,10 @@
 title: 'Individual heterogeneity in functional topography of the default-mode network in medial prefrontal cortex'
 author: "Claudio Toro-Serey, Sean Tobyne, & Joseph T. McGuire"
 output:
-  word_document: 
-    reference_docx: Style_reference_draft.docx
   pdf_document: 
     keep_tex: true
+  word_document: 
+    reference_docx: Style_reference_draft.docx
   html_document: default
 bibliography: mPFC_paper.bib
 header-includes:
@@ -1775,7 +1775,7 @@ To test the possibility that the higher inter-subject variability in mPFC was dr
 
 ### *Partition Comparison: Day 1 vs Day 2*
 
-The relatively high variability seen in the aggregate map could reflect at least three factors: (1) measurement noise, (2) dynamic variation in mPFC network organization, and (3) stable patterns of functional organization that differ across individuals. To evaluate the third possibility, we examined the test/re-test reliability of mPFC/PCC community structure across separate days of testing. If the variability we observed were truly due to having captured an individual's unique organization, day to day ARI values should be consistently higher within- than between-individuals. Figure 6 shows pairwise comparisons among ten example subjects for PCC and mPFC separately (left). 
+The relatively high variability seen in the aggregate map could reflect at least three factors: (1) measurement noise, (2) dynamic variation in mPFC network organization, and (3) stable patterns of functional organization that differ across individuals. To evaluate the third possibility, we examined the test/re-test reliability of mPFC/PCC community structure across separate days of testing. If the variability we observed were truly due to having captured an individual's unique organization, day to day ARI values should be consistently higher within- than between-individuals (an example comparison for two subjects is provided on Supplemental Figure 2). Figure 6 shows pairwise comparisons among ten example subjects for PCC and mPFC separately (left). 
 
 ``` {r Partition comparison: halves, echo=FALSE, message = FALSE, cache = TRUE}
 # Load data
@@ -2256,7 +2256,7 @@ include_graphics("./Images/similarity_all.png")
 
 \bigskip
 
-``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 5), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each subject, we produced partitions for each 20 minute sliding window (1 min shift, ~84 TRs) throughout their full time series (median number of windows = 37). B: Proportion of times each vertex was affiliated with the DMN community across windows (up), and the continuous Fiedler vector map for the current subject using their full time series (down). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DMN affiliations. Grey lines display each subject's association, while the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded.", echo=FALSE, message = FALSE}
+``` {r Stability per subject: Fiedler vector vs prop. DMN plot (Fig 5), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each subject, we produced partitions for each 20 minute sliding window (1 min shift, ~84 TRs) throughout their full time series (median number of windows = 37). B: Proportion of times each vertex was affiliated with the DMN community across windows (up), and the continuous Fiedler vector map for the current subject using their full time series (down). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DMN affiliations. Grey lines display each subject's association, while the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded. The histogram counts the mean number of vertices that were affiliated at each proportion.", echo=FALSE, message = FALSE}
 # code to generate plots
 
 # # time series
