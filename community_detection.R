@@ -162,7 +162,7 @@ tseries <- Data[indx, ]
 # analyze
 write("Correlating data", stdout())
 corrMat <- cor(t(tseries))
-transfMat <- fisherTanh(Data = corrMat, thresh = corrThresh)
+transfMat <- fisherTanh(Data = corrMat, preThresh = corrThresh)
 corrMat <- transfMat$tanhZ
 
 diag(corrMat) <- 0 # avoid self-loops when creating the graph
