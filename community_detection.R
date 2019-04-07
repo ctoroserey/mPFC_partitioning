@@ -212,7 +212,7 @@ tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirect
 
 # run K-means as a clustering control (no seeding, this is just proving a point)
 write("Running K-Means", stdout())
-km <- kmeans(tseries, 2, iter.max = 100)$cluster
+km <- kmeans(tseries, 3, iter.max = 100)$cluster
 
 
 # Run a fastgreedy modularity community detection on ROIs
@@ -224,12 +224,14 @@ tempCommunity <- fastgreedy.community(tempGraph)
 write("Running SP", stdout())
 tempLap <- laplacian_matrix(tempGraph, normalized=T)
 tempEigen <- eigen(tempLap)
+eigenVals <- tempEigen$values
+eigenVecs <- tempEigen$vectors
 
 # store all outputs in this data frame, so they can be written afterwards in HCP format  
 df <- data.frame(Vertex = indx,
-                 eigenVal = eigenVals$V1,
+                 eigenVal = eigenVals,
                  FV = eigenVecs[ , ncol(eigenVecs) - 1],
-                 modularity = modularity$V1,
+                 #modularity = modularity$V1,
                  kmeans = km)
 
 # write to text files ready to be transformed to CIFTIs
