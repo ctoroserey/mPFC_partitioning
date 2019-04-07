@@ -61,8 +61,19 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
   
 }
 
+# To store files ready to be converted to CIFTI
+HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID = "100307", padding = 0){
+  
+  nVertices <- 59412
+  tempVec <- rep(padding, nVertices)
+  temp <- grep(MOI, colnames(Data))
+  tempVec[Data$Vertex] <- Data[[temp]]
+  write.table(file = paste(SubjID,"_",MOI,'_dataforCifti.txt', sep=""), tempVec, row.names = F, col.names = F, dec = ".")
+  
+}
+
 # if a minimum corr value is desired (otherwise set NA for p-value based thresholding)
-corrThresh <- 0.2
+corrThresh <- NA
 
 # ROIs
 yeoLbls <- c("L_25_ROI",
@@ -139,15 +150,41 @@ yeoLbls <- c("L_25_ROI",
              "L_23c_ROI",
              "R_23c_ROI",
              "R_PreS_ROI",
-             "R_H_ROI")   
+             "R_H_ROI",
+             "L_STSdp_ROI",
+             "L_STSvp_ROI",
+             "L_STSva_ROI",
+             "L_TE1m_ROI",
+             "L_TE1a_ROI",
+             "L_TPOJ1_ROI",
+             "L_8Av_ROI",
+             "L_8C_ROI",
+             "L_PHA2_ROI",
+             "L_44_ROI",
+             "L_PSL_ROI",
+             "R_STV_ROI",
+             "R_TPOJ1_ROI",
+             "R_TE1m_ROI",
+             "R_STSdp_ROI",
+             "R_STSda_ROI",
+             "R_8Av_ROI",
+             "R_8C_ROI",
+             "R_PCV_ROI",
+             "R_PHA1_ROI",
+             "R_p47r_ROI")   
 
 # load labels and ensure they are numeric
 labelCoords_vertex <- read.table('labelCoords_vertex.csv', sep = ",", header = T)
+
+# get ROI indices
+indx <- sapply(yeoLbls, function(lbl) {grep(lbl, labelCoords_vertex$Label)}) 
+indx <- do.call(c, indx)
 
 # load data
 write("Loading data", stdout())
 Data <- fread(paste("./tseries/", SubjID, "_timeSeries.csv", sep = ""), header = F)
 Data <- data.matrix(Data)
+
 # append the ROI label to each vertex
 dimnames(Data) <- list(labelCoords_vertex$Label, seq(ncol(Data)))
 
@@ -173,20 +210,33 @@ corrMat[corrMat == 1] <- 0 # return filtered-out vertices to 0
 tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
 
 
+# run K-means as a clustering control (no seeding, this is just proving a point)
+write("Running K-Means", stdout())
+km <- kmeans(tseries, 2, iter.max = 100)$cluster
+
+
 # Run a fastgreedy modularity community detection on ROIs
 write("Running modularity", stdout())
-
 tempCommunity <- fastgreedy.community(tempGraph)
 
 
 # now SP
 write("Running SP", stdout())
-
 tempLap <- laplacian_matrix(tempGraph, normalized=T)
 tempEigen <- eigen(tempLap)
 
-    
+# store all outputs in this data frame, so they can be written afterwards in HCP format  
+df <- data.frame(Vertex = indx,
+                 eigenVal = eigenVals$V1,
+                 FV = eigenVecs[ , ncol(eigenVecs) - 1],
+                 modularity = modularity$V1,
+                 kmeans = km)
 
-write.table(file = paste(SubjID, "_fullBrain_eigenVals.csv", sep= ""), tempEigen$values, row.names = F, col.names = F, dec = ".")
-write.table(file = paste(SubjID, "_fullBrain_eigenVecs.csv", sep= ""), tempEigen$vectors, row.names = F, col.names = F, dec = ".")
-write.table(file = paste(SubjID, "_fullBrain_modularity.csv", sep= ""), tempCommunity$membership, row.names = F, col.names = F, dec = ".")
+# write to text files ready to be transformed to CIFTIs
+HCPOut(df, MOI = "FV", SubjID = SubjID, padding = 0)
+HCPOut(df, MOI = "modularity", SubjID = SubjID, padding = -1)
+HCPOut(df, MOI = "kmeans", SubjID = SubjID, padding = 0)
+
+# store the dtaframe just in case (ARI comparisons, for ex)
+write.csv(df, file = paste(SubjID, "commDetection.csv", sep = "_"), sep = ",")
+
