@@ -328,10 +328,6 @@ while IFS=$'\t' read -r -a label ; do
 done < $HOME/fMRI/Glasser_labels_rh.csv
 
 
-## To do ##
-# - Turn some things into functions on separate files (set function path as "". /path/to/functions" at the beginning of the script, including the period)
-# - Might be good to cat echos like (echo ; echo "Skip..." ; echo) to avoid extra lines
-# - mris_ca_train might be good to combine each study's resulting annotation file
 
 #                                         ######----------- Notes -----------######
 #
