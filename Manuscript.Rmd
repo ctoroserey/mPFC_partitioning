@@ -11,6 +11,8 @@ output:
 bibliography: mPFC_paper.bib
 header-includes:
     - \usepackage{setspace}\doublespacing
+    - \usepackage[left]{lineno}
+    - \linenumbers
 ---
 
 ```{r setup, include=FALSE}
@@ -1187,14 +1189,9 @@ threshFV <- function(Data, thresholdRange = c(0.01, 0.99), nthresh = 50) {
 ```
   
 ``` {r For HCP data, fig.align="center", echo=FALSE, message = FALSE}
-# this is used to get the number of subjects and proportion maps for the group (for visualization only)
-setwd('./For_HCP')
-temp <- list.files(pattern = '*Binary*')
-FB <- lapply(temp, read.table)
-Summed <- do.call(cbind, lapply(FB, "[[", 'V1')) - 1
-FB_Means <- rowMeans(Summed)
-nSubj <- length(temp)
-rm(temp)
+# this is used to get the number of subjects 
+setwd('./Summary/')
+nSubj <- length(dir())
 ```
 
 1.  Department of Psychological and Brain Sciences, Boston University, Boston, USA
@@ -1247,9 +1244,9 @@ With these lists, we tested for parcels that were significantly more strongly as
 corrCounts <- read.csv('corrCounts.csv')
 ```
 
-Our fMRI analyses used resting-state fMRI data from the Human Connectome Project [@VanEssen2012] Q6 release (N = `r nSubj`, randomly sampled from the total pool of 469 available subjects). Each subject's data was acquired over two days at Washington University in St. Louis on a Siemens CONNECTOM Skyra MRI scanner (Siemens, Erlangen, Germany). Four resting state runs (repetition time = 0.720 s, echo time = 33.1 ms, flip angle = 52°, multiband factor = 8, 72 slices, 2 mm isotropic voxels) each comprised up to 1200 time points (14 min 33 s) for a total of up to 4800 time points (median = `r median(corrCounts$nTR)`, minimum = `r min(corrCounts$nTR)`). Two runs were acquired on each day, with the phase encoding direction set to left-right for one run and right-left for the other. Only subjects with both left-right and right-left phase encoding were included (i.e. subjects with four rsfMRI sessions). In addition, only datasets with low motion levels (under 1.5 mm) and less than 5% of points over 0.5 mm framewise displacement (FD) were used. See [@VanEssen2012] for more details about the data acquisition protocol.
+Our fMRI analyses used resting-state fMRI data from the Human Connectome Project [@VanEssen2012] Q6 release (N = `r nSubj`, randomly sampled from the total pool of 469 available subjects). Each subject's data was acquired over two days at Washington University in St. Louis on a Siemens CONNECTOM Skyra MRI scanner (Siemens, Erlangen, Germany). Four resting state runs (repetition time = 0.720 s, echo time = 33.1 ms, flip angle = 52°, multiband factor = 8, 72 slices, 2 mm isotropic voxels) each comprised 1200 time points (14 min 24 s) for a total of 4800 time points. Two runs were acquired on each day, with the phase encoding direction set to left-right for one run and right-left for the other. Only subjects with both left-right and right-left phase encoding were included (i.e. subjects with four rsfMRI sessions). In addition, only datasets with low motion levels (under 1.5 mm) and less than 5% of points over 0.5 mm framewise displacement (FD) were used. See [@VanEssen2012] for more details about the data acquisition protocol.
 
-Data initially underwent the HCP minimal preprocessing pipeline [@Glasser2013], which included gradient nonlinearity correction, motion correction, EPI distortion correction, high-pass filtering (0.0005 Hz threshold), MNI152-based normalization, surface reconstruction, and mapping of functional data to the surface (details can be found on Glasset et al., 2013). In addition, data underwent temporal denoising based on independent components [FIX; @Griffanti2014; @Salimi-Khorshidi2014]. Data were further preprocessed using an in-house pipeline described previously [@Tobyne2017]. Steps included linear interpolation across high motion timepoints with over 0.5 mm of framewise displacement, band-pass filtering (allowed frequencies ranged from 0.009 and 0.08 Hz), temporal denoising via grayordinate signal regression [@Burgess2016] and censoring of high-motion timepoints by deletion. Finally, data acquired on the same day (i.e. left-right and right-left phase encoding session) were temporally demeaned. Each subject's brain was comprised of 32k standard grayordinates per hemisphere (combined in a CIFTI file). We retained only the cortical surfaces, which resulted in 59,412 total surface vertices per subject. 
+Data initially underwent the HCP minimal preprocessing pipeline [@Glasser2013], which included gradient nonlinearity correction, motion correction, EPI distortion correction, high-pass filtering (0.0005 Hz threshold), MNI152-based normalization, surface reconstruction, and mapping of functional data to the surface (details can be found on Glasset et al., 2013). In addition, data underwent temporal denoising based on independent components [FIX; @Griffanti2014; @Salimi-Khorshidi2014]. Data were further preprocessed using an in-house pipeline described previously [@Tobyne2017]. Steps included linear interpolation across high motion timepoints with over 0.5 mm of framewise displacement, band-pass filtering (allowed frequencies ranged from 0.009 and 0.08 Hz), temporal denoising via grayordinate signal regression [@Burgess2016] and censoring of high-motion timepoints by deletion. Finally, data acquired on the same day (i.e. left-right and right-left phase encoding session) were temporally demeaned. The post-processed time series had a median of `r median(corrCounts$nTR)` time points (minimum = `r min(corrCounts$nTR)`) across participants. Each subject's brain was comprised of 32k standard grayordinates per hemisphere (combined in a CIFTI file). We retained only the cortical surfaces, which resulted in 59,412 total surface vertices per subject. 
 
 ### *Network Definition*
 
