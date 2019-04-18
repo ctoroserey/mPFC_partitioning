@@ -1420,6 +1420,7 @@ subjList <- sapply(temp, substring, first = 1, last = 6)
 Summaries <- lapply(temp, read.csv)
 nSubj <- length(Summaries)
 nVertices <- nrow(Summaries[[1]]) # in case I need the number of vertices included per brain
+
 ```
 
 With our mPFC/PCC search space, we estimated each individual's DMN coverage using their full time series (approximately 4800 total TRs from four scanning sessions over two days). Each subject's network (n = `r nSubj`) was constructed by calculating pairwise correlations among the time series for all the surface vertices in the search space (`r nVertices` total vertices). We applied the SP community detection algorithm to thresholded transformations of these networks to identify cohesive functional communities corresponding to DMN and non-DMN areas.
@@ -1479,48 +1480,6 @@ Ttest_pvals_corrected <- p.adjust(sapply(All_ttests, "[[", "p.value"), method = 
 Ttest_pvals_corrected <- ifelse(Ttest_pvals_corrected < 0.05, 1, 0)
 Tstats <- sapply(All_ttests, "[[", "statistic")
 
-
-### Testing grounds
-# this part compares the distribution of Fiedler values for DMN and nonDMN
-# note: remove filter(y > 0) for 'full brain'
-# First plot compares the median FV between communities across subjects
-allSummaries <- do.call(rbind, Summaries)
-allSummaries$SubjID <- rep(subjList, each = nVertices) 
-ecdfPCC <- allSummaries %>%
-          mutate(FV_abs = abs(FiedlerVec),
-                 Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
-          filter(y < 0) %>%
-          ggplot(aes(FV_abs, group = interaction(SubjID, Community), color = Community)) +
-          stat_ecdf(alpha = 0.3) +
-          #scale_color_manual(values = c("Yellow", "Red")) +
-          xlim(0,0.05) +
-          geom_vline(xintercept = 0.009, lty = 2) +
-          labs(title = "Per-subject ECDF of Fiedler values: PCC") +
-          theme_classic()
-
-ecdfPFC <- allSummaries %>%
-          mutate(FV_abs = abs(FiedlerVec),
-                 Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
-          filter(y > 0) %>%
-          ggplot(aes(FV_abs, group = interaction(SubjID, Community), color = Community)) +
-          #scale_color_manual(values = c("Yellow", "Red")) +
-          stat_ecdf(alpha = 0.3) +
-          xlim(0,0.05) +
-          labs(title = "Per-subject ECDF of Fiedler values: PFC") +
-          geom_vline(xintercept = 0.009, lty = 2) +
-          theme_classic()
-
-ecdfALL <- allSummaries %>%
-  mutate(FV_abs = abs(FiedlerVec),
-         Community = ifelse(FiedlerBinary == 0, "nonDMN", "DMN")) %>%
-  ggplot(aes(FV_abs, group = interaction(SubjID, Community), color = Community)) +
-  #scale_color_manual(values = c("Yellow", "Red")) +
-  stat_ecdf(alpha = 0.5) +
-  xlim(0,0.05) +
-  labs(title = "Per-subject ECDF of Fiedler values") +
-  geom_vline(xintercept = 0.009, lty = 2) +
-  theme_classic()
-
 ```
 
 This comparison showed that both clustering methods were in high agreement across subjects (mean ARI = `r round(mean(RI_all_within$Index), digits = 2)`, SD = `r round(sd(RI_all_within$Index), digits = 2)`). Modularity showed a tendency to produce additional communities (median = `r median(nModularity)`, range = `r range(nModularity)`). However, these communities encompassed a small number of vertices (median = `r median(modularityCounts_extra)`, IQR = `r quantile(modularityCounts_extra, 0.25)` - `r quantile(modularityCounts_extra, 0.75)`) compared to the principal two (median = `r median(modularityCounts_two)`, IQR = `r quantile(modularityCounts_two, 0.25)` - `r quantile(modularityCounts_two, 0.75)`, suggesting that the overall network is composed of two main communities.   
@@ -1540,6 +1499,10 @@ SVals <- lapply(temp, read.csv2)
 
 # concatenate all proportion of DMN affiliations per node to produce (1) a histogram for fig 4C, and (2) % of node affiliated with either community > 99% over time
 allPropDMN <- sapply(Summaries, "[[", "slidePropDMN")
+
+# put all summaries together for model fit
+allSummaries <- do.call(rbind, Summaries)
+allSummaries$SubjID <- rep(subjList, each = nVertices) 
 
 # Do a mixed effects GLM (binomial, quasi unavailable on glmer) to estimate the relationship between Fiedler vec and propDMN
 SC_FVvPDMN_model <- glmer(slidePropDMN ~ FiedlerVec + (1 | SubjID), family = "binomial", data = allSummaries)
@@ -1576,7 +1539,6 @@ SC_sd_plot <- ggplot(data = SC_summary, aes(x=SD)) +
   labs(x = "SD") +
   theme(text = element_text(size=35)) +
   theme_classic() 
-
 
 ```
 
@@ -2104,7 +2066,6 @@ Data <- c(D1,D2)
 subjList_halves_plot <- rep(best$SubjID, each = 2)
 allHalfCombs <- comparePartitions(Data = Data, MOI = "V1", nSubjects = 40, Index = "Cor", subjNames = c(subjList_halves_plot, subjList_halves_plot))
 
-Foo <- "fighters"
 ```
 
 ``` {r Correlation vs community detection: comparison, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
