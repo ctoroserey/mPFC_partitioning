@@ -17,183 +17,6 @@ library(plyr)
 library(mcclust)
 library(lme4)
 library(parallel)
-#library(lmerTest)
-
-## log-log degree distribution
-logDegreeDist <- function(Graph = padjMat) {
-  
-  tempD <- degree(Graph)
-  tempDD <- degree.distribution(Graph) # frequency of occurrencies of certain degrees
-  d <- (0:(max(tempD)-1))
-  ind <- (tempDD!=0)
-  plot(d[ind], tempDD[ind], log = "xy", col = "blue", 
-       xlab = "Log-Degree", ylab = "Log-Intensity",  
-       main = "Log-Log Degree Distribution")
-  
-}
-
-
-## Create correlation matrix between vertices of 2 ROIs
-# Requires labeled time series matrix
-vertexCorrMat <- function(ROI_1 = 'R_7m_ROI', ROI_2 = 'L_7m_ROI'){
-  
-  # extract the time series from the ROIs
-  indexing_1 <- which(rownames(timeSeries)==as.character(ROI_1))
-  indexing_2 <- which(rownames(timeSeries)==as.character(ROI_2))
-  nVerts_1 <- length(indexing_1)
-  nVerts_2 <- length(indexing_2)
-  ROI_1_tseries <- timeSeries[indexing_1, ]
-  ROI_2_tseries <- timeSeries[indexing_2, ]
-  
-  # Create empty matrix
-  corrMat <- matrix(data = 0, nrow = nVerts_1, ncol = nVerts_2)
-  
-  # 
-  for (vertex_1 in seq(nVerts_1)){
-    
-    # temp series 1
-    tempOne <- ROI_1_tseries[vertex_1, ]
-    
-    for(vertex_2 in seq(nVerts_2)){
-      
-      # temp series 2
-      tempTwo <- ROI_2_tseries[vertex_2, ]
-      
-      # store the Pearson correlation in the corr matrix
-      corrMat[vertex_1, vertex_2] <- cor(tempOne, tempTwo, method = "pearson") 
-      
-    }
-  }
-  
-  # name the dimensions of the matrix according to the surface vertex index
-  rownames(corrMat) <- indexing_1
-  colnames(corrMat) <- indexing_2
-  
-  # plot (optional?)  
-  # unclustered heatmap
-  heatmap(corrMat,
-          Rowv = NA,
-          Colv = NA,
-          scale = "row",
-          col = pallette(1000))
-  
-  # clustered heatmap
-  heatmap(corrMat,
-          scale = "row",
-          col = pallette(1000))
-  
-  # print min-max corr vals
-  print(range(corrMat))
-  
-  return(corrMat)
-  
-}
-
-
-## Correlation matrix between an ROI and the Glasser parcels
-parcelCorrMat <- function(ROI = 'R_7m_ROI', lbels = lookup$V1){
-  
-  # extract the time series from the ROIs
-  indexing <- which(rownames(timeSeries)==as.character(ROI))
-  nVerts <- length(indexing)
-  ROI_tseries <- timeSeries[indexing, ]
-  
-  # create empty matrix to store values
-  corrMat <- matrix(data = 0, nrow = nVerts, ncol = 360)
-  
-  # Loop through every combination of label and 7m vertex
-  for (Parcel in lbels){
-    
-    # Get an ROI index to retrieve timeseries and store correlation vals
-    indxROI <- which(lbels==as.character(Parcel))
-    
-    for(vertex in seq(nVerts)){
-      
-      # temp series
-      tempROI <- as.numeric(ptSeries[indxROI, ])
-      tempVertex <- ROI_tseries[vertex, ]
-      
-      # store the Pearson correlation in the corr matrix
-      corrMat[vertex, indxROI] <- cor(tempROI, tempVertex, method = "pearson") 
-      
-    }
-  }
-  
-  # name the columns according to labels
-  colnames(corrMat) <- lbels
-  rownames(corrMat) <- indexing
-  
-  # plot (optional?)  
-  # unclustered heatmap
-  heatmap(corrMat,
-          Rowv = NA,
-          Colv = NA,
-          scale = "none",
-          col = pallette(1000))
-  
-  # clustered heatmap
-  heatmap(corrMat,
-          scale = "none",
-          col = pallette(1000))
-  
-  # print min-max corr vals
-  print(range(corrMat))
-  
-  return(corrMat)
-  
-}
-
-
-## Correlation matrix between an Parcel and every other grayordinate
-# THIS CAN BE OPTIMIZED WITH A BETTER USE OF COR()
-partoverCorrMat <- function(ROI = 'R_7m_ROI', lbels = verts[[1]]){
-  
-  # extract the time series from the ROI
-  indexing <- which(rownames(ptSeries)==as.character(ROI))
-  ROI_tseries <- as.numeric(ptSeries[indexing, ])
-  
-  # get the remaining number of vertices
-  nVerts <- length(lbels) 
-  
-  # Create data frame to store values
-  parcelIndx <- which(labelCoords_parcel$Label==ROI)
-  corrVec <- data.frame(Seed = rep(ROI, nVerts),
-                        Labels = lbels,
-                        xstart = rep(labelCoords_parcel$x[parcelIndx], nVerts), # 7.33324 for R_7m
-                        ystart = rep(labelCoords_parcel$y[parcelIndx], nVerts), # -63.142
-                        zstart = rep(labelCoords_parcel$z[parcelIndx], nVerts)) # 42.5578
-  
-  for(vertex in seq(nVerts)){
-    
-    # temp series
-    tempVertex <- timeSeries[vertex, ] 
-    
-    # store the Pearson correlation in the corr matrix
-    #corrVec$Correlation[vertex] <- cor(ROI_tseries, tempVertex, method = "pearson") 
-    
-    # Another option, so that FDR can be applied
-    tempCor <- cor.test(ROI_tseries, tempVertex, method = "pearson")
-    corrVec$Correlation[vertex] <- tempCor$estimate
-    corrVec$pval[vertex] <- tempCor$p.value
-    
-  }
-  
-  # Turn ROI vertices into 0s
-  indexing <- which(corrVec$Labels==as.character(ROI))
-  corrVec$Correlation[indexing] <- 0
-  
-  # Create a column with p-vals corrected for multiple comparisons
-  corrVec$adjPval <- p.adjust(corrVec$pval, "BY")
-  
-  # normalize correlation vals for analysis (see below)
-  tempTanh <- fisherTanh(Data = corrVec$Correlation)
-  corrVec$tanhZ <- tempTanh$tanhZ
-  corrVec$tanhPvals <- tempTanh$pvals
-  corrVec$tanhPAdjusted <- tempTanh$adjustPvals
-  
-  return(corrVec)
-  
-}
 
 
 ## tanh-z transformation (variance stabilizing Fisher) and p-values (adjusted and not)
@@ -252,470 +75,136 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
 }
 
 
-## Extract the centroid-most vertex from each parcel
-parcelCentroid <- function(ROI = 'R_7m_ROI', all_coordinates = labelCoords_vertex){
-  
-  # The coordinate file must contain a Label column
-  
-  # Get the ROI-specific vertices
-  indx <- grep(ROI, all_coordinates$Label)
-  
-  # Grab the coordinates
-  tempCoords <- all_coordinates[indx, c("x","y","z")]
-  rownames(tempCoords) <- indx
-  
-  # Compute the distance among all vertices, and turn into a matrix
-  tempDist <- dist(tempCoords, diag = T)
-  tempDist <- as.matrix(tempDist)
-  
-  # Compute the sum of distances for each vertex, and get the minimum
-  sumDists <- colSums(tempDist)
-  minDist <- which(sumDists == min(sumDists))
-  minDist <- indx[minDist]
-  
-  return(minDist)
-  
-}
-
-
-## This function takes the output from partoverCorrMat() and adds/removes the characteristics we decided on.
-prepROItoVer <- function(Data = R_7m_allCorr, Coordinates = labelCoords_vertex){
-  
-  # Add vertex coordinates
-  tempDframe <- cbind(Data, Coordinates[,1:3])
-  
-  # Remove rows with non-significant adjusted pvalues
-  indx <- tempDframe$adjPval < 0.05
-  tempDframe <- tempDframe[indx, ]
-  
-  # Characterize correlation direction and round up vals for plotting
-  tempDframe$Relation <- ifelse(tempDframe$Correlation < 0, "Negative", "Positive")
-  tempDframe$Correlation <- round(tempDframe$Correlation, digits = 2)
-  
-  # Add a column to differentiate between left/right hemispheres
-  tempDframe$Hemisphere <- substring(tempDframe$Labels,1,1)
-  
-  return(tempDframe)
-  
-}
-
-
-## Plot correlation from ROI to rest of vertices
-plotROItoVertex <- function(Data = R_7m_allCorr, ROI = 'R_7m_ROI', ColRange = Cols, View = "Axial", Legends = TRUE){
-  
-  ROIindx <- grep(ROI, Data$Labels)
-  ROIvertices <- Data[ROIindx,c("x","y","z")] # grab ROI-specific vertices to black out
-  labelCoord <- ROIvertices[1,] # just to place the label
-  
-  if (View == "Axial") {
-    ggplot() +
-      geom_point(data = Data, aes(x=x, y=y, alpha=.5, color = Correlation), show.legend = Legends) +
-      geom_point(data = labelCoords_vertex, aes(x=x, y=y), alpha=0.01) +
-      geom_nodes(data = ROIvertices, aes(x=x, y=y)) +
-      geom_nodelabel_repel(aes(x=labelCoord$x, y=labelCoord$y, label = sub("_ROI","",ROI))) +
-      scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-      theme_blank()
-  } else if (View == "Sagittal") {
-    ggplot() +
-      geom_point(data = Data, aes(x=y, y=z, alpha=.5, color = Correlation), show.legend = Legends) +
-      geom_point(data = labelCoords_vertex, aes(x=y, y=z), alpha=0.01) +
-      geom_nodes(data = ROIvertices, aes(x=y, y=z)) +
-      geom_nodelabel_repel(aes(x=labelCoord$y, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-      scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-      theme_blank()
-  } else if (View == "Coronal") {
-    ggplot() +
-      geom_point(data = Data, aes(x=x, y=z, alpha=.5, color = Correlation), show.legend = Legends) +
-      geom_point(data = labelCoords_vertex, aes(x=x, y=z),  alpha=0.01) +
-      geom_nodes(data = ROIvertices, aes(x=x, y=z), alpha=.5) +
-      geom_nodelabel_repel(aes(x=labelCoord$x, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-      scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-      theme_blank()
-  } else if (View == "Medial Right") {
-    if (substring(ROI,1,1) == "R") {
-      oneHemi <- Data[grep("R", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x < 20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      medialHemi$y <- medialHemi$y * -1
-      ROIvertices$y <- ROIvertices$y * -1
-      labelCoord$y <- labelCoord$y * -1
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      medialHemi_all$y <- medialHemi_all$y * -1
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        geom_nodes(data = ROIvertices, aes(x=y, y=z), alpha=.5) +
-        geom_nodelabel_repel(aes(x=labelCoord$y, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-        theme_blank()
-    } else {
-      oneHemi <- Data[grep("R", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x < 20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      medialHemi$y <- medialHemi$y * -1
-      ROIvertices$y <- ROIvertices$y * -1
-      labelCoord$y <- labelCoord$y * -1
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      medialHemi_all$y <- medialHemi_all$y * -1
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        theme_blank()
-    }
-  } else if (View == "Medial Left") {
-    if (substring(ROI,1,1) == "L") {
-      oneHemi <- Data[grep("L", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x > -20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        geom_nodes(data = ROIvertices, aes(x=y, y=z), alpha=.5) +
-        geom_nodelabel_repel(aes(x=labelCoord$y, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-        theme_blank()
-    } else {
-      oneHemi <- Data[grep("L", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x > -20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        theme_blank()
-    }
-  }
-  
-}
-
-
-## Run a fastgreedy modularity community detection on ROIs
-# This function relies on having the timeSeries data uploaded, and labelCoords_vertex 
-# Extras dictates whether the community object + correlation matrix should also be extracted
-communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "vertex", extras = F) {
+## Run community detection on ROIs
+communityDetection <- function(Data = NA, ROIS = "None", extras = T) {
+  # This function relies on having the timeSeries data uploaded, and labelCoords_vertex 
+  # Extras dictates whether the community object + correlation matrix should also be extracted
+  #
+  # Parameter definitions:
+  #
+  #   Data: raw time series data
+  #
+  #   ROIS: a list. If the data needs to be reduced to specific ROIs  
+  #
+  #   extras: if you want to return the original and transformed correlation matrices  
   
   print(paste('Computing modularity based on', Type))
   
+  # This will just do SP for sliding window, otherwise do both modularity and SP
   if (ROIS == "None"){
     
-    # This will just do SP for now, for sliding window
     print("Previously concatenated data")
     
+    # correlation matrix
     corrMat <- cor(t(Data))
-    corrMatrix <- corrMat
-    transfMat <- fisherTanh(Data = corrMat)
-    if (thresh == T) {
-      transfMat$tanhZ[transfMat$adjustPvals > 0.05] <- 0
-    }
-    corrMat <- transfMat$tanhZ
     
-    diag(transfMat$tanhZ) <- 0    
+    # store to return the original corr. matrix
+    corrMatrix <- corrMat
+    
+    # fisher transform, and turn FDR corrected non-significant p-vals to 0
+    # then turn diagonal to 0 
+    transfMat <- fisherTanh(Data = corrMat)
+    transfMat$tanhZ[transfMat$adjustPvals > 0.05] <- 0
+    corrMat <- transfMat$tanhZ
     diag(corrMat) <- 0
     
+    # exponentiate to keep ordinal ranks, but making the distribution positive
+    # then reset thresholded values from 1 to 0
     corrMat <- exp(corrMat)
-    corrMat[corrMat==1] <- 0
-    transfMat$tanhZ <- corrMat
+    corrMat[corrMat == 1] <- 0
     
+    # spectral partitioning
     tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-    tempLap <- laplacian_matrix(tempGraph, normalized=T)
+    tempLap <- laplacian_matrix(tempGraph, normalized = T)
     tempEigen <- eigen(tempLap)
-    f.vec <- length(tempEigen$values) - 1
-    tempEigen$binarized <-  as.factor(ifelse(tempEigen$vectors[,f.vec] > 0, 1, 0)) # binarized Fiedler Vector 
+    fvec <- tempEigen$vectors[,  length(tempEigen$values) - 1]
+    binarized <-  as.factor(ifelse(fvec > 0, 1, 0)) # binarized Fiedler Vector 
     
+    # put summary together
     summary <- data.frame(Label = colnames(corrMat),
-                          Hemisphere = substring(colnames(corrMat),1,1),
+                          Hemisphere = substring(colnames(corrMat), 1, 1),
                           EigenVal = tempEigen$values,
-                          FiedlerVec = tempEigen$vectors[, (length(tempEigen$values) - 1)],
-                          FiedlerBinary = tempEigen$binarized)
-    
-    ## Get the final components
-    if (extras == T) {
-      modularityResults <- list(CorrMatrix = corrMatrix,
-                                TransfMatrix = transfMat,
-                                Summary = summary)
-    } else {
-      modularityResults <- list(Summary = summary)
-    }
+                          FiedlerVec = fvec,
+                          FiedlerBinary = binarized)
     
   } else {
     
-    if (Type == "vertex") {
-      # To store the vertex indices corresponding to the ROIs
-      indx <- numeric()
-      
-      # had to place dashes on each side because grep grabbed strings containing the names (i.e. 47m, a24pr)
-      #ROIS <- c("_7m_", vmPFC_labels) # c("_a24_", "_7m_")
-      for (ROI in ROIS) {
-        indx <- c(indx, grep(ROI, rownames(Data)))  
-      }
-      
-      nVerts <- length(indx)
-      ROI_tseries <- Data[indx, ]
-      
-      # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
-      corrMat <- cor(t(ROI_tseries))
-      
-      # name the dimensions of the matrix according to the surface vertex index
-      rownames(corrMat) <- indx
-      
-      # for storing later
-      corrMatrix <- corrMat
-      
-      
-      # transform to Fisher's (think of thresholding)
-      transfMat <- fisherTanh(Data = corrMat)
-      
-      # Store Fisher transformed vals for graphing
-      corrMat <- transfMat$tanhZ
-      
-      # diagonals of 1 could be interpreted as self-loops
-      diag(transfMat$tanhZ) <- 0    
-      diag(corrMat) <- 0
-      
-      # Exponentiate to preserve distribution while ensuring positive weights
-      # I'm keeping corrMat and transfMat$tanhZ separate in case I want to uncorrect transfMat in the future
-      corrMat <- exp(corrMat)
-      corrMat[corrMat==1] <- 0
-      transfMat$tanhZ <- corrMat
-      
-      # community detection
-      # I initially used the absolute value of the correlation, but the exp preserves the distribution 
-      # Next, try using the fisher transform
-      
-      tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-      tempCommunity <- fastgreedy.community(tempGraph)
-      
-      # community object
-      #modularityResults$community <- tempCommunity
-      
-      # correlation matrix with transformed values
-      #modularityResults$corrMat <- corrMatrix
-      
-      # get coordinate info from selected regions (useful for ggplot)
-      summary <- data.frame(Vertex = indx,
-                            Label = tempCommunity$names,
-                            Membership = tempCommunity$membership,
-                            Modularity = tempCommunity$modularity,
-                            x = labelCoords_vertex[indx, "x"],
-                            y = labelCoords_vertex[indx, "y"],
-                            z = labelCoords_vertex[indx, "z"],
-                            Hemisphere = substring(tempCommunity$names,1,1))
-      
-      
-    } else if (Type == "parcels") {
-      
-      # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
-      corrMat <- cor(t(Data))
-      
-      # for storing later
-      corrMatrix <- corrMat
-      
-      # transform to Fisher's (think of thresholding)
-      transfMat <- fisherTanh(Data = corrMat)
-      
-      # Store Fisher transformed vals for graphing
-      corrMat <- transfMat$tanhZ
-      
-      # diagonals of 1 could be interpreted as self-loops
-      diag(transfMat$tanhZ) <- 0
-      diag(corrMat) <- 0
-      
-      # Exponentiate to preserve distribution while ensuring positive weights
-      # I'm keeping corrMat and transfMat$tanhZ separate in case I want to uncorrect transfMat in the future
-      corrMat <- exp(corrMat)
-      corrMat[corrMat==1] <- 0
-      transfMat$tanhZ <- corrMat
-      
-      # community detection
-      # I initially used the absolute value of the correlation, but the exp preserves the distribution 
-      # Next, try thresholding it by the adjusted p-vals
-      tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-      tempCommunity <- fastgreedy.community(tempGraph)
-      
-      # community object
-      #modularityResults$community <- tempCommunity
-      
-      # correlation matrix with transformed values
-      #modularityResults$corrMat <- corrMatrix
-      
-      # get coordinate info from selected regions (useful for ggplot)
-      summary <- data.frame(Label = tempCommunity$names,
-                            Membership = tempCommunity$membership,
-                            Modularity = tempCommunity$modularity,
-                            x = labelCoords_parcel[ ,"x"],
-                            y = labelCoords_parcel[ ,"y"],
-                            z = labelCoords_parcel[ ,"z"],
-                            Hemisphere = substring(tempCommunity$names,1,1))
-      
+    # To store the vertex indices corresponding to the ROIs
+    indx <- numeric()
+    
+    # had to place dashes on each side because grep grabbed strings containing the names (i.e. 47m, a24pr)
+    for (ROI in ROIS) {
+      indx <- c(indx, grep(ROI, rownames(Data)))  
     }
     
+    # reduce time series to only include ROIs
+    nVerts <- length(indx)
+    ROI_tseries <- Data[indx, ]
     
-    ## Get the final components
-    modularityResults <- list(Community = tempCommunity,
-                              CorrMatrix = corrMatrix,
-                              TransfMatrix = transfMat,
-                              Summary = summary)
+    # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
+    corrMat <- cor(t(ROI_tseries))
     
-  }
-  
-  return(modularityResults)
-  
-}
-
-
-## plot the communities from communityDetection
-plotCommunities <- function(Data = modularityResults, Hemi = "R", type = "Membership", Legends = T, bground=0.1, Cols = c("aquamarine4", "#D9541A")) {
-  # This takes the output from the communityDetection function and plots them on the medial wall (since we're interested in medial now)
-  # type is the name of the column to plot
-  if (Hemi == "R") {
-    # "Medial Right"
-    oneHemi <- Data[grep("R", Data$Hemisphere), ] # from the ROIs
-    oneHemi$Medial <- ifelse(oneHemi$x < 20, "Medial", "Other")
-    medialHemi <- oneHemi[grep("Medial", oneHemi$Medial), ]
-    medialHemi$y <- medialHemi$y * -1
-    oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-    oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-    medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-    medialHemi_all$y <- medialHemi_all$y * -1
-    ggplot() + 
-      geom_point(data = medialHemi, aes_string(x="y", y="z", color = type), show.legend=Legends) +
-      geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=bground) +
-      scale_color_gradient(low = Cols[1], high = Cols[2]) +
-      theme_blank() 
-  } else if (Hemi == "L") {
-    # "Medial Left"
-    oneHemi <- Data[grep("L", Data$Hemisphere), ]
-    oneHemi$Medial <- ifelse(oneHemi$x > -20, "Medial", "Other")
-    medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-    oneHemi_all <- labelCoords_vertex[grep("L",labelCoords_vertex$Hemisphere), ] # whole surface
-    oneHemi_all$Medial <- ifelse(oneHemi_all$x > -20, "Medial", "Other")
-    medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-    ggplot() + 
-      geom_point(data = medialHemi, aes_string(x="y", y="z", color = type), show.legend=Legends) +
-      geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=bground) +
-      scale_color_gradient(low = Cols[1], high = Cols[2]) +
-      theme_blank() 
-  }
-}
-
-
-## get ROI coords & index
-# The point here is to reduce the summary dframes from community detection to show only ROIs
-# Should work for extracting any label-indexed dframe though
-# I wanted to also get the index in case I want to extract specific rows from parcel/vertex coord dframes
-getCoords <- function(Labels = DMN_labels, Coords = labelCoords_parcel, TimeSeries = FALSE){
-  
-  indx <- numeric()
-  
-  # If you want to select time series from raw data
-  if (TimeSeries == TRUE) {
+    # name the dimensions of the matrix according to the surface vertex index
+    rownames(corrMat) <- indx
     
-    for (ROI in Labels) {
-      indx <- c(indx, grep(ROI, rownames(Coords)))
-    }
+    # store untransformed correlation matrix for later
+    corrMatrix <- corrMat
     
-  } else { # for the summary output of the community detection output
+    # transform to Fisher's (think of thresholding)
+    transfMat <- fisherTanh(Data = corrMat)
     
-    for (ROI in Labels) {
-      indx <- c(indx, grep(ROI, Coords$Label))
-    }
+    # Store Fisher transformed vals for graphing
+    corrMat <- transfMat$tanhZ
+    
+    # diagonals of 1 could be interpreted as self-loops
+    diag(corrMat) <- 0
+    
+    # Exponentiate to preserve distribution while ensuring positive weights
+    corrMat <- exp(corrMat)
+    corrMat[corrMat == 1] <- 0
+    
+    # community detection
+    # I initially used the absolute value of the correlation, but the exp preserves the distribution 
+    # create a graph from adjacency matrix
+    tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
+    
+    # spectral partitioning
+    tempLap <- laplacian_matrix(tempGraph, normalized = T)
+    tempEigen <- eigen(tempLap)
+    fvec <- tempEigen$vectors[, length(tempEigen$values) - 1]
+    binarized <- as.factor(ifelse(fvec > 0, 1, 0)) # binarized Fiedler Vector 
+    
+    # modularity
+    tempCommunity <- fastgreedy.community(tempGraph)
+    
+    # put summary together
+    summary <- data.frame(Vertex = indx,
+                          Label = tempCommunity$names,
+                          x = labelCoords_vertex[indx, "x"],
+                          y = labelCoords_vertex[indx, "y"],
+                          z = labelCoords_vertex[indx, "z"],
+                          Hemisphere = substring(tempCommunity$names, 1, 1),
+                          Membership = tempCommunity$membership,
+                          Modularity = tempCommunity$modularity,
+                          EigenVal = tempEigen$values,
+                          FiedlerVec = fvec,
+                          FiedlerBinary = binarized)
     
   }
   
-  results <- list()
-  results$Index <- indx
-  results$Coords <- Coords[indx, ]
-  
-  return(results)
-  
-}
-
-
-# eigen value community detection
-eigenVals <- function(Data) {
-  
-  # This will produce a vector of values, ready to be plotted
-  tempGraph <- graph_from_adjacency_matrix(Data$TransfMatrix$tanhZ, mode = "undirected", weighted = T)
-  tempGraph <- laplacian_matrix(tempGraph, normalized=T)
-  tempGraph <- eigen(tempGraph)
-  f.vec <- length(tempGraph$values) - 1
-  tempGraph$binarized <-  as.factor(ifelse(tempGraph$vectors[,f.vec] > 0, 1, 0)) # binarized Fiedler Vector
-  
-  return(tempGraph)
-  
-}
-
-
-# Attempt at setting up data for confusion matrices and Jaccard index calculations
-confusionMatrix <- function(partition1 = parcelCommunities[[1]]$Membership, partition2 = parcelCommunities[[1]]$FiedlerBinary) {
-  
-  # Divide partitions to evaluate
-  # Usually 2 will be fiedler
-  
-  # Check if any partition has 0s (since I binarize the Fiedler vector)
-  if (0 %in% partition1) {
-    
-    partition1[grep(0, partition1)] <- 1
-    partition1[grep(1, partition1)] <- 2
-    
-  } 
-  
-  if (0 %in% partition2) {
-    
-    partition2[grep(1, partition2)] <- 2   
-    partition2[grep(0, partition2)] <- 1
-    
+  # Get the final components together
+  # extras should be TRUE if you want to keep the original and transformed correlation matrices
+  if (extras) {
+    communityResults <- list(CorrMatrix = corrMatrix,
+                             TransfMatrix = transfMat,
+                             Summary = summary)
+  } else {
+    communityResults <- summary
   }
   
-  # Community sizes
-  commSizes1 <- table(partition1)
-  commSizes2 <- table(partition2)
-  
-  # Number of communities per partition
-  nComms1 <- length(commSizes1)
-  nComms2 <- length(commSizes2)
-  
-  # Number of vertices
-  n <- length(partition1)
-  
-  # Putting together elements of the confusion matrix
-  confMatrix <- matrix(nrow = nComms1,
-                       ncol = nComms2)
-  
-  for (i in as.numeric(case.names(commSizes1))) {
-    
-    # Vertices belonging to community qX of partition X
-    tempComm1 <- partition1 == i
-    
-    for (j in as.numeric(case.names(commSizes2))) {
-      
-      # Vertices belonging to community qY of partition Y
-      tempComm2 <- partition2 == j
-      
-      # Populate matrix
-      confMatrix[i,j] <- sum(tempComm1 & tempComm2) 
-      
-    }
-  }
-  
-  if (sum(confMatrix) != n) {warning('Sum of the confusion matrix is not equal to number of vertices')}
-  
-  
-  return(confMatrix)
+  return(communityResults)
   
 }
-
 
 # Permutation for 2 groups
 permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, paired = FALSE){
@@ -787,38 +276,8 @@ bootstrap <- function(group = 1, statType = mean, B = 5000){
 }
 
 
-# number of times a node changes affiliation in a time series
-flexibility <- function(Data = cbind(1:10, 6:15)) {
-  # Calculation of flexibility based on Garcia et al., 2018  
-  # This function takes in a data frame or matrix in which columns are the community affiliation 
-  # It needs at least 2 colums, although it's pointless for that  
-  
-  # How many jumps can there be?
-  nJumps <- dim(Data)[2] - 1
-  
-  # Matrix to store jumps
-  jumpCount <- matrix(nrow = dim(Data)[1], ncol = nJumps)
-  
-  # For each transition, get the which nodes changed affiliation
-  for (jump in seq(nJumps)) {
-    
-    jumpCount[, jump] <- Data[, jump] != Data[, jump + 1]
-    
-  }
-  
-  # How many times did every node jump?
-  totalJumps <- rowSums(jumpCount)
-  
-  # Calculate the flexibility per node
-  flexibility <- totalJumps / nJumps
-  
-  return(flexibility)
-  
-}
-
-
 # Sliding window
-slidingWindow <- function(subjTS = ROI_timeSeries[[1]], mins = 15, jump = 1, Spectral = T, Modularity = F, ROIs = c(vmPFC_labels)) {
+slidingWindow <- function(subjTS = NA, mins = 15, jump = 1) {
   # This is a fairly specific function. It takes the time series from a participant and preps/runs community detection at each specified time window. 
   # Returns the summaries for each window (based on communityDetection function)
   # The selection of a window size is based on the fact that a TR = 0.720s and an hour is 5000 TRs (HCP-based)
@@ -850,15 +309,16 @@ slidingWindow <- function(subjTS = ROI_timeSeries[[1]], mins = 15, jump = 1, Spe
   nJumps <- floor((TS - length(WS)) / jump) # number of jumps to be performed, based on the selected parameters
   
   ##------- using lapply
-  winData <- mclapply(seq(nJumps), function(x) subjTS[,WS+(jump*(x-1))])
+  winData <- mclapply(seq(nJumps), function(x) subjTS[, WS + (jump * (x - 1))])
   commTS <- mclapply(winData, communityDetection, ROIS = "None", Type = "vertex", thresh = T, extras = F)
+  
   return(commTS)
   
 }
 
 
 # compare sliding window data to overall communities
-slideCompare <- function(subjData = slideCommunities[[1]], template = vmpfc7mCommunities[[1]], func = "RI", comm = "Spectral") {
+slideCompare <- function(subjData = slideCommunities[[1]], template = NA, func = "RI", comm = "Spectral") {
   # This function compares the community partition from each window slide to the one derived from the whole data set
   # 
   # Parameter definitions:
@@ -928,7 +388,7 @@ evenSpectral <- function(Data = slideCommunities[[1]][[7]]) {
 # Once this is created, go to the terminal and input something like this
 # wb_command -cifti-convert -from-text dataforCifti.txt 100307.MyelinMap_BC.32k_fs_LR.dscalar.nii testCifti.dscalar.nii
 # Where the myelin file here is just a templace. It can be any dscalar.nii with the right surface size
-HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID = "100307"){
+HCPOut <- function(Data = NA, MOI = "Membership", SubjID = "100307"){
   
   nVertices <- 59412
   tempVec <- rep(-1, nVertices)
@@ -939,7 +399,7 @@ HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID =
 }
 
 # Perform pairwise comparisons of clustering outcomes on all subjects
-comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary", Index = "VI", nSubjects = nSubj, subjNames = subjList) {
+comparePartitions <- function(Data = NA, MOI = "FiedlerBinary", Index = "VI", nSubjects = nSubj, subjNames = subjList) {
   # This function will compare the community partitions from all subjects and create a 'comparison matrix' for every pairwise combination of subjects
   # Alternatively, if a second MOI is added 
   # Inputs
@@ -967,13 +427,13 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
     if (Index == "VI") {
       for (subj in seq(nSubjects)) {
         for (subj2 in seq(nSubjects)) {
-          indexMatrix[subj,subj2] <- vi.dist(allVecs[, subj], allVecs[, subj2])
+          indexMatrix[subj, subj2] <- vi.dist(allVecs[, subj], allVecs[, subj2])
         }
       }
     } else if (Index == "RI") {
       for (subj in seq(nSubjects)) {
         for (subj2 in seq(nSubjects)) {
-          indexMatrix[subj,subj2] <- arandi(allVecs[, subj], allVecs[, subj2], adjust = T)
+          indexMatrix[subj, subj2] <- arandi(allVecs[, subj], allVecs[, subj2], adjust = T)
         }
       }
     }
@@ -995,13 +455,12 @@ comparePartitions <- function(Data = dmnval7mCommunities, MOI = "FiedlerBinary",
   return(indexMatrix)
   
 }
+
 ###------- Setups ---------------
 write('Setting up variables for future computations...', stdout())
 
 ## Choose what to analyze
-Parcellated <- F # Parcellated whole brain community detection
 Vertex <- T # ROI-based vertex analysis
-Plots <- F # If running on the SCC, plots might be unhelpful. Have a separate script for that instead
 Sliding <- T
 
 # colors to differentiate other things
@@ -1012,16 +471,6 @@ Cols <- c("DMN" = "aquamarine4","Valuation" = "#D9541A",rgb(190,190,190,100, max
 # These come from an arbitrary division based on where Mackey & Petrides (2014) draw their line
 # This is computed below, but if we want to save time it can be loaded instead.
 #bothLbls <- as.character(read.table('bothLbls.csv', header = F)$V2)
-
-vmPFC_labels <- c("_10pp_",
-                  "_10r_",
-                  "_10v_",
-                  "_25_",
-                  "_OFC_",
-                  "_a24_",
-                  "_p32_",
-                  "_pOFC_",
-                  "_s32_")
 
 # Based on Yeo et al.
 bothLbls <- c("L_25_ROI",
@@ -1070,7 +519,7 @@ bothLbls <- c("L_25_ROI",
               "L_p10p_ROI",
               "L_PCV_ROI")            
 
-Yeo_PCC_labels <- c("_7m_",
+PCC_labels <- c("_7m_",
                     "_23d_",
                     "_31a_",
                     "_31pd_",
@@ -1081,7 +530,7 @@ Yeo_PCC_labels <- c("_7m_",
                     "_d23ab_",
                     "_v23ab_")
 
-mPFC_only <- c("_a24_",
+mPFC_labels <- c("_a24_",
                "_d32_",
                "_p32_",
                "_10r_",
@@ -1094,7 +543,7 @@ mPFC_only <- c("_a24_",
                "_25_")
 
 # Little test to ensure that the ROIs match before running the whole thing
-if (FALSE %in% (mPFC_only %in% c(mPFC_only, "Blah"))) {
+if (FALSE %in% (mPFC_labels %in% c(mPFC_labels, "Blah"))) {
   stop("mPFC-only and Overlapping ROIs don't match")
 }
 
@@ -1107,32 +556,6 @@ labelCoords_parcel <- read.csv2('labelCoords_parcel.csv', sep = ",")
 labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(x)))
 labelCoords_vertex <- transform(labelCoords_vertex, y = as.numeric(as.character(y)))
 labelCoords_vertex <- transform(labelCoords_vertex, z = as.numeric(as.character(z)))
-
-
-###------- Structural Data ---------------
-write('Loading structural brain data from HCP subjects...', stdout())
-
-#setwd('../../../restricted/projectnb/cd-lab/Claudio/Community/')
-# Myelin density maps (all HCP subjects)
-myelinData <- read.csv(paste(SubjID,'_myelin.txt', sep=""), header = F)
-myelinData$Label <- labelCoords_vertex$Label
-
-# Curvature (update to all HCP subjects)
-curvatureData <- read.csv(paste(SubjID,'_curvature.txt', sep=""), header = F)
-curvatureData$Label <- labelCoords_vertex$Label
-
-# Cortical thickness, with curvature regressed out (update to all HCP subjects)
-thicknessData <- read.csv(paste(SubjID,'_thickness.txt', sep=""), header = F)
-thicknessData$Label <- labelCoords_vertex$Label
-
-# Get myelin density for ROIs
-myelinROI <- getCoords(Labels = bothLbls, Coords = myelinData, TimeSeries = F)$Coords
-
-# Get curvature for ROIs
-curvatureROI <- getCoords(Labels = bothLbls, Coords = curvatureData, TimeSeries = F)$Coords
-
-# Get thickness for ROIs
-thicknessROI <- getCoords(Labels = bothLbls, Coords = thicknessData, TimeSeries = F)$Coords
 
 ###------- Load HCP Data ---------------
 # Prep subject data from HCP
@@ -1172,281 +595,95 @@ rm(temp)
 ###------- Community Detection: all ---------------
 write("Computing community detection for the ROI vertices...", stdout())
 
-# Modularity
-dmnval7mCommunities <- communityDetection(Data = timeSeries, ROIS = bothLbls, Type = "vertex", thresh = T)
+# compute spectral partitioning and modularity
+communities <- communityDetection(Data = timeSeries, ROIS = bothLbls, Type = "vertex", thresh = T, extras = F)
 
-# Spectral
-tempEigen <- eigenVals(dmnval7mCommunities)
+# Append the tSNR
+# communities$Summary$tSNR <- tSNR
 
-# Store SP attributes and compute descriptives
-# SP
-dmnval7mCommunities$Summary$EigenVal <- tempEigen$values
-dmnval7mCommunities$Summary$FiedlerVec <- tempEigen$vectors[, (length(tempEigen$values) - 1)] # grab the Fiedler vector
-dmnval7mCommunities$Summary$FiedlerBinary <- tempEigen$binarized
-
-# Descriptives
-tempGraph <- graph_from_adjacency_matrix(dmnval7mCommunities$TransfMatrix$tanhZ,
-                                              mode = "undirected",
-                                              weighted = T)
-
-# Descriptives (Betweenness takes a long time, disregard)
-dmnval7mCommunities$Summary$Strength <- strength(tempGraph)
-
-# Append the coefficient of variation
-# dmnval7mCommunities$Summary$varCoeff <- varCoeff
-
-# Retain summary only from community detection (this is for now, since the matrices might be useful in the future)
-dmnval7mCommunities <- dmnval7mCommunities$Summary
-
-# Make sure the coordinates are numeric
-dmnval7mCommunities <-transform(dmnval7mCommunities, x = as.numeric(as.character(x)), y = as.numeric(as.character(y)), z = as.numeric(as.character(z)))
-
-# Make sure the binarized Fiedler Vector is a factor
-dmnval7mCommunities <- transform(dmnval7mCommunities, FiedlerBinary = as.factor(FiedlerBinary))
-
-# And ensure that DMN is assciated with the positive values of the eigenvector
-dmnval7mCommunities <- evenSpectral(dmnval7mCommunities)
-
-# Myelin
-dmnval7mCommunities$Myelin <- myelinROI[ , 1]
-
-# Curvature
-dmnval7mCommunities$Curvature <- curvatureROI[ , 1]
-
-# Thickness
-dmnval7mCommunities$Thickness <- thicknessROI[ , 1]
-
-rm(tempGraph)
-
-
-
+# Ensure that DMN is assciated with the positive values of the eigenvector
+communities <- evenSpectral(communities)
 
 
 ###------- Measures of variance -----------
-if (Vertex) {
+
+write("Computing each vertex's variance...", stdout())
+
+## Raw mPFC and PCC SNR
+# Reduce the 4 SNR-dedicated tseries to the ROIs
+timeSeries_SNR_ROI <- lapply(timeSeries_SNR, getCoords, Labels = bothLbls, TimeSeries = T)
+rm(timeSeries_SNR)
+
+# Compute tSNR
+SNR_mean <- lapply(timeSeries_SNR_ROI, function(data) rowMeans(data$Coords))
+SNR_sd <- lapply(timeSeries_SNR_ROI, function(data) apply(data$Coords, 1, sd))
+tSNR <- do.call(cbind, lapply(seq_along(length(SNR_mean)), function(x) SNR_mean[[x]] / SNR_sd[[x]]))
+
+# Get the mean coefficient across sessions, and append it to the overall summary
+communities$tSNR <- rowMeans(tSNR)
+
+rm(SNR_mean, SNR_sd, timeSeries_SNR_ROI)
+
+## Now compute the variance explained by the mean time series from the DMN community on each DMN community vertex
+## This should be high, since the communities are correlation-based
+
+# Get the vertices from the DMN community
+index <- communities$Vertex[communities$FiedlerBinary == 1]
+tempY <- communities$y[communities$FiedlerBinary == 1]
+tempZ <- communities$z[communities$FiedlerBinary == 1]
+
+# Select their corresponding time series, and compute the average tseries of the whole community
+DMN_commTSeries <- timeSeries[index, ] 
+DMN_commTSeries_mean <- colMeans(DMN_commTSeries)
+
+# Run a simple linear model per vertex time series
+DMN_commTSeries_models <- apply(DMN_commTSeries, 1, function(vertexTimeseries) {lm(vertexTimeseries ~ DMN_commTSeries_mean)})
+
+# Get the R-squares and T-values, and store them along with the vertex index
+Rsquared <- sapply(DMN_commTSeries_models, function(data) {summary(data)$r.squared})
+Tvalue <- sapply(DMN_commTSeries_models, function(data) {summary(data)$coefficients[2,3]})
+DMN_commVrtxvsOverallCorr <- data.frame(index, tempY, tempZ, Rsquared, Tvalue)
+colnames(DMN_commVrtxvsOverallCorr)[1] <- "Vertex"
+
+rm(tempComm, index, Rsquared, Tvalue, DMN_commTSeries, DMN_commTSeries_models, DMN_commTSeries_mean)
   
-  write("Computing each vertex's variance...", stdout())
-  
-  ## Raw mPFC and PCC SNR
-  # Reduce the 4 SNR-dedicated tseries to the ROIs
-  timeSeries_SNR_ROI <- lapply(timeSeries_SNR, getCoords, Labels = bothLbls, TimeSeries = T)
-  rm(timeSeries_SNR)
-  
-  # Compute coefficient of variation
-  SNR_mean <- lapply(timeSeries_SNR_ROI, function(data) rowMeans(data$Coords))
-  SNR_sd <- lapply(timeSeries_SNR_ROI, function(data) apply(data$Coords, 1, sd))
-  varCoeff <- do.call(cbind, lapply(seq_along(length(SNR_mean)), function(x) SNR_mean[[x]] / SNR_sd[[x]]))
-  
-  # Get the mean coefficient across sessions, and append it to the overall summary
-  dmnval7mCommunities$varCoeff <- rowMeans(varCoeff)
-  
-  rm(SNR_mean, SNR_sd, timeSeries_SNR_ROI)
-  
-  ## Now compute the variance explained by the mean time series from the DMN community on each DMN community vertex
-  ## This should be high, since the communities are correlation-based
-  
-  # Get the vertices from the DMN community
-  # tempComm <- dmnval7mCommunities[dmnval7mCommunities$y > 0, ]
-  index <- dmnval7mCommunities$Vertex[dmnval7mCommunities$FiedlerBinary == 1]
-  tempY <- dmnval7mCommunities$y[dmnval7mCommunities$FiedlerBinary == 1]
-  tempZ <- dmnval7mCommunities$z[dmnval7mCommunities$FiedlerBinary == 1]
-  
-  # Select their corresponding time series, and compute the average tseries of the whole community
-  DMN_commTSeries <- timeSeries[index, ] 
-  DMN_commTSeries_mean <- colMeans(DMN_commTSeries)
-  
-  # Run a simple linear model per vertex time series
-  DMN_commTSeries_models <- apply(DMN_commTSeries, 1, function(vertexTimeseries) {lm(vertexTimeseries ~ DMN_commTSeries_mean)})
-  
-  # Get the R-squares and T-values, and store them along with the vertex index
-  Rsquared <- sapply(DMN_commTSeries_models, function(data) {summary(data)$r.squared})
-  Tvalue <- sapply(DMN_commTSeries_models, function(data) {summary(data)$coefficients[2,3]})
-  DMN_commVrtxvsOverallCorr <- data.frame(index, tempY, tempZ, Rsquared, Tvalue)
-  colnames(DMN_commVrtxvsOverallCorr)[1] <- "Vertex"
-  
-  rm(tempComm, index, Rsquared, Tvalue, DMN_commTSeries, DMN_commTSeries_models, DMN_commTSeries_mean)
-  
-}
 ###------- Community Detection: Day 1 vs Day 2 -----------
-if (Vertex) {
   
-  write("Computing PCC-seed correlations and community detection for the ROI vertices, Day 1 vs Day 2...", stdout())
+write("Computing PCC-seed correlations and community detection for the ROI vertices, Day 1 vs Day 2...", stdout())
+
+# Correlate Yeo 2011 PCC ROI with mPFC
+# Get vertex indices
+Yeo_PCC_indx <- getCoords(Labels = PCC_labels, Coords = timeSeries_halves[[1]], TimeSeries = T)$Index
+mPFC_indx <- getCoords(Labels = mPFC_labels, Coords = timeSeries_halves[[1]], TimeSeries = T)$Index
+
+# Correlate the mean PCC time series with mPFC
+corHalves <- mclapply(timeSeries_halves, function(data) as.numeric(cor(t(data[mPFC_indx,]), colMeans(data[Yeo_PCC_indx,]))))
+
+# Compute the day 1/2 communities 
+communities_halves <- mclapply(timeSeries_halves, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T, extras = F)
+
+# Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)\
+communities_halves <- lapply(communities_halves, evenSpectral)
+
+rm(timeSeries_halves)
   
-  # Correlate Yeo 2011 PCC ROI with mPFC
-  # Get vertex indices
-  Yeo_PCC_indx <- getCoords(Labels = Yeo_PCC_labels, Coords = timeSeries_halves[[1]], TimeSeries = T)$Index
-  mPFC_indx <- getCoords(Labels = mPFC_only, Coords = timeSeries_halves[[1]], TimeSeries = T)$Index
-  
-  # Correlate the mean PCC time series with mPFC
-  corHalves <- mclapply(timeSeries_halves, function(data) as.numeric(cor(t(data[mPFC_indx,]), colMeans(data[Yeo_PCC_indx,]))))
-  
-  # Fisher transform and FDR threshold (same as with the community detection)
-  # corHalves_corrected <- lapply(corHalves, fisherTanh)
-  # corHalves_corrected <- lapply(corHalves_corrected, function(data) ifelse(data$tanhZ == 0, 0, 1))
-  # 
-  # rm(corHalves)
-  
-  # Compute the day 1/2 communities too
-  dmnval7mCommunities_halves <- lapply(timeSeries_halves, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T)
-  
-  # Spectral
-  tempEigen_halves <- mclapply(dmnval7mCommunities_halves, eigenVals)
-  
-  # Store SP attributes and compute descriptives
-  tempGraph <- list()
-  for (i in seq(length(tempEigen_halves))) {
-    
-    # SP
-    dmnval7mCommunities_halves[[i]]$Summary$EigenVal <- tempEigen_halves[[i]]$values
-    dmnval7mCommunities_halves[[i]]$Summary$FiedlerVec <- tempEigen_halves[[i]]$vectors[, (length(tempEigen_halves[[i]]$values) - 1)] # grab the Fiedler vector
-    dmnval7mCommunities_halves[[i]]$Summary$FiedlerBinary <- tempEigen_halves[[i]]$binarized
-    
-    # Descriptives
-    # It takes too long to compute for the extended analyses.
-    tempGraph[[i]] <- graph_from_adjacency_matrix(dmnval7mCommunities_halves[[i]]$TransfMatrix$tanhZ,
-                                                  mode = "undirected",
-                                                  weighted = T)
-    
-  }
-  
-  # Descriptives (Betweenness takes a long time, disregard)
-  # This code is horrible. Optimize with apply/do.call, etc.
-  tempStrength <- mclapply(tempGraph, strength)
-  
-  for (i in seq(length(tempEigen_halves))) {
-    
-    dmnval7mCommunities_halves[[i]]$Summary$Strength <- tempStrength[[i]]
-    
-  }
-  
-  # Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)
-  for (Win in seq(length(dmnval7mCommunities_halves))) {
-    dmnval7mCommunities_halves[[Win]] <- dmnval7mCommunities_halves[[Win]]$Summary
-    dmnval7mCommunities_halves[[Win]] <- transform(dmnval7mCommunities_halves[[Win]], x = as.numeric(as.character(x)), y = as.numeric(as.character(y)), z = as.numeric(as.character(z)))
-    dmnval7mCommunities_halves[[Win]] <- transform(dmnval7mCommunities_halves[[Win]], FiedlerBinary = as.factor(FiedlerBinary))
-    dmnval7mCommunities_halves[[Win]] <- evenSpectral(dmnval7mCommunities_halves[[Win]])
-  }
-  
-  rm(tempStrength, tempGraph, timeSeries_halves)
-  
-}
+
 ###------- Community Detection: session ---------------
-## Vertex-wise
-if (Vertex == T) {
   
-  write("Computing community detection for the ROI vertices, session...", stdout())
+write("Computing community detection for the ROI vertices, session...", stdout())
+
+# Modularity
+communities_sess <- mclapply(timeSeries_sess, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T, extras = F)
+
+# Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)\
+communities_halves <- lapply(communities_halves, evenSpectral)
+
+rm(timeSeries_sess)
   
-  # Modularity
-  dmnval7mCommunities_sess <- lapply(timeSeries_sess, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T)
-  
-  # Spectral
-  tempEigen_sess <- mclapply(dmnval7mCommunities_sess, eigenVals)
-  
-  # Store SP attributes and compute descriptives
-  tempGraph <- list()
-  for (i in seq(length(tempEigen_sess))) {
-    
-    # SP
-    dmnval7mCommunities_sess[[i]]$Summary$EigenVal <- tempEigen_sess[[i]]$values
-    dmnval7mCommunities_sess[[i]]$Summary$FiedlerVec <- tempEigen_sess[[i]]$vectors[, (length(tempEigen_sess[[i]]$values) - 1)] # grab the Fiedler vector
-    dmnval7mCommunities_sess[[i]]$Summary$FiedlerBinary <- tempEigen_sess[[i]]$binarized
-    
-    # Descriptives
-    # For MA703 I won't worry about this, since I'm not using it. 
-    # It takes too long to compute for the extended analyses.
-    tempGraph[[i]] <- graph_from_adjacency_matrix(dmnval7mCommunities_sess[[i]]$TransfMatrix$tanhZ,
-                                                  mode = "undirected",
-                                                  weighted = T)
-    
-  }
-  
-  # Descriptives (Betweenness takes a long time, disregard)
-  tempStrength <- mclapply(tempGraph, strength)
-  
-  for (i in seq(length(tempEigen_sess))) {
-    
-    dmnval7mCommunities_sess[[i]]$Summary$Strength <- tempStrength[[i]]
-    
-  }
-  
-  # Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)
-  for (Win in seq(length(dmnval7mCommunities_sess))) {
-    dmnval7mCommunities_sess[[Win]] <- dmnval7mCommunities_sess[[Win]]$Summary
-    dmnval7mCommunities_sess[[Win]] <- transform(dmnval7mCommunities_sess[[Win]], x = as.numeric(as.character(x)), y = as.numeric(as.character(y)), z = as.numeric(as.character(z)))
-    dmnval7mCommunities_sess[[Win]] <- transform(dmnval7mCommunities_sess[[Win]], FiedlerBinary = as.factor(FiedlerBinary))
-    dmnval7mCommunities_sess[[Win]] <- evenSpectral(dmnval7mCommunities_sess[[Win]])
-  }
-  
-  rm(tempStrength, tempGraph, timeSeries_sess)
-  
-}
-###------- Parcel Communities: Descriptive summaries ---------------
-# THINK ABOUT WRITING A CSV SUMMARY FOR THIS
-if (Parcellated == T) {
-  
-  # Some cleaning up and averaging to plot the parcellated strength onto the brain
-  tempStr <- cbind(parcelCommunities[[1]]$Strength,
-                   parcelCommunities[[2]]$Strength,
-                   parcelCommunities[[3]]$Strength)
-  tempBtw <- cbind(parcelCommunities[[1]]$Betweenness,
-                   parcelCommunities[[2]]$Betweenness,
-                   parcelCommunities[[3]]$Betweenness)
-  summaryParcels <- data.frame(Label = metaStuff$Label,
-                               x = metaStuff$x,
-                               y = metaStuff$y,
-                               z = metaStuff$z,
-                               Strength = rowMeans(tempStr),
-                               Betweenness = rowMeans(tempBtw))
-  
-  # Append whether a label is DMN or not
-  indx <- grep(paste(bothLbls, collapse="|"), parcelCommunities[[1]]$Label)
-  indx2 <- seq(360)[-indx]
-  parcelCommunities[[1]]$lblComb[indx] <-  "DMN/Val"
-  parcelCommunities[[2]]$lblComb[indx] <-  "DMN/Val"
-  parcelCommunities[[3]]$lblComb[indx] <-  "DMN/Val"
-  parcelCommunities[[1]]$lblComb[indx2] <-  "Other"
-  parcelCommunities[[2]]$lblComb[indx2] <-  "Other"
-  parcelCommunities[[3]]$lblComb[indx2] <-  "Other"
-  
-  # Shortened versions
-  summaryParcels$lblComb <- parcelCommunities[[1]]$lblComb
-  summaryParcels_s <- getCoords(Labels = DMN_labels, Coords = summaryParcels)
-  summaryParcels_comb <- getCoords(Labels = combinedLbls, Coords = summaryParcels)
-  summaryParcels_both <- getCoords(Labels = bothLbls, Coords = summaryParcels)
-  summaryParcels_dmn <- getCoords(Labels = dmnLbls, Coords = summaryParcels)
-  
-  # Short communities
-  parcelCommunities_s <- list()
-  parcelCommunities_s[[1]] <- getCoords(Labels = bothLbls, Coords = parcelCommunities[[1]])
-  parcelCommunities_s[[2]] <- getCoords(Labels = bothLbls, Coords = parcelCommunities[[2]])
-  parcelCommunities_s[[3]] <- getCoords(Labels = bothLbls, Coords = parcelCommunities[[3]])
-  
-}
-###------- Parcel communities: Inter-subject agreement ---------------
-# WRITE AS CSV, AND NOTE THAT THE VIs ARE UNADJUSTED (DIVIDE BY THE LOG OF THE NUMBER OF VERTICES)
-if(Parcellated == T) {
-  
-  write("Computing within and between subject partition comparisons for parcellated brain...", stdout())
-  
-  # Inter subject SP
-  # Rand index
-  interRI_p <- comparePartitions(Data = parcelCommunities, Index = "RI")
-  
-  # Variation of information
-  interVI_p <- comparePartitions(Data = parcelCommunities, Index = "VI")
-  
-  # Within subject cross-method
-  # Rand index
-  withinRI_p <- comparePartitions(Data = parcelCommunities, index = "RI", MOI = c("FiedlerBinary","Membership"))
-  
-  # Variation of information  
-  withinVI_p <- comparePartitions(Data = parcelCommunities, index = "VI", MOI = c("FiedlerBinary","Membership"))
-  
-  save(interRI_p, interVI_p, withinRI_p, withinVI_p, file = "parcelComparisons.RData")
-  
-}
+
+
 ###------- Vertex communities: Sliding window ---------------
-if (Vertex & Sliding) {
+if (Sliding) {
   
   write("Computing sliding window analysis for vertex communities...", stdout())
   
@@ -1454,12 +691,10 @@ if (Vertex & Sliding) {
   ROI_timeSeries <- getCoords(Coords = timeSeries, Labels = bothLbls, TimeSeries = T)
   
   # Sliding window analysis for each subject (using defaults)
-  slideCommunities <- slidingWindow(subjTS = ROI_timeSeries, ROIs = bothLbls, Spectral = T, Modularity = F, mins = 20, jump = 1)
+  slideCommunities <- slidingWindow(subjTS = ROI_timeSeries, ROIs = bothLbls, mins = 20, jump = 1)
   
   # Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)
-  for (Win in seq(length(slideCommunities))) {
-    slideCommunities[[Win]] <- evenSpectral(Data = slideCommunities[[Win]]$Summary)
-  }
+  slideCommunities <- lapply(slideCommunities, evenSpectral)
   
   # Store the community structure per sliding window 
   slidingVals <- do.call(cbind, lapply(slideCommunities, "[[", "FiedlerBinary")) # do call will perform a function on a list. lapply creates a sublist from the original data
@@ -1468,7 +703,7 @@ if (Vertex & Sliding) {
   # now compare to the template 
   # Get the index for each comparison
   tempCompare <- slideCompare(subjData = slideCommunities,
-                              dmnval7mCommunities,
+                              communities,
                               comm = "Spectral",
                               func = "RI")
   
@@ -1476,58 +711,42 @@ if (Vertex & Sliding) {
   allSlideCompared <- data.frame(SubjID = rep(SubjID, length(tempCompare)),
                           Window = seq(length(tempCompare)),
                           Index = tempCompare) #scale(tempCompare, center = T, scale = F))
-  
 
-  # Add other relevant values to the final summary
-  # With this info, we can potentially run a mixed effects GLM to estimate the probability of a vertex being mostly DMN (propDMN) based on myelin density
-  # Flexibility
-  testy <- slidingVals 
-  dmnval7mCommunities$slideFlexibility <- flexibility(testy)
-  
-  # Proportion of times a node was associated with DNM
-  dmnval7mCommunities$slidePropDMN <- rowMeans(testy)
-  
-  # Another one is to look at the fiedler vector and plot that. Perhaps nodes closer to 0 are also the most variable ones.
-  testy <- do.call(cbind, lapply(slideCommunities, "[[", "FiedlerVec")) 
-  dmnval7mCommunities$slideFiedVec_mean <- rowMeans(testy)
-  
-  # or the SD
-  dmnval7mCommunities$slideFiedVec_sd <- transform(testy, SD=apply(testy,1, sd, na.rm = TRUE))$SD
+  # Add proportion of times a node was associated with DNM to the final summary
+  communities$slidePropDMN <- rowMeans(slidingVals)
     
 }
 ###------- Save Data ---------------
-if (Vertex) {
   
-  write("Saving summary files...", stdout())
-  
-  # Produce a final summary for each participant
-  write.csv(dmnval7mCommunities, paste(SubjID, "_finalSummary.csv", sep=""), row.names = F)
-  
-  # Final summary for each half
-  lapply(seq_along(dmnval7mCommunities_halves), function(x) {write.csv(dmnval7mCommunities_halves[[x]], paste(SubjID, "_H", x,"_finalSummary.csv",sep=""), row.names = F)})
-  lapply(seq_along(corHalves), function(x) {write.table(corHalves[[x]], paste(SubjID, "_H", x,"_corHalves.csv",sep=""), row.names = F, col.names = F)})
-  
-  # Final summary for each session
-  lapply(seq_along(dmnval7mCommunities_sess), function(x) {write.csv(dmnval7mCommunities_sess[[x]], paste(SubjID, "_S", x,"_finalSummary.csv",sep=""), row.names = F)})
-  
-  # The variance explained by the mean DMN time series on each vertex
-  write.csv(DMN_commVrtxvsOverallCorr, paste(SubjID, "_DMN_VrtxvMean.csv", sep=""), row.names = F)
-  
-  # Save the agreement between each slide and the overall partition
-  if (Sliding) {
-    write.csv2(allSlideCompared, file = paste(SubjID, "_slideWindowComparisons.csv", sep=""), row.names = F)
-  
-    # Write the actual sliding affiliations 
-    write.csv2(slidingVals, file = paste(SubjID, "_slideWindowValues.csv", sep=""), row.names = F)
-  }
-  
-  # Write files for HCP
-  HCPOut(Data = dmnval7mCommunities, MOI = "FiedlerBinary", SubjID = SubjID)  
-  HCPOut(Data = dmnval7mCommunities, MOI = "FiedlerVec", SubjID = SubjID) 
-  HCPOut(Data = dmnval7mCommunities, MOI = "Strength", SubjID = SubjID) 
-  HCPOut(Data = dmnval7mCommunities, MOI = "varCoeff", SubjID = SubjID) 
-  
+write("Saving summary files...", stdout())
+
+# Produce a final summary for each participant
+write.csv(communities, paste(SubjID, "_finalSummary.csv", sep=""), row.names = F)
+
+# Final summary for each half
+lapply(seq_along(communities_halves), function(x) {write.csv(communities_halves[[x]], paste(SubjID, "_H", x,"_finalSummary.csv", sep = ""), row.names = F)})
+lapply(seq_along(corHalves), function(x) {write.table(corHalves[[x]], paste(SubjID, "_H", x,"_corHalves.csv",sep=""), row.names = F, col.names = F)})
+
+# Final summary for each session
+lapply(seq_along(communities_sess), function(x) {write.csv(communities_sess[[x]], paste(SubjID, "_S", x,"_finalSummary.csv",sep=""), row.names = F)})
+
+# The variance explained by the mean DMN time series on each vertex
+write.csv(DMN_commVrtxvsOverallCorr, paste(SubjID, "_DMN_VrtxvMean.csv", sep=""), row.names = F)
+
+# Save the agreement between each slide and the overall partition
+if (Sliding) {
+  write.csv2(allSlideCompared, file = paste(SubjID, "_slideWindowComparisons.csv", sep=""), row.names = F)
+
+  # Write the actual sliding affiliations 
+  write.csv2(slidingVals, file = paste(SubjID, "_slideWindowValues.csv", sep=""), row.names = F)
 }
+
+# Write files for HCP
+HCPOut(Data = communities, MOI = "FiedlerBinary", SubjID = SubjID)  
+HCPOut(Data = communities, MOI = "FiedlerVec", SubjID = SubjID) 
+HCPOut(Data = communities, MOI = "tSNR", SubjID = SubjID) 
+  
+
 
 
 
