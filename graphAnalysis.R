@@ -2,7 +2,7 @@
 SubjID <- commandArgs(trailingOnly=TRUE)
 write(paste("Analyzing data for subject", SubjID), stdout())
 
-### Run a graph theoretic fMRI analysis
+### Run a graph theoretic fMRI analysis on the pre-processed time series of an individual
 
 ###------- Libraries and functions ---------------
 write('Loading functions and libraries...', stdout())
@@ -19,11 +19,11 @@ library(lme4)
 library(parallel)
 
 
-## tanh-z transformation (variance stabilizing Fisher) and p-values (adjusted and not)
-# This takes either a matrix of correlation values (vectors too, but manually compute pvals)
-# Normalization approach suggested in network textbook (equation 7.20)
-# This transformation is approximately normal with mean 0 and sd = sqrt(1 / (n - 3))
+# tanh-z transformation (variance stabilizing Fisher) and p-values (adjusted and not)
 fisherTanh <- function(Data = padjMatrix, preThresh = NA){
+  # This takes either a matrix of correlation values (vectors too, but manually compute pvals)
+  # Normalization approach suggested in network textbook (equation 7.20)
+  # This transformation is approximately normal with mean 0 and sd = sqrt(1 / (n - 3))
   
   transformed <- list()
   
@@ -44,7 +44,7 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
       z.vec <- transformed$tanhZ
       n <- length(Data)
     }
-    transformed$pvals <- 2 * pnorm(abs(z.vec), 0 , sqrt(1 / (n-3)), lower.tail=F)
+    transformed$pvals <- 2 * pnorm(abs(z.vec), 0 , sqrt(1 / (n - 3)), lower.tail = F)
     
     # adjust pvals
     transformed$adjustPvals <- p.adjust(transformed$pvals, "BH")
@@ -65,9 +65,10 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
       dimnames(tempMat) <- list(rownames(Data), rownames(Data))
       transformed$adjustPvals <- tempMat
       
-      # retain only the significant adjusted pval Z scores
-      transformed$tanhZ[transformed$adjustPvals > 0.05] <- 0
     }
+    
+    # retain only the significant adjusted pval Z scores
+    transformed$tanhZ[transformed$adjustPvals > 0.05] <- 0
   }
   
   return(transformed)
@@ -75,9 +76,41 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
 }
 
 
-## Run community detection on ROIs
-communityDetection <- function(Data = NA, ROIS = "None", extras = T) {
-  # This function relies on having the timeSeries data uploaded, and labelCoords_vertex 
+# get ROI coords & index
+getCoords <- function(Labels = DMN_labels, Coords = labelCoords_parcel, TimeSeries = FALSE){
+  # The point here is to reduce the summary dframes from community detection to show only ROIs
+  # Should work for extracting any label-indexed dframe though
+  # I wanted to also get the index in case I want to extract specific rows from parcel/vertex coord dframes
+  
+  indx <- numeric()
+  
+  # If you want to select time series from raw data
+  if (TimeSeries == TRUE) {
+    
+    for (ROI in Labels) {
+      indx <- c(indx, grep(ROI, rownames(Coords)))
+    }
+    
+  } else { # for the summary output of the community detection output
+    
+    for (ROI in Labels) {
+      indx <- c(indx, grep(ROI, Coords$Label))
+    }
+    
+  }
+  
+  results <- list()
+  results$Index <- indx
+  results$Coords <- Coords[indx, ]
+  
+  return(results)
+  
+}
+
+
+# Run community detection on ROIs
+communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras = T) {
+  # This function relies on having the timeSeries data uploaded, and labelCoords_vertex as the row names for ROI selection
   # Extras dictates whether the community object + correlation matrix should also be extracted
   #
   # Parameter definitions:
@@ -86,49 +119,11 @@ communityDetection <- function(Data = NA, ROIS = "None", extras = T) {
   #
   #   ROIS: a list. If the data needs to be reduced to specific ROIs  
   #
+  #   modularity: TRUE if you would like to also run the fastgreedy modularity community detection
+  #
   #   extras: if you want to return the original and transformed correlation matrices  
-  
-  print(paste('Computing modularity based on', Type))
-  
-  # This will just do SP for sliding window, otherwise do both modularity and SP
-  if (ROIS == "None"){
-    
-    print("Previously concatenated data")
-    
-    # correlation matrix
-    corrMat <- cor(t(Data))
-    
-    # store to return the original corr. matrix
-    corrMatrix <- corrMat
-    
-    # fisher transform, and turn FDR corrected non-significant p-vals to 0
-    # then turn diagonal to 0 
-    transfMat <- fisherTanh(Data = corrMat)
-    transfMat$tanhZ[transfMat$adjustPvals > 0.05] <- 0
-    corrMat <- transfMat$tanhZ
-    diag(corrMat) <- 0
-    
-    # exponentiate to keep ordinal ranks, but making the distribution positive
-    # then reset thresholded values from 1 to 0
-    corrMat <- exp(corrMat)
-    corrMat[corrMat == 1] <- 0
-    
-    # spectral partitioning
-    tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-    tempLap <- laplacian_matrix(tempGraph, normalized = T)
-    tempEigen <- eigen(tempLap)
-    fvec <- tempEigen$vectors[,  length(tempEigen$values) - 1]
-    binarized <-  as.factor(ifelse(fvec > 0, 1, 0)) # binarized Fiedler Vector 
-    
-    # put summary together
-    summary <- data.frame(Label = colnames(corrMat),
-                          Hemisphere = substring(colnames(corrMat), 1, 1),
-                          EigenVal = tempEigen$values,
-                          FiedlerVec = fvec,
-                          FiedlerBinary = binarized)
-    
-  } else {
-    
+
+  if (ROIS != "None") {
     # To store the vertex indices corresponding to the ROIs
     indx <- numeric()
     
@@ -139,41 +134,43 @@ communityDetection <- function(Data = NA, ROIS = "None", extras = T) {
     
     # reduce time series to only include ROIs
     nVerts <- length(indx)
-    ROI_tseries <- Data[indx, ]
-    
-    # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
-    corrMat <- cor(t(ROI_tseries))
-    
-    # name the dimensions of the matrix according to the surface vertex index
-    rownames(corrMat) <- indx
-    
-    # store untransformed correlation matrix for later
-    corrMatrix <- corrMat
-    
-    # transform to Fisher's (think of thresholding)
-    transfMat <- fisherTanh(Data = corrMat)
-    
-    # Store Fisher transformed vals for graphing
-    corrMat <- transfMat$tanhZ
-    
-    # diagonals of 1 could be interpreted as self-loops
-    diag(corrMat) <- 0
-    
-    # Exponentiate to preserve distribution while ensuring positive weights
-    corrMat <- exp(corrMat)
-    corrMat[corrMat == 1] <- 0
-    
-    # community detection
-    # I initially used the absolute value of the correlation, but the exp preserves the distribution 
-    # create a graph from adjacency matrix
-    tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-    
-    # spectral partitioning
-    tempLap <- laplacian_matrix(tempGraph, normalized = T)
-    tempEigen <- eigen(tempLap)
-    fvec <- tempEigen$vectors[, length(tempEigen$values) - 1]
-    binarized <- as.factor(ifelse(fvec > 0, 1, 0)) # binarized Fiedler Vector 
-    
+    Data <- Data[indx, ]
+  }
+  
+  # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
+  corrMat <- cor(t(Data))
+  
+  # name the dimensions of the matrix according to the surface vertex index
+  rownames(corrMat) <- indx
+  
+  # store untransformed correlation matrix for later
+  corrMatrix <- corrMat
+  
+  # transform to Fisher's (think of thresholding)
+  transfMat <- fisherTanh(Data = corrMat)
+  
+  # Store Fisher transformed vals for graphing
+  corrMat <- transfMat$tanhZ
+  
+  # diagonals of 1 could be interpreted as self-loops
+  diag(corrMat) <- 0
+  
+  # Exponentiate to preserve distribution while ensuring positive weights
+  corrMat <- exp(corrMat)
+  corrMat[corrMat == 1] <- 0
+  
+  # community detection
+  # I initially used the absolute value of the correlation, but the exp preserves the distribution 
+  # create a graph from adjacency matrix
+  tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
+  
+  # spectral partitioning
+  tempLap <- laplacian_matrix(tempGraph, normalized = T)
+  tempEigen <- eigen(tempLap)
+  fvec <- tempEigen$vectors[, length(tempEigen$values) - 1]
+  binarized <- as.factor(ifelse(fvec > 0, 1, 0)) # binarized Fiedler Vector 
+  
+  if (modularity) {
     # modularity
     tempCommunity <- fastgreedy.community(tempGraph)
     
@@ -189,9 +186,19 @@ communityDetection <- function(Data = NA, ROIS = "None", extras = T) {
                           EigenVal = tempEigen$values,
                           FiedlerVec = fvec,
                           FiedlerBinary = binarized)
-    
+  } else {
+    # put summary together
+    summary <- data.frame(Vertex = indx,
+                          Label = tempCommunity$names,
+                          x = labelCoords_vertex[indx, "x"],
+                          y = labelCoords_vertex[indx, "y"],
+                          z = labelCoords_vertex[indx, "z"],
+                          Hemisphere = substring(tempCommunity$names, 1, 1),
+                          EigenVal = tempEigen$values,
+                          FiedlerVec = fvec,
+                          FiedlerBinary = binarized)
   }
-  
+
   # Get the final components together
   # extras should be TRUE if you want to keep the original and transformed correlation matrices
   if (extras) {
@@ -205,6 +212,7 @@ communityDetection <- function(Data = NA, ROIS = "None", extras = T) {
   return(communityResults)
   
 }
+
 
 # Permutation for 2 groups
 permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, paired = FALSE){
@@ -310,7 +318,7 @@ slidingWindow <- function(subjTS = NA, mins = 15, jump = 1) {
   
   ##------- using lapply
   winData <- mclapply(seq(nJumps), function(x) subjTS[, WS + (jump * (x - 1))])
-  commTS <- mclapply(winData, communityDetection, ROIS = "None", Type = "vertex", thresh = T, extras = F)
+  commTS <- mclapply(winData, communityDetection, ROIS = "None", modularity = F, extras = F)
   
   return(commTS)
   
@@ -359,6 +367,7 @@ slideCompare <- function(subjData = slideCommunities[[1]], template = NA, func =
   
 }
 
+
 # Ensure that all spectral communities associated with 7m (i.e. DMN) have the same label value of 1 
 evenSpectral <- function(Data = slideCommunities[[1]][[7]]) {
   
@@ -383,12 +392,13 @@ evenSpectral <- function(Data = slideCommunities[[1]][[7]]) {
   
 }
 
+
 # Create a vector ready to be used for HCP data (32k CIFTI surface)
-# The input should be the summary from community partitioning
-# Once this is created, go to the terminal and input something like this
-# wb_command -cifti-convert -from-text dataforCifti.txt 100307.MyelinMap_BC.32k_fs_LR.dscalar.nii testCifti.dscalar.nii
-# Where the myelin file here is just a templace. It can be any dscalar.nii with the right surface size
 HCPOut <- function(Data = NA, MOI = "Membership", SubjID = "100307"){
+  # The input should be the summary from community partitioning
+  # Once this is created, go to the terminal and input something like this
+  # wb_command -cifti-convert -from-text dataforCifti.txt 100307.MyelinMap_BC.32k_fs_LR.dscalar.nii testCifti.dscalar.nii
+  # Where the myelin file here is just a templace. It can be any dscalar.nii with the right surface size
   
   nVertices <- 59412
   tempVec <- rep(-1, nVertices)
@@ -397,6 +407,7 @@ HCPOut <- function(Data = NA, MOI = "Membership", SubjID = "100307"){
   write.table(file = paste(SubjID,"_",MOI,'_dataforCifti.txt', sep=""), tempVec, row.names = F, col.names = F, dec = ".")
   
 }
+
 
 # Perform pairwise comparisons of clustering outcomes on all subjects
 comparePartitions <- function(Data = NA, MOI = "FiedlerBinary", Index = "VI", nSubjects = nSubj, subjNames = subjList) {
@@ -455,6 +466,7 @@ comparePartitions <- function(Data = NA, MOI = "FiedlerBinary", Index = "VI", nS
   return(indexMatrix)
   
 }
+
 
 ###------- Setups ---------------
 write('Setting up variables for future computations...', stdout())
@@ -596,7 +608,7 @@ rm(temp)
 write("Computing community detection for the ROI vertices...", stdout())
 
 # compute spectral partitioning and modularity
-communities <- communityDetection(Data = timeSeries, ROIS = bothLbls, Type = "vertex", thresh = T, extras = F)
+communities <- communityDetection(Data = timeSeries, ROIS = bothLbls, modularity = T, extras = F)
 
 # Append the tSNR
 # communities$Summary$tSNR <- tSNR
@@ -645,7 +657,7 @@ Tvalue <- sapply(DMN_commTSeries_models, function(data) {summary(data)$coefficie
 DMN_commVrtxvsOverallCorr <- data.frame(index, tempY, tempZ, Rsquared, Tvalue)
 colnames(DMN_commVrtxvsOverallCorr)[1] <- "Vertex"
 
-rm(tempComm, index, Rsquared, Tvalue, DMN_commTSeries, DMN_commTSeries_models, DMN_commTSeries_mean)
+rm(index, Rsquared, Tvalue, DMN_commTSeries, DMN_commTSeries_models, DMN_commTSeries_mean)
   
 ###------- Community Detection: Day 1 vs Day 2 -----------
   
@@ -660,7 +672,7 @@ mPFC_indx <- getCoords(Labels = mPFC_labels, Coords = timeSeries_halves[[1]], Ti
 corHalves <- mclapply(timeSeries_halves, function(data) as.numeric(cor(t(data[mPFC_indx,]), colMeans(data[Yeo_PCC_indx,]))))
 
 # Compute the day 1/2 communities 
-communities_halves <- mclapply(timeSeries_halves, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T, extras = F)
+communities_halves <- mclapply(timeSeries_halves, communityDetection, ROIS = bothLbls, modularity = T, extras = F)
 
 # Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)\
 communities_halves <- lapply(communities_halves, evenSpectral)
@@ -673,7 +685,7 @@ rm(timeSeries_halves)
 write("Computing community detection for the ROI vertices, session...", stdout())
 
 # Modularity
-communities_sess <- mclapply(timeSeries_sess, communityDetection, ROIS = bothLbls, Type = "vertex", thresh = T, extras = F)
+communities_sess <- mclapply(timeSeries_sess, communityDetection, ROIS = bothLbls, modularity = T, extras = F)
 
 # Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)\
 communities_halves <- lapply(communities_halves, evenSpectral)
@@ -691,7 +703,7 @@ if (Sliding) {
   ROI_timeSeries <- getCoords(Coords = timeSeries, Labels = bothLbls, TimeSeries = T)
   
   # Sliding window analysis for each subject (using defaults)
-  slideCommunities <- slidingWindow(subjTS = ROI_timeSeries, ROIs = bothLbls, mins = 20, jump = 1)
+  slideCommunities <- slidingWindow(subjTS = ROI_timeSeries, mins = 20, jump = 1)
   
   # Ensure that the binarized partition is consistent across windows (i.e. ~7m = 1)
   slideCommunities <- lapply(slideCommunities, evenSpectral)
