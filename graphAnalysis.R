@@ -85,18 +85,14 @@ getCoords <- function(Labels = DMN_labels, Coords = labelCoords_parcel, TimeSeri
   indx <- numeric()
   
   # If you want to select time series from raw data
-  if (TimeSeries == TRUE) {
-    
+  if (TimeSeries) {
     for (ROI in Labels) {
       indx <- c(indx, grep(ROI, rownames(Coords)))
     }
-    
   } else { # for the summary output of the community detection output
-    
     for (ROI in Labels) {
       indx <- c(indx, grep(ROI, Coords$Label))
     }
-    
   }
   
   results <- list()
@@ -311,13 +307,13 @@ slidingWindow <- function(subjTS = NA, mins = 15, jump = 1) {
   
   # Window sizing (length)
   # Think about incorporating custom TRs
-  TS <- dim(subjTS)[2] # time series for the subject
-  WS <- seq(834 * (mins/10)) # window from the first TR up to 834 (~10 mins) times the desired multiplier
+  TS <- ncol(subjTS) # time series for the subject
+  WS <- seq(834 * (mins / 10)) # window from the first TR up to 834 (~10 mins) times the desired multiplier
   jump <- 84 * jump # 84 ~ 1 min, times the number of mins that the window moves
   nJumps <- floor((TS - length(WS)) / jump) # number of jumps to be performed, based on the selected parameters
   
   ##------- using lapply
-  winData <- mclapply(seq(nJumps), function(x) subjTS[, WS + (jump * (x - 1))])
+  winData <- mclapply(seq(nJumps), function(x) {subjTS[, WS + (jump * (x - 1))]})
   commTS <- mclapply(winData, communityDetection, ROIS = "None", modularity = F, extras = F)
   
   return(commTS)
@@ -339,6 +335,9 @@ slideCompare <- function(subjData = slideCommunities[[1]], template = NA, func =
   # 
   #   comm: The subject data might contain modularity and spectral partitions. Choose which to use.
   
+  # alternative way:
+  tempComparison <- sapply(subjData, function(data) {arandi(data$FiedlerBinary, template$FiedlerBinary, adjust = T)})
+  
   # For storing RIs or VIs
   tempComparison <- numeric()
   
@@ -346,8 +345,8 @@ slideCompare <- function(subjData = slideCommunities[[1]], template = NA, func =
   nJumps <- length(subjData)
   
   # This loop is technically backwards. I should technically divide by function, then partition method, and then run the window comparisons
-  # It's still really fast, so I won't worry.
-  for (Win in seq(nJumps)) {
+  # It's still fast, so I won't worry.
+
     if (comm == "Modularity") {
       if (func == "RI") {
         tempComparison[Win] <- arandi(subjData[[Win]]$Membership, template$Membership, adjust = T)
@@ -356,12 +355,11 @@ slideCompare <- function(subjData = slideCommunities[[1]], template = NA, func =
       }
     } else if (comm == "Spectral") {
       if (func == "RI") {
-        tempComparison[Win] <- arandi(subjData[[Win]]$FiedlerBinary, template$FiedlerBinary, adjust = T)
+        tempComparison <- sapply(subjData, function(data) {arandi(data$FiedlerBinary, template$FiedlerBinary, adjust = T)})
       } else if (func == "VI") {
         tempComparison[Win] <- vi.dist(subjData[[Win]]$FiedlerBinary, template$FiedlerBinary)
       }
     }
-  }
   
   return(tempComparison)
   
@@ -715,14 +713,14 @@ if (Sliding) {
   # now compare to the template 
   # Get the index for each comparison
   tempCompare <- slideCompare(subjData = slideCommunities,
-                              communities,
+                              template = communities,
                               comm = "Spectral",
                               func = "RI")
   
   # Store as data frame 
   allSlideCompared <- data.frame(SubjID = rep(SubjID, length(tempCompare)),
                           Window = seq(length(tempCompare)),
-                          Index = tempCompare) #scale(tempCompare, center = T, scale = F))
+                          Index = tempCompare)
 
   # Add proportion of times a node was associated with DNM to the final summary
   communities$slidePropDMN <- rowMeans(slidingVals)
