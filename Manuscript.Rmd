@@ -14,15 +14,17 @@ header-includes:
     - \usepackage{setspace}\doublespacing
     - \usepackage[left]{lineno}
     - \linenumbers
+    - \usepackage{float}
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.pos = 'H')
 ```
 
-```{r Libraries and functions, include = FALSE, echo = FALSE}
+```{r Libraries, functions, and setups, include = FALSE, echo = FALSE}
 
-Cols <- c("aquamarine4", "#D9541A", rgb(190,190,190,100, maxColorValue = 255)) 
+# color scheme
+Cols <- c("aquamarine4", "#D9541A", rgb(190, 190, 190, 100, maxColorValue = 255)) 
 
 # In case I want to visualize stuff in the brain
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv', sep = ",")[, 2:6]
@@ -30,26 +32,26 @@ labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(
 
 # general options
 threshMaps <- TRUE # Whether to apply subject-wise thresholds on maps or not
-permuting <- FALSE # show permutation progress?
+permuting <- FALSE # show meta-analysis permutation progress? (SLOW)
 
 # Libraries used for the whole process
 library(tidyverse)
-library(igraph)
+library(igraph) # DELETE?
 library(pander)
-library(ggnetwork)
+library(ggnetwork) # DELETE?
 library(ggplot2)
-library(gridExtra)
-library(data.table)
-library(plyr)
-library(mcclust)
+library(gridExtra) # DELETE?
+library(data.table) 
+library(plyr) # DELETE?
+library(mcclust) 
 library(lme4)
-library(parallel)
+library(parallel) 
 library(corrplot)
 library(DescTools)
 library(knitr)
 
 
-# produce one permutation instance of the meta-analysis (so it can be fed to mclapply for quicker results)
+## produce one permutation instance of the meta-analysis (so it can be fed to mclapply for quicker results)
 metaPerm <- function(list1 = studyList_sv, list2 = studyList_DN, labels = Yeo_labels, perm = 1) {
   
   # print every 100th permutation just to have a general sense of how far we are
@@ -100,592 +102,6 @@ cohenD <- function(group1 = 1, group2 = 2){
   
 }
 
-## log-log degree distribution
-logDegreeDist <- function(Graph = padjMat) {
-  
-  tempD <- degree(Graph)
-  tempDD <- degree.distribution(Graph) # frequency of occurrencies of certain degrees
-  d <- (0:(max(tempD)-1))
-  ind <- (tempDD!=0)
-  plot(d[ind], tempDD[ind], log = "xy", col = "blue", 
-       xlab = "Log-Degree", ylab = "Log-Intensity",  
-       main = "Log-Log Degree Distribution")
-  
-}
-
-
-## Create correlation matrix between vertices of 2 ROIs
-# Requires labeled time series matrix
-vertexCorrMat <- function(ROI_1 = 'R_7m_ROI', ROI_2 = 'L_7m_ROI'){
-  
-  # extract the time series from the ROIs
-  indexing_1 <- which(rownames(timeSeries)==as.character(ROI_1))
-  indexing_2 <- which(rownames(timeSeries)==as.character(ROI_2))
-  nVerts_1 <- length(indexing_1)
-  nVerts_2 <- length(indexing_2)
-  ROI_1_tseries <- timeSeries[indexing_1, ]
-  ROI_2_tseries <- timeSeries[indexing_2, ]
-  
-  # Create empty matrix
-  corrMat <- matrix(data = 0, nrow = nVerts_1, ncol = nVerts_2)
-  
-  # 
-  for (vertex_1 in seq(nVerts_1)){
-    
-    # temp series 1
-    tempOne <- ROI_1_tseries[vertex_1, ]
-    
-    for(vertex_2 in seq(nVerts_2)){
-      
-      # temp series 2
-      tempTwo <- ROI_2_tseries[vertex_2, ]
-      
-      # store the Pearson correlation in the corr matrix
-      corrMat[vertex_1, vertex_2] <- cor(tempOne, tempTwo, method = "pearson") 
-      
-    }
-  }
-  
-  # name the dimensions of the matrix according to the surface vertex index
-  rownames(corrMat) <- indexing_1
-  colnames(corrMat) <- indexing_2
-  
-  # plot (optional?)  
-  # unclustered heatmap
-  heatmap(corrMat,
-          Rowv = NA,
-          Colv = NA,
-          scale = "row",
-          col = pallette(1000))
-  
-  # clustered heatmap
-  heatmap(corrMat,
-          scale = "row",
-          col = pallette(1000))
-  
-  # print min-max corr vals
-  print(range(corrMat))
-  
-  return(corrMat)
-  
-}
-
-
-## Correlation matrix between an ROI and the Glasser parcels
-parcelCorrMat <- function(ROI = 'R_7m_ROI', lbels = lookup$V1){
-  
-  # extract the time series from the ROIs
-  indexing <- which(rownames(timeSeries)==as.character(ROI))
-  nVerts <- length(indexing)
-  ROI_tseries <- timeSeries[indexing, ]
-  
-  # create empty matrix to store values
-  corrMat <- matrix(data = 0, nrow = nVerts, ncol = 360)
-  
-  # Loop through every combination of label and 7m vertex
-  for (Parcel in lbels){
-    
-    # Get an ROI index to retrieve timeseries and store correlation vals
-    indxROI <- which(lbels==as.character(Parcel))
-    
-    for(vertex in seq(nVerts)){
-      
-      # temp series
-      tempROI <- as.numeric(ptSeries[indxROI, ])
-      tempVertex <- ROI_tseries[vertex, ]
-      
-      # store the Pearson correlation in the corr matrix
-      corrMat[vertex, indxROI] <- cor(tempROI, tempVertex, method = "pearson") 
-      
-    }
-  }
-  
-  # name the columns according to labels
-  colnames(corrMat) <- lbels
-  rownames(corrMat) <- indexing
-  
-  # plot (optional?)  
-  # unclustered heatmap
-  heatmap(corrMat,
-          Rowv = NA,
-          Colv = NA,
-          scale = "none",
-          col = pallette(1000))
-  
-  # clustered heatmap
-  heatmap(corrMat,
-          scale = "none",
-          col = pallette(1000))
-  
-  # print min-max corr vals
-  print(range(corrMat))
-  
-  return(corrMat)
-  
-}
-
-
-## Correlation matrix between an Parcel and every other grayordinate
-# THIS CAN BE OPTIMIZED WITH A BETTER USE OF COR()
-partoverCorrMat <- function(ROI = 'R_7m_ROI', lbels = verts[[1]]){
-  
-  # extract the time series from the ROI
-  indexing <- which(rownames(ptSeries)==as.character(ROI))
-  ROI_tseries <- as.numeric(ptSeries[indexing, ])
-  
-  # get the remaining number of vertices
-  nVerts <- length(lbels) 
-  
-  # Create data frame to store values
-  parcelIndx <- which(labelCoords_parcel$Label==ROI)
-  corrVec <- data.frame(Seed = rep(ROI, nVerts),
-                        Labels = lbels,
-                        xstart = rep(labelCoords_parcel$x[parcelIndx], nVerts), # 7.33324 for R_7m
-                        ystart = rep(labelCoords_parcel$y[parcelIndx], nVerts), # -63.142
-                        zstart = rep(labelCoords_parcel$z[parcelIndx], nVerts)) # 42.5578
-  
-  for(vertex in seq(nVerts)){
-    
-    # temp series
-    tempVertex <- timeSeries[vertex, ] 
-    
-    # store the Pearson correlation in the corr matrix
-    #corrVec$Correlation[vertex] <- cor(ROI_tseries, tempVertex, method = "pearson") 
-    
-    # Another option, so that FDR can be applied
-    tempCor <- cor.test(ROI_tseries, tempVertex, method = "pearson")
-    corrVec$Correlation[vertex] <- tempCor$estimate
-    corrVec$pval[vertex] <- tempCor$p.value
-    
-  }
-  
-  # Turn ROI vertices into 0s
-  indexing <- which(corrVec$Labels==as.character(ROI))
-  corrVec$Correlation[indexing] <- 0
-  
-  # Create a column with p-vals corrected for multiple comparisons
-  corrVec$adjPval <- p.adjust(corrVec$pval, "BY")
-  
-  # normalize correlation vals for analysis (see below)
-  tempTanh <- fisherTanh(Data = corrVec$Correlation)
-  corrVec$tanhZ <- tempTanh$tanhZ
-  corrVec$tanhPvals <- tempTanh$pvals
-  corrVec$tanhPAdjusted <- tempTanh$adjustPvals
-  
-  return(corrVec)
-  
-}
-
-
-## tanh-z transformation (variance stabilizing Fisher) and p-values (adjusted and not)
-# This takes either a matrix of correlation values (vectors too, but manually compute pvals)
-# Normalization approach suggested in network textbook (equation 7.20)
-# This transformation is approximately normal with mean 0 and sd = sqrt(1 / (n - 3))
-fisherTanh <- function(Data = padjMatrix, preThresh = NA){
-  
-  transformed <- list()
-  
-  if (is.numeric(preThresh)) {
-    Data[Data == 1] <- 0.999
-    Data[Data < preThresh] <- 0
-    transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
-  } else {
-    # tanh
-    Data[Data == 1] <- 0.999
-    transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
-    
-    # p-vals
-    if (is.matrix(Data)) {
-      z.vec <- transformed$tanhZ[upper.tri(transformed$tanhZ)]
-      n <- dim(Data)[1]
-    } else if (is.vector(Data)) {
-      z.vec <- transformed$tanhZ
-      n <- length(Data)
-    }
-    transformed$pvals <- 2 * pnorm(abs(z.vec), 0 , sqrt(1 / (n-3)), lower.tail=F)
-    
-    # adjust pvals
-    transformed$adjustPvals <- p.adjust(transformed$pvals, "BH")
-    
-    if (is.matrix(Data)) {
-      # get pvals and their adjustment into a symetric matrix form
-      # regular
-      tempMat <- matrix(0, dim(Data)[1], dim(Data)[2])
-      tempMat[upper.tri(tempMat)] <- transformed$pvals
-      tempMat[lower.tri(tempMat)] <- transformed$pvals
-      dimnames(tempMat) <- list(rownames(Data), rownames(Data))
-      transformed$pvals <- tempMat
-      
-      # adjusted
-      tempMat <- matrix(0, dim(Data)[1], dim(Data)[2])
-      tempMat[upper.tri(tempMat)] <- transformed$adjustPvals
-      tempMat[lower.tri(tempMat)] <- transformed$adjustPvals
-      dimnames(tempMat) <- list(rownames(Data), rownames(Data))
-      transformed$adjustPvals <- tempMat
-      
-      # retain only the significant adjusted pval Z scores
-      transformed$tanhZ[transformed$adjustPvals > 0.05] <- 0
-    }
-  }
-  
-  return(transformed)
-  
-}
-
-
-## Extract the centroid-most vertex from each parcel
-parcelCentroid <- function(ROI = 'R_7m_ROI', all_coordinates = labelCoords_vertex){
-  
-  # The coordinate file must contain a Label column
-  
-  # Get the ROI-specific vertices
-  indx <- grep(ROI, all_coordinates$Label)
-  
-  # Grab the coordinates
-  tempCoords <- all_coordinates[indx, c("x","y","z")]
-  rownames(tempCoords) <- indx
-  
-  # Compute the distance among all vertices, and turn into a matrix
-  tempDist <- dist(tempCoords, diag = T)
-  tempDist <- as.matrix(tempDist)
-  
-  # Compute the sum of distances for each vertex, and get the minimum
-  sumDists <- colSums(tempDist)
-  minDist <- which(sumDists == min(sumDists))
-  minDist <- indx[minDist]
-  
-  return(minDist)
-  
-}
-
-
-## This function takes the output from partoverCorrMat() and adds/removes the characteristics we decided on.
-prepROItoVer <- function(Data = R_7m_allCorr, Coordinates = labelCoords_vertex){
-  
-  # Add vertex coordinates
-  tempDframe <- cbind(Data, Coordinates[,1:3])
-  
-  # Remove rows with non-significant adjusted pvalues
-  indx <- tempDframe$adjPval < 0.05
-  tempDframe <- tempDframe[indx, ]
-  
-  # Characterize correlation direction and round up vals for plotting
-  tempDframe$Relation <- ifelse(tempDframe$Correlation < 0, "Negative", "Positive")
-  tempDframe$Correlation <- round(tempDframe$Correlation, digits = 2)
-  
-  # Add a column to differentiate between left/right hemispheres
-  tempDframe$Hemisphere <- substring(tempDframe$Labels,1,1)
-  
-  return(tempDframe)
-  
-}
-
-
-## Plot correlation from ROI to rest of vertices
-plotROItoVertex <- function(Data = R_7m_allCorr, ROI = 'R_7m_ROI', ColRange = Cols, View = "Axial", Legends = TRUE){
-  
-  ROIindx <- grep(ROI, Data$Labels)
-  ROIvertices <- Data[ROIindx,c("x","y","z")] # grab ROI-specific vertices to black out
-  labelCoord <- ROIvertices[1,] # just to place the label
-  
-  if (View == "Axial") {
-    ggplot() +
-      geom_point(data = Data, aes(x=x, y=y, alpha=.5, color = Correlation), show.legend = Legends) +
-      geom_point(data = labelCoords_vertex, aes(x=x, y=y), alpha=0.01) +
-      geom_nodes(data = ROIvertices, aes(x=x, y=y)) +
-      geom_nodelabel_repel(aes(x=labelCoord$x, y=labelCoord$y, label = sub("_ROI","",ROI))) +
-      scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-      theme_blank()
-  } else if (View == "Sagittal") {
-    ggplot() +
-      geom_point(data = Data, aes(x=y, y=z, alpha=.5, color = Correlation), show.legend = Legends) +
-      geom_point(data = labelCoords_vertex, aes(x=y, y=z), alpha=0.01) +
-      geom_nodes(data = ROIvertices, aes(x=y, y=z)) +
-      geom_nodelabel_repel(aes(x=labelCoord$y, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-      scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-      theme_blank()
-  } else if (View == "Coronal") {
-    ggplot() +
-      geom_point(data = Data, aes(x=x, y=z, alpha=.5, color = Correlation), show.legend = Legends) +
-      geom_point(data = labelCoords_vertex, aes(x=x, y=z),  alpha=0.01) +
-      geom_nodes(data = ROIvertices, aes(x=x, y=z), alpha=.5) +
-      geom_nodelabel_repel(aes(x=labelCoord$x, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-      scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-      theme_blank()
-  } else if (View == "Medial Right") {
-    if (substring(ROI,1,1) == "R") {
-      oneHemi <- Data[grep("R", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x < 20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      medialHemi$y <- medialHemi$y * -1
-      ROIvertices$y <- ROIvertices$y * -1
-      labelCoord$y <- labelCoord$y * -1
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      medialHemi_all$y <- medialHemi_all$y * -1
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        geom_nodes(data = ROIvertices, aes(x=y, y=z), alpha=.5) +
-        geom_nodelabel_repel(aes(x=labelCoord$y, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-        theme_blank()
-    } else {
-      oneHemi <- Data[grep("R", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x < 20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      medialHemi$y <- medialHemi$y * -1
-      ROIvertices$y <- ROIvertices$y * -1
-      labelCoord$y <- labelCoord$y * -1
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      medialHemi_all$y <- medialHemi_all$y * -1
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        theme_blank()
-    }
-  } else if (View == "Medial Left") {
-    if (substring(ROI,1,1) == "L") {
-      oneHemi <- Data[grep("L", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x > -20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        geom_nodes(data = ROIvertices, aes(x=y, y=z), alpha=.5) +
-        geom_nodelabel_repel(aes(x=labelCoord$y, y=labelCoord$z, label = sub("_ROI","",ROI))) +
-        theme_blank()
-    } else {
-      oneHemi <- Data[grep("L", Data$Hemisphere), ]
-      oneHemi$Medial <- ifelse(oneHemi$x > -20, "Medial", "Other")
-      medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-      oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-      oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-      medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-      ggplot() +
-        geom_point(data = medialHemi, aes(x=y, y=z, alpha=.1, color = Correlation), show.legend = Legends) +
-        #geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=0.07) +
-        scale_color_gradient2(low = ColRange[1], mid = "white", high = ColRange[2], limits = c(-1,1)) +
-        theme_blank()
-    }
-  }
-  
-}
-
-
-## Run a fastgreedy modularity community detection on ROIs
-# This function relies on having the timeSeries data uploaded, and labelCoords_vertex 
-# Extras dictates whether the community object + correlation matrix should also be extracted
-communityDetection <- function(Data = parcelBins$First, ROIS = "None", Type = "vertex", extras = F) {
-  
-  print(paste('Computing modularity based on', Type))
-  
-  if (ROIS == "None"){
-    
-    # This will just do SP for now, for sliding window
-    print("Previously concatenated data")
-    
-    corrMat <- cor(t(Data))
-    corrMatrix <- corrMat
-    transfMat <- fisherTanh(Data = corrMat)
-    
-    corrMat <- transfMat$tanhZ
-    
-    diag(transfMat$tanhZ) <- 0    
-    diag(corrMat) <- 0
-    
-    corrMat <- exp(corrMat)
-    corrMat[corrMat==1] <- 0
-    transfMat$tanhZ <- corrMat
-    
-    tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-    tempLap <- laplacian_matrix(tempGraph, normalized=T)
-    tempEigen <- eigen(tempLap)
-    f.vec <- length(tempEigen$values) - 1
-    tempEigen$binarized <-  as.factor(ifelse(tempEigen$vectors[,f.vec] > 0, 1, 0)) # binarized Fiedler Vector 
-    
-    summary <- data.frame(Label = colnames(corrMat),
-                          Hemisphere = substring(colnames(corrMat),1,1),
-                          EigenVal = tempEigen$values,
-                          FiedlerVec = tempEigen$vectors[, (length(tempEigen$values) - 1)],
-                          FiedlerBinary = tempEigen$binarized)
-    
-    ## Get the final components
-    if (extras == T) {
-      modularityResults <- list(CorrMatrix = corrMatrix,
-                                TransfMatrix = transfMat,
-                                Summary = summary)
-    } else {
-      modularityResults <- list(Summary = summary)
-    }
-    
-  } else {
-    
-    if (Type == "vertex") {
-      # To store the vertex indices corresponding to the ROIs
-      indx <- numeric()
-      
-      # had to place dashes on each side because grep grabbed strings containing the names (i.e. 47m, a24pr)
-      for (ROI in ROIS) {
-        indx <- c(indx, grep(ROI, rownames(Data)))  
-      }
-      
-      nVerts <- length(indx)
-      ROI_tseries <- Data[indx, ]
-      
-      # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
-      corrMat <- cor(t(ROI_tseries))
-      
-      # name the dimensions of the matrix according to the surface vertex index
-      rownames(corrMat) <- indx
-      
-      # for storing later
-      corrMatrix <- corrMat
-      
-      # transform to Fisher's (think of thresholding)
-      transfMat <- fisherTanh(Data = corrMat)
-      
-      # Store Fisher transformed vals for graphing
-      corrMat <- transfMat$tanhZ
-      
-      # diagonals of 1 could be interpreted as self-loops
-      diag(transfMat$tanhZ) <- 0    
-      diag(corrMat) <- 0
-      
-      # Exponentiate to preserve distribution while ensuring positive weights
-      # I'm keeping corrMat and transfMat$tanhZ separate in case I want to uncorrect transfMat in the future
-      corrMat <- exp(corrMat)
-      corrMat[corrMat == 1] <- 0
-      transfMat$tanhZ <- corrMat
-      
-      # community detection
-      # I initially used the absolute value of the correlation, but the exp preserves the distribution 
-      # Next, try using the fisher transform
-      
-      tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-      tempCommunity <- fastgreedy.community(tempGraph)
-      
-      # community object
-      #modularityResults$community <- tempCommunity
-      
-      # correlation matrix with transformed values
-      #modularityResults$corrMat <- corrMatrix
-      
-      # get coordinate info from selected regions (useful for ggplot)
-      summary <- data.frame(Vertex = indx,
-                            Label = tempCommunity$names,
-                            Membership = tempCommunity$membership,
-                            Modularity = tempCommunity$modularity,
-                            x = labelCoords_vertex[indx, "x"],
-                            y = labelCoords_vertex[indx, "y"],
-                            z = labelCoords_vertex[indx, "z"],
-                            Hemisphere = substring(tempCommunity$names,1,1))
-      
-      
-    } else if (Type == "parcels") {
-      
-      # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
-      corrMat <- cor(t(Data))
-      
-      # for storing later
-      corrMatrix <- corrMat
-      
-      # transform to Fisher's (think of thresholding)
-      transfMat <- fisherTanh(Data = corrMat)
-      
-      # Store Fisher transformed vals for graphing
-      corrMat <- transfMat$tanhZ
-      
-      # diagonals of 1 could be interpreted as self-loops
-      diag(transfMat$tanhZ) <- 0
-      diag(corrMat) <- 0
-      
-      # Exponentiate to preserve distribution while ensuring positive weights
-      # I'm keeping corrMat and transfMat$tanhZ separate in case I want to uncorrect transfMat in the future
-      corrMat <- exp(corrMat)
-      corrMat[corrMat==1] <- 0
-      transfMat$tanhZ <- corrMat
-      
-      # community detection
-      # I initially used the absolute value of the correlation, but the exp preserves the distribution 
-      # Next, try thresholding it by the adjusted p-vals
-      tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
-      tempCommunity <- fastgreedy.community(tempGraph)
-      
-      # community object
-      #modularityResults$community <- tempCommunity
-      
-      # correlation matrix with transformed values
-      #modularityResults$corrMat <- corrMatrix
-      
-      # get coordinate info from selected regions (useful for ggplot)
-      summary <- data.frame(Label = tempCommunity$names,
-                            Membership = tempCommunity$membership,
-                            Modularity = tempCommunity$modularity,
-                            x = labelCoords_parcel[ ,"x"],
-                            y = labelCoords_parcel[ ,"y"],
-                            z = labelCoords_parcel[ ,"z"],
-                            Hemisphere = substring(tempCommunity$names,1,1))
-      
-    }
-    
-    
-    ## Get the final components
-    modularityResults <- list(Community = tempCommunity,
-                              CorrMatrix = corrMatrix,
-                              TransfMatrix = transfMat,
-                              Summary = summary)
-    
-  }
-  
-  return(modularityResults)
- 
-}
-
-
-## plot the communities from communityDetection
-plotCommunities <- function(Data = modularityResults, Hemi = "R", type = "Membership", Legends = T, bground=0.1, Cols = c("aquamarine4", "#D9541A")) {
-  # This takes the output from the communityDetection function and plots them on the medial wall (since we're interested in medial now)
-  # type is the name of the column to plot
-  if (Hemi == "R") {
-    # "Medial Right"
-    oneHemi <- Data[grep("R", Data$Hemisphere), ] # from the ROIs
-    oneHemi$Medial <- ifelse(oneHemi$x < 20, "Medial", "Other")
-    medialHemi <- oneHemi[grep("Medial", oneHemi$Medial), ]
-    medialHemi$y <- medialHemi$y * -1
-    oneHemi_all <- labelCoords_vertex[grep("R",labelCoords_vertex$Hemisphere), ] # whole surface
-    oneHemi_all$Medial <- ifelse(oneHemi_all$x < 20, "Medial", "Other")
-    medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-    medialHemi_all$y <- medialHemi_all$y * -1
-    ggplot() + 
-      geom_point(data = medialHemi, aes_string(x="y", y="z", color = type), show.legend=Legends) +
-      geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=bground) +
-      scale_color_gradient(low = Cols[1], high = Cols[2]) +
-      theme_blank() 
-  } else if (Hemi == "L") {
-    # "Medial Left"
-    oneHemi <- Data[grep("L", Data$Hemisphere), ]
-    oneHemi$Medial <- ifelse(oneHemi$x > -20, "Medial", "Other")
-    medialHemi <- oneHemi[which(oneHemi$Medial=="Medial"), ]
-    oneHemi_all <- labelCoords_vertex[grep("L",labelCoords_vertex$Hemisphere), ] # whole surface
-    oneHemi_all$Medial <- ifelse(oneHemi_all$x > -20, "Medial", "Other")
-    medialHemi_all <- oneHemi_all[grep("Medial", oneHemi_all$Medial), ]
-    ggplot() + 
-      geom_point(data = medialHemi, aes_string(x="y", y="z", color = type), show.legend=Legends) +
-      geom_point(data = medialHemi_all, aes(x=y, y=z), alpha=bground) +
-      scale_color_gradient(low = Cols[1], high = Cols[2]) +
-      theme_blank() 
-  }
-}
-
 
 ## get ROI coords & index
 # The point here is to reduce the summary dframes from community detection to show only ROIs
@@ -719,82 +135,7 @@ getCoords <- function(Labels = DN_labels, Coords = labelCoords_parcel, TimeSerie
 }
 
 
-# eigen value community detection
-eigenVals <- function(Data = binnedCommunities_p$First) {
-  
-  # This will produce a vector of values, ready to be plotted
-  tempGraph <- graph_from_adjacency_matrix(Data$TransfMatrix$tanhZ, mode = "undirected", weighted = T)
-  tempGraph <- laplacian_matrix(tempGraph, normalized=T)
-  tempGraph <- eigen(tempGraph)
-  f.vec <- length(tempGraph$values) - 1
-  tempGraph$binarized <-  as.factor(ifelse(tempGraph$vectors[,f.vec] > 0, 1, 0)) # binarized Fiedler Vector
-  
-  return(tempGraph)
-  
-}
-
-
-# Attempt at setting up data for confusion matrices and Jaccard index calculations
-confusionMatrix <- function(partition1 = parcelCommunities[[1]]$Membership, partition2 = parcelCommunities[[1]]$FiedlerBinary) {
-  
-  # Divide partitions to evaluate
-  # Usually 2 will be fiedler
-  
-  # Check if any partition has 0s (since I binarize the Fiedler vector)
-  if (0 %in% partition1) {
-    
-    partition1[grep(0, partition1)] <- 1
-    partition1[grep(1, partition1)] <- 2
-    
-  } 
-  
-  if (0 %in% partition2) {
-    
-    partition2[grep(1, partition2)] <- 2   
-    partition2[grep(0, partition2)] <- 1
-    
-  }
-  
-  # Community sizes
-  commSizes1 <- table(partition1)
-  commSizes2 <- table(partition2)
-  
-  # Number of communities per partition
-  nComms1 <- length(commSizes1)
-  nComms2 <- length(commSizes2)
-  
-  # Number of vertices
-  n <- length(partition1)
-  
-  # Putting together elements of the confusion matrix
-  confMatrix <- matrix(nrow = nComms1,
-                       ncol = nComms2)
-  
-  for (i in as.numeric(case.names(commSizes1))) {
-    
-    # Vertices belonging to community qX of partition X
-    tempComm1 <- partition1 == i
-    
-    for (j in as.numeric(case.names(commSizes2))) {
-      
-      # Vertices belonging to community qY of partition Y
-      tempComm2 <- partition2 == j
-      
-      # Populate matrix
-      confMatrix[i,j] <- sum(tempComm1 & tempComm2) 
-      
-    }
-  }
-  
-  if (sum(confMatrix) != n) {warning('Sum of the confusion matrix is not equal to number of vertices')}
-  
-  
-  return(confMatrix)
-  
-}
-
-
-# Permutation for 2 groups
+## Permutation for 2 groups
 permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, paired = FALSE){
   
   # prep data
@@ -844,7 +185,7 @@ permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, pair
 }
 
 
-# Non-parametric Bootstrap for a single group
+## Non-parametric Bootstrap for a single group
 bootstrap <- function(group = 1, statType = mean, B = 5000){
   
   # prep param
@@ -864,142 +205,6 @@ bootstrap <- function(group = 1, statType = mean, B = 5000){
 }
 
 
-# number of times a node changes affiliation in a time series
-flexibility <- function(Data = cbind(1:10, 6:15)) {
-  # Calculation of flexibility based on Garcia et al., 2018  
-  # This function takes in a data frame or matrix in which columns are the community affiliation 
-  # It needs at least 2 colums, although it's pointless for that  
-  
-  # How many jumps can there be?
-  nJumps <- dim(Data)[2] - 1
-  
-  # Matrix to store jumps
-  jumpCount <- matrix(nrow = dim(Data)[1], ncol = nJumps)
-  
-  # For each transition, get the which nodes changed affiliation
-  for (jump in seq(nJumps)) {
-    
-    jumpCount[, jump] <- Data[, jump] != Data[, jump + 1]
-    
-  }
-  
-  # How many times did every node jump?
-  totalJumps <- rowSums(jumpCount)
-  
-  # Calculate the flexibility per node
-  flexibility <- totalJumps / nJumps
-  
-  return(flexibility)
-  
-}
-
-
-# Sliding window
-slidingWindow <- function(subjTS = ROI_timeSeries[[1]], mins = 15, jump = 1, Spectral = T, Modularity = F, ROIs = c("_7m_", vmPFC_labels)) {
-  # This is a fairly specific function. It takes the time series from a participant and preps/runs community detection at each specified time window. 
-  # Returns the summaries for each window (based on communityDetection function)
-  # The selection of a window size is based on the fact that a TR = 0.720s and an hour is 5000 TRs (HCP-based)
-  # Since each subject has a different amount of time points, and all are slightly under 1 hr, I chose to round down the number of window moves to avoid unevenness
-  # 
-  # Parameter definitions:
-  #   
-  #   subjTS: Subject time series. Note: if you want to look at more than vmpfc and 7m, add a parameter for the labels that can be passed to the community detection function
-  # 
-  #   mins: Size of the window that will slide through the data.
-  #   
-  #   jump: Steps (in mins) advanced per slide
-  #   
-  #   Spectral: Whether to compute spectral partitioning as well. Takes significantly longer, but might be more useful for bisections
-  #
-  # Right now this takes ~27 mins per subject to run. Think of ways to improve that.
-  
-  
-  # Adapted so it works with the output from getCoords
-  # One wouldn't really apply a full-brain analysis of this sort anyways, too computationally intensive
-  indx <- subjTS$Index
-  subjTS <- subjTS$Coords
-  
-  # Window sizing (length)
-  # Think about incorporating custom TRs
-  TS <- dim(subjTS)[2] # time series for the subject
-  WS <- seq(834 * (mins/10)) # window from the first TR up to 834 (~10 mins) times the desired multiplier
-  jump <- 84 * jump # 84 ~ 1 min, times the number of mins that the window moves
-  nJumps <- floor((TS - length(WS)) / jump) # number of jumps to be performed, based on the selected parameters
-  
-  ##------- using lapply
-  winData <- mclapply(seq(nJumps), function(x) subjTS[,WS+(jump*(x-1))])
-  commTS <- mclapply(winData, communityDetection, ROIS = "None", Type = "vertex", thresh = T, extras = F)
-  return(commTS)
-  
-}
-
-
-# compare sliding window data to overall communities
-slideCompare <- function(subjData = slideCommunities[[1]], template = vmpfc7mCommunities[[1]], func = "RI", comm = "Spectral") {
-  # This function compares the community partition from each window slide to the one derived from the whole data set
-  # 
-  # Parameter definitions:
-  #   
-  #   subjData: A participant's output from slideCommunities
-  #   
-  #   template: The partition from the whole time series
-  # 
-  #   func: Which function to use for comparing ("RI" for adjusted RI, "VI" for variation of information)
-  # 
-  #   comm: The subject data might contain modularity and spectral partitions. Choose which to use.
-  
-  # For storing RIs or VIs
-  tempComparison <- numeric()
-  
-  # How many jumps does the original data contain?
-  nJumps <- length(subjData)
-  
-  # This loop is technically backwards. I should technically divide by function, then partition method, and then run the window comparisons
-  # It's still really fast, so I won't worry.
-  for (Win in seq(nJumps)) {
-    if (comm == "Modularity") {
-      if (func == "RI") {
-        tempComparison[Win] <- arandi(subjData[[Win]]$Membership, template$Membership, adjust = T)
-      } else if (func == "VI") {
-        tempComparison[Win] <- vi.dist(subjData[[Win]]$Membership, template$Membership)
-      }
-    } else if (comm == "Spectral") {
-      if (func == "RI") {
-        tempComparison[Win] <- arandi(subjData[[Win]]$FiedlerBinary, template$FiedlerBinary, adjust = T)
-      } else if (func == "VI") {
-        tempComparison[Win] <- vi.dist(subjData[[Win]]$FiedlerBinary, template$FiedlerBinary)
-      }
-    }
-  }
-  
-  return(tempComparison)
-  
-}
-
-# Ensure that all spectral communities associated with 7m (i.e. DN) have the same label value of 1 
-evenSpectral <- function(Data = slideCommunities[[1]][[7]]) {
-  
-  # Get only the values for 7m
-  shortData <- Data[grep("_7m_", Data$Label), ]
-  
-  # Get 7m's most probable affiliation
-  affil <- mean(as.numeric(shortData$FiedlerBinary)-1)
-  
-  # If it is close to 1, then invert the labeling. 
-  # Note: This has no effect on RI or VI, since they are insensitive to actual labeling
-  # This is for visualization purposes only
-  if (affil < 0.5) {
-    
-    UD <- as.numeric(Data$FiedlerBinary) - 1
-    Data$FiedlerBinary <- as.factor((UD - 1)^2)
-    Data$FiedlerVec <- Data$FiedlerVec * -1
-    
-  }
-  
-  return(Data)
-  
-}
-
 # Create a vector ready to be used for HCP data (32k CIFTI surface)
 # The input should be the summary from community partitioning
 # Once this is created, go to the terminal and input something like this
@@ -1014,6 +219,7 @@ HCPOut <- function(Data = DNval7mCommunities[[1]], MOI = "Membership", SubjID = 
   write.table(file = paste(SubjID,"_",MOI,'_dataforCifti.txt', sep=""), tempVec, row.names = F, col.names = F, dec = ".")
   
 }
+
 
 # Perform pairwise comparisons of clustering outcomes on all subjects
 comparePartitions <- function(Data = DNval7mCommunities, MOI = "FiedlerBinary", Index = "VI", nSubjects = nSubj, subjNames = subjList) {
@@ -1048,19 +254,19 @@ comparePartitions <- function(Data = DNval7mCommunities, MOI = "FiedlerBinary", 
     if (Index == "VI") {
       for (subj in seq(nSubjects)) {
         for (subj2 in seq(nSubjects)) {
-          indexMatrix[subj,subj2] <- vi.dist(allVecs[, subj], allVecs[, subj2])
+          indexMatrix[subj, subj2] <- vi.dist(allVecs[, subj], allVecs[, subj2])
         }
       }
     } else if (Index == "RI") {
       for (subj in seq(nSubjects)) {
         for (subj2 in seq(nSubjects)) {
-          indexMatrix[subj,subj2] <- arandi(allVecs[, subj], allVecs[, subj2], adjust = T)
+          indexMatrix[subj, subj2] <- arandi(allVecs[, subj], allVecs[, subj2], adjust = T)
         }
       }
     } else if (Index == "Cor") {
       for (subj in seq(nSubjects)) {
         for (subj2 in seq(nSubjects)) {
-          indexMatrix[subj,subj2] <- cor(allVecs[, subj], allVecs[, subj2], method = "spearman")
+          indexMatrix[subj, subj2] <- cor(allVecs[, subj], allVecs[, subj2], method = "spearman")
         }
       }
     }
@@ -1093,6 +299,7 @@ comparePartitions <- function(Data = DNval7mCommunities, MOI = "FiedlerBinary", 
   
 }
 
+
 # Generate a matrix with submatrices of 1s of a given size along the diagonal
 # Useful to extract specific portions of data from a similarity matrix
 diagBlocks <- function(dims = 20, sqSize = 4) {
@@ -1106,6 +313,7 @@ diagBlocks <- function(dims = 20, sqSize = 4) {
   finalMatrix <- finalMatrix == 1
   finalMatrix
 }
+
 
 # This function will select a two-tailed fiedler vector threshold with respect to the stability of the vertex
 # The threshold will be based on proportion DN given by thresholdRange
@@ -1305,7 +513,7 @@ The two methods were expected to produce somewhat similar results, but the one d
 
 ### *Meta-analysis*
 
-``` {r Meta-analysis permutation, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Meta-analysis permutation, echo = FALSE, message = FALSE, cache = TRUE}
 # Glasser parcels contained in Yeo's 17-net DN and limbic networks on the medial cortical wall
 Yeo_labels <- c("L_25_ROI",
               "L_OFC_ROI",
@@ -1392,7 +600,8 @@ if (permuting) {
   significantROIs <- tmpDF %>% filter(Chi_squared >= quantile(nullDist, 0.95))
   
 }
-# results!
+
+## results!
 # 25 bilateral (prportion sv = L: 0.42, R: 0.39; proportion DN = L: 0.18, R: 0.16, Chi = L: 12.91, R: 12.83, both p = 0.005)
 # 7m bilateral (prportion sv = L: 0.17, R: 0.15; proportion DN = L: 0.36, R: 0.40, Chi = L: 10.07, R: 18.89, L: p = 0.02, R: p < 0.0001)
 # v23ab right (proportion sv = 0.16; proportion DN = 0.36, chi = 11.51, p = 0.01)
@@ -1424,7 +633,7 @@ Figure 2 shows a representative partitioning of the search space for a single pa
 
 Before evaluating the degree of generazibility of this topographic pattern across individuals, we examined the validity of the partitionings by comparing them to results from an alternative community detection algorithm, modularity maximization [@Clauset2004]. Modularity seeks to find the set of communities that maximizes within-community connection weights relative to a null model. Since modularity is not constrained to a predetermined number of communities, it was capable of finding more than two in our data set. We quantified the cross-method agreement in terms of the Adjusted Rand Index (ARI; see Methods), which measures the proportion of node pairs in a network that were either clustered together or separately in both partitionings, while being agnostic to labeling schemes and controlling for chance clustering. The ARI takes values ranging from 0 to 1, with 0 indicating chance agreement.
 
-``` {r Partition comparison: all 2, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Partition comparison: all 2, echo = FALSE, message = FALSE, cache = TRUE}
 ## Community number evaluation (across and within methods)
 # ARI between methods
 RI_all_within <- comparePartitions(Data = Summaries, Index = "RI", MOI = c("FiedlerBinary", "Membership"), nSubjects = nSubj, subjNames = subjList)
@@ -1465,7 +674,7 @@ Next, we examined the similarity of partitionings across individuals by computin
 ### *Pattern variability over time*
 
 
-``` {r Variability per subject: Overall, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Variability per subject: Overall, echo = FALSE, message = FALSE, cache = TRUE}
 # Load files
 setwd('./Sliding_window/')
 temp <- list.files(pattern = '*Comparisons.csv')
@@ -1501,7 +710,7 @@ rm(FiedlerVector, formula, Fitted_Proportion)
 
 We next sought to identify a set of temporally stable core nodes in each community. In order to estimate the stability of partitions over time, we performed a sliding window analysis on each subject's full time series (20 min windows shifting by 1 min). We compared the partitioning derived from each window with the partitioning computed using the entire time series (Figure 4). 
 
-``` {r Variability per subject: PCC vs mPFC, fig.align="center", fig.width=10, fig.height=4, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Variability per subject: PCC vs mPFC, echo = FALSE, message = FALSE, cache = TRUE}
 ## Check stability for PCC and mPFC separately
 # Get the sliding values for PCC and PFC separately
 tempSW_PCC <- lapply(SVals, "[", i = posteriorIndx, j =)
@@ -1548,7 +757,7 @@ The mean ARI along each subject's time series was high for both PCC (mean = `r r
 
 We next tested whether the continuous-valued Fiedler vector (before binarization into discrete communities) carried information about the stability of individual nodes. There is precedent in the literature for the idea that the magnitude (and not just the sign) of the Fiedler vector values conveys important information about the role of each node in the network [@Gkantsidis2003; @Tian2018]. Therefore, we tested whether the magnitude of the eigenvector values was associated with the stability of nodes in time. Specifically, we estimated the proportion of DN affiliations per node as a function of Fiedler vector values, using a logistic mixed effects model (Figure 4). The model yielded a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDN_modelSummary$coefficients[2,2], digits = 2)`, *p* < 0.001), signifying that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community over time.
 
-``` {r Threshold values}
+``` {r Threshold values, echo = FALSE, message = FALSE}
 # Get a FV threshold for each subject based on mean vertex stability
 # Note, the mean resulting threshold is similar to the group's 25th and 75th quantiles
 TFV <- safely(threshFV)
@@ -1604,7 +813,7 @@ rm(tempList)
 
 These analyses suggest that there is potential value in thresholding the Fiedler vector as a means to identify idiosyncratic and reliable DN and non-DN vertices on an individual subject basis. We therefore thresholded each subject's Fiedler vector to produce these refined maps. For each individual, we estimated the threshold by selecting the smallest absolute Fiedler vector value that yielded an average stability of 99%, for positive (mean = `r threshDescriptives[3]`, SD = `r threshDescriptives[4]`) and negative (mean = `r threshDescriptives[1]`, SD = `r threshDescriptives[2]`) values separately. Individuals without such stable nodes (n = `r nUnstable`) were not thresholded, and were included in the subsequent analyses in unthresholded form. The median proportion of retained vertices per individual was `r round(median(prcntSurvived), digits = 2)` (IQR = `r round(quantile(prcntSurvived, 0.25), digits = 2)` - `r round(quantile(prcntSurvived, 0.75), digits = 2)`). Sub-threshold vertices were set to zero in Fiedler vector maps and 0.5 in the binarized maps (so that they would not bias the calculation of averages). Figure 5 shows the thresholded partitioning for the same individual shown in Figure 2. The maps used in all subsequent analyses were thresholded by this individualized criterion. 
 
-``` {r Partition comparison: all thresholded, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Partition comparison: all thresholded, echo = FALSE, message = FALSE, cache = TRUE}
 ## Compare partitionings
 # Across subjects
 # Note: the upper and lower triangles can totally be combined before plotting, instead of adding one corrplot over another. Might work on that eventually.
@@ -1633,7 +842,7 @@ FBS[FBS < 0.5] <- 1 - FBS[FBS < 0.5]
 
 With these thresholded partitions, we recomputed the overall similarity of their functional organization across participants. Compared to before, there was lower topographic agreement across individuals (mean ARI = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). The same was true for both PCC (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`) and mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`) separately, although the significance of the differences between these areas was preserved (paired permutation, *p* `r ifelse(Overall_PCCvsPFC_permTest$Pval == 0, "< 0.001", paste("=", Overall_PCCvsPFC_permTest$Pval))`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`). Figure 5 (bottom) shows the spatial average of the thresholded partitions across all participants, denoting the proportion of times a vertex was affiliated with the DN community. This summary illustrates the common organizational layout of both communities, but also highlights the considerable variability across individuals, especially in mPFC.
 
-``` {r Noise Effects: Per-subject Fiedler by R-sqd, fig.align="center", fig.width=3, fig.height=3, fig.cap = "FORMER Figure 13. Fiedler vector values are linearly related to the total variance explained by each vertex with respect to the mean DN time series.", echo=FALSE, message = FALSE, cache = TRUE}
+``` {r tSNR evaluation, echo = FALSE, message = FALSE, cache = TRUE}
 ## next get the mean tSNR of PCC and mPFC before/after thresholding
 # the first piece of code gets each subject's mean tSNR per region, and reduces to a single matrix
 # the second one is similar, but filtering out vertices that didn't meet the threshold
@@ -1680,7 +889,7 @@ To test the possibility that the higher inter-subject variability in mPFC was dr
 
 The relatively high inter-individual variability seen in the aggregate map could reflect at least three factors: (1) measurement noise, (2) dynamic variation in mPFC network organization, and (3) stable patterns of functional organization that differ across individuals. To evaluate the third possibility, we examined the test/re-test reliability of mPFC/PCC community structure across separate days of testing. Insofar as the observed variability reflects individual-specific brain organization, day to day ARI values should be consistently higher within-individual than between individuals (an example comparison for two individuals is provided in Supplemental Figure 2). Figure 6 shows pairwise comparisons among ten example subjects for PCC and mPFC separately (left). 
 
-``` {r Partition comparison: halves, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Partition comparison: halves, echo = FALSE, message = FALSE, cache = TRUE}
 # Load data
 setwd('./Summary_halves/')
 temp <- list.files(pattern = "*_finalSummary.csv")
@@ -1717,28 +926,15 @@ if (threshMaps) {
   count <- 1
   for (i in threshindex) {
     Summaries_halves[[count]] <- Summaries_halves[[count]] %>%
-            mutate(FiedlerVec = ifelse(FiedlerVec > as.numeric(threshDF[i,2]) & FiedlerVec < as.numeric(threshDF[i,3]), 0, FiedlerVec)) %>%
+            mutate(FiedlerVec = ifelse(FiedlerVec > as.numeric(threshDF[i, 2]) & FiedlerVec < as.numeric(threshDF[i, 3]), 0, FiedlerVec)) %>%
             mutate(FiedlerBinary = ifelse(FiedlerVec > 0, 1, ifelse(FiedlerVec < 0, 0, 0.5)))
     count <- count + 1
   }
 }
 
-# # Now recompute so that all network analyses are performed on thresholded data
-# # Select subsection of subjects for plotting the similarity matrices
-# Summaries_halves_plot <- Summaries_halves[selectSubj]
-# subjList_halves_plot <- subjList_halves[selectSubj]
-
-# # Compare all halves with RI (plot only)
-# RI_all_between_halves_plot <- comparePartitions(Data = Summaries_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
-# 
-# # Compare PCC and PFC among all subjects (plot only)
-# tempComm_PCC_halves_plot <- lapply(Summaries_halves_plot, "[", i = posteriorIndx, j =)
-# tempComm_PFC_halves_plot <- lapply(Summaries_halves_plot, "[", i = !posteriorIndx, j =)
-# RI_PFC_halves_plot <- comparePartitions(Data = tempComm_PFC_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
-# RI_PCC_halves_plot <- comparePartitions(Data = tempComm_PCC_halves_plot, Index = "RI", nSubjects = length(Summaries_halves_plot), subjNames = subjList_halves_plot)
 ```
 
-``` {r Partition comparison: halves ratios, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Partition comparison: halves ratios, echo = FALSE, message = FALSE, cache = TRUE}
 ## Now compare all possible pairs of subjects (for actual reporting)
 # Compare all halves with RI
 RI_all_between_halves <- comparePartitions(Data = Summaries_halves, Index = "RI", nSubjects = length(Summaries_halves), subjNames = subjList_halves)
@@ -1859,7 +1055,7 @@ Figure 6 shows ARI ratios for PCC and mPFC. A signed-rank test showed evidence f
 
 We extended the analysis of per-day data by examining whether the organization of the DN could be extracted using per-run data only. The duration of each run (approximately 14 mins long) falls below a previously suggested stability threshold for fMRI-based modularity estimations [@Gordon2017]. Nonetheless, high ARI ratios would indicate that the SP algorithm can reliably estimate individual-specific patterns of DN organization from only a single run of data.
 
-``` {r Partition comparison: session similarity matrices, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Partition comparison: session similarity matrices, echo = FALSE, message = FALSE, cache = TRUE}
 # Load data
 setwd('./Summary_sess/')
 temp <- list.files()
@@ -1893,7 +1089,7 @@ if (threshMaps) {
 # RI_PCC_sess_plot <- comparePartitions(Data = tempComm_PCC_sess, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
 ```
 
-``` {r Partition comparison: session compare all, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Partition comparison: session compare all, echo = FALSE, message = FALSE, cache = TRUE}
 # Now run comparisons among all subjects (for actual reporting)
 RI_all_between_sess <- comparePartitions(Data = Summaries_sess, Index = "RI", nSubjects = length(Summaries_sess), subjNames = subjList_sess)
 tempComm_PCC_sess <- lapply(Summaries_sess, "[", i = posteriorIndx, j =)
@@ -1944,7 +1140,7 @@ RI_PCC_sess_plot <- RI_PCC_sess[bestindx, bestindx]
 
 Run-specific SP results could still capture a subject's unique organizational pattern to some degree, even though the overall levels of agreement decreased (PCC between subjects: mean = `r round(mean(Sess_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[2]]), digits = 2)`; mPFC between subjects: mean = `r round(mean(Sess_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[2]]), digits = 2)`; PCC within subjects: mean = `r round(mean(Sess_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[1]]), digits = 2)`; mPFC within subjects: mean = `r round(mean(Sess_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[1]]), digits = 2)`). We again computed each subject's ARI ratio in order to quantify the specificity of the partitions, this time using the mean of 6 across-run (within-participant) ARI values in the numerator of the ratio (Figure 6, right). 
 
-``` {r Partition comparison: session ratios, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Partition comparison: session ratios, echo = FALSE, message = FALSE, cache = TRUE}
 ## Brain storming:
 ## Within-subject comparisons would be more interesting? Like, comparing the mean RI within-between per subject
 ## Perhaps a more interresting idea would be to generate an index of variance within/between subject
@@ -2048,17 +1244,18 @@ Our results are complementary with previous studies that described individual-sp
   
 In addition to its general diagnostics, SP provides analytical advantages specific to neuroscience. We found that SP outperformed a traditional seed-based correlation approach in capturing idiosyncratic functional topography. By relying on all sources of functional covariation among cortical vertices (rather than individual correlations with the seed), community detection methods in general, and SP in particular, are capable of further filtering nodes with weak sub-network affiliation. In addition, we found SP results could be made more stable by thresholding the underlying Fiedler vector by using temporal stability to apply a custom threshold per individual. The magnitude of these eigenvector values has been recently used to characterize the continuous connectivity profile of the insula with the rest of the brain, challenging the notion of discrete parcellations of this region [@Tian2018]. The combination of discrete classification and gradual information provided by SP points to flexible information benefits not regularly afforded by other clustering algorithms. 
   
-The community organization of PCC and mPFC shares significant similarities with DN sub-networks A and B proposed by Braga & Buckner [-@Braga2017; -@Braga2019]. The topography of our thresholded DN community closely matched network A, while non-DN captured zones uncovered by either DN network. Subthreshold vertices from the DN community overlaped with DN-B vertices, suggesting that this network could act as a dynamic intermediary between DN-A and other networks. Our findings therefore complement the initial identification of sub-DN networks by quantifying the systematic variability of its underlying topography in a larger group of people Understanding the interaction of networks A (DN), B, and non-DN should be subject of future examinations. Nevertheless, these qualitative similarities are important, as they collectively suggest that: (1) canonical DN regions can be topographically fractionated into DN and non-DN; (2) the DN community can be further partitioned into two sub-networks; (3) the SP algorithm is a useful and reliable tool for identifying this refined topography in a data-driven way; and (4) the topographic organization of the communities is variable across a large sample of participants, especially in mPFC.
+The community organization of PCC and mPFC shares significant similarities with DN sub-networks A and B proposed by Braga & Buckner [-@Braga2017; -@Braga2019]. The topography of our thresholded DN community closely matched network A, while non-DN captured zones uncovered by either DN network. Subthreshold vertices from the DN community overlaped with DN-B vertices, suggesting that this network could act as a dynamic intermediary between DN-A and other networks. Our findings therefore complement the initial identification of sub-DN networks by quantifying the systematic variability of its underlying topography in a larger group of people. Understanding the interaction of networks A (DN), B, and non-DN should be subject of future examinations. Nevertheless, these qualitative similarities are important, as they collectively suggest that: (1) canonical DN regions can be topographically fractionated into DN and non-DN; (2) the DN community can be further partitioned into two sub-networks; (3) the SP algorithm is a useful and reliable tool for identifying this refined topography in a data-driven way; and (4) the topographic organization of the communities is variable across a large sample of participants, especially in mPFC.
 
-The work presented here faces a number of challenges. A prominent limitation is that our approach is (by design) anatomically focal. However, similar spectral methods have been successfully recruited in larger cortical zones. For example, Margulies et al. [-@Margulies2016] used a combination of gradient maps to characterize the spatial embedding of unimodal and heteromodal regions of cortex. Here we show that a variant of such methods, in combination with prior information on the brain space of interest, is capable of producing refined functional topography in individuals. A similar limitation corresponds to forcing a bipartition of this region. While we provide evidence that binarizing this region is adequate, questions remain regarding the potential dynamics that might obscure additional networks (e.g. the correspondence of subthreshold DN vertices to network B, as mentioned above). In addition, structural connections from these networks to the rest of the brain might produce more nuanced information about sub-specialization of these communities [@Kernbach2018].
+The work presented here faces a number of challenges. A prominent limitation is that our approach is (by design) anatomically focal. However, similar spectral methods have been successfully recruited in larger cortical zones. For example, Margulies et al. [-@Margulies2016] used a combination of gradient maps to characterize the spatial embedding of unimodal and heteromodal regions of cortex. Here we show that a variant of such methods, in combination with prior information on the brain space of interest, is capable of producing refined functional topography in individuals. A similar limitation corresponds to forcing a bipartition of this region. While we provide evidence that binarizing our search space is adequate, questions remain regarding the potential dynamics that might obscure additional networks (e.g. the correspondence of subthreshold DN vertices to network B, as mentioned above). In addition, structural connections from these networks to the rest of the brain might produce more nuanced information about sub-specialization of these communities [@Kernbach2018].
 
-Our findings pose interesting avenues for future work. The ability to capture an individual's functional topography without the need of group priors has direct implications for clinical research and diagnosis, where acquiring large sample and data sizes are challenging. Studies interested in characterizing the repercussions of mental illness on neural function could benefit from answering this question in individual patients. This is especially true for disorders such as schizophrenia and depression that significantly affect mPFC [@Hiser2018]. mPFC has also recently become a common target for deep brain stimulation (or TMS) as a depression treatment [CITATION FROM HISER AND KOENIGS], but signal quality issues make imaging this area challenging [CITATION]. Being able to produce stable personalized targets in mPFC has the potential to boost our ability to implement and evaluate the effectiveness of these methods. Finally, the main motivating factor for this study was to assess whether cortical regions subserving DN and valuation are indeed overlapping in mPFC and PCC. While our current results suggest a re-examination of this question at the individual level, we do not estimate the location of valuation relative to DN. A natural next step is to examine whether SP can be similarly used to capture the idiosyncratic cortical topography of valuation. This could allow us not only to more strongly conclude whether DN and valuation are neurally segregable, but also aid in studies aiming to dissociate different forms of valuation.
+Our findings pose interesting avenues for future work. The ability to capture an individual's functional topography without the need of group priors has direct implications for clinical research and diagnosis, where acquiring large sample and data sizes are challenging. Studies interested in characterizing the repercussions of mental illness on neural function could benefit from answering this question in individual patients. This is especially true for disorders such as schizophrenia and depression that significantly affect mPFC [@Hiser2018]. mPFC has also recently become a common target for deep brain stimulation (or TMS) as a depression treatment [@Merkl2013], but signal quality issues make imaging this area challenging [CITATION]. Being able to produce stable personalized targets in mPFC has the potential to boost our ability to implement and evaluate the effectiveness of these methods. Finally, the main motivating factor for this study was to assess whether cortical regions subserving DN and valuation are indeed overlapping in mPFC and PCC. While our current results suggest a re-examination of this question at the individual level, we do not estimate the location of valuation relative to DN. A natural next step is to examine whether SP can be similarly used to capture the idiosyncratic cortical topography of valuation. This could allow us not only to more strongly conclude whether DN and valuation are neurally segregable, but also aid in studies aiming to dissociate different forms of valuation.
 
 \newpage
 ## Acknowledgements
 
-We thank Lauren DiNicola, Daniel Reznik, Xavier Guell, and David Somers for helpful discussions, and Dan Sussman for initial guidance on community detection and evaluation methods. This work was supported by grants from the National Science Foundation (BCS-1755757 and BCS-1625552) and the Office of Naval Research (MURI awards N00014-16-1-2832 and N00014-17-1-2304). Data were provided [in part] by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
+We thank Lauren DiNicola, Daniel Reznik, Xavier Guell, and David Somers for helpful discussions, and Daniel Sussman for initial guidance on community detection and evaluation methods. This work was supported by grants from the National Science Foundation (BCS-1755757 and BCS-1625552) and the Office of Naval Research (MURI awards N00014-16-1-2832 and N00014-17-1-2304). Data were provided [in part] by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
 
+\newpage
 
 ## Figures
 
@@ -2257,8 +1454,9 @@ include_graphics("./Images/commvscorr.png")
 include_graphics("./Images/braga_comparison.png")
 
 ```
+\bigskip
 
-\pagebreak
+\newpage
 
 ## Supplemental Materials
 
