@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-SubjID <- commandArgs(trailingOnly=TRUE)
+SubjID <- commandArgs(trailingOnly = TRUE)
 write(paste("Analyzing data for subject", SubjID), stdout())
 
 library(igraph)
@@ -72,11 +72,12 @@ HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID =
   
 }
 
-# if a minimum corr value is desired (otherwise set NA for p-value based thresholding)
+# if a minimum corr value is desired prior to clustering (otherwise set NA for p-value based thresholding)
 corrThresh <- NA
 
-# ROIs
-yeoLbls <- c("L_25_ROI",
+
+# ROIs used on the paper
+ROI <- c("L_25_ROI",
              "L_OFC_ROI",
              "L_10v_ROI",
              "R_25_ROI",
@@ -115,72 +116,16 @@ yeoLbls <- c("L_25_ROI",
              "L_10d_ROI",
              "R_s32_ROI",
              "R_9a_ROI",
-             "L_PCV_ROI",
-             "L_POS1_ROI", # from this one on, it's Lauren D's extended space
-             "L_PreS_ROI",
-             "L_H_ROI",
-             "L_POS2_ROI",
-             "L_7Pm_ROI",
-             "L_PGs_ROI",
-             "L_PGi_ROI",
-             "L_TPOJ2_ROI",
-             "L_TPOJ3_ROI",
-             "L_PGp_ROI",
-             "L_TE2a_ROI",
-             "L_MST_ROI",
-             "L_MT_ROI",
-             "L_9-46d_ROI",
-             "L_8Ad_ROI",
-             "L_46_ROI",
-             "R_PGp_ROI",
-             "R_PGs_ROI",
-             "R_PGi_ROI",
-             "R_TPOJ3_ROI",
-             "R_TPOJ2_ROI",
-             "R_MST_ROI",
-             "R_MT_ROI",
-             "R_TE2a_ROI",
-             "R_TE1a_ROI",
-             "R_9-46d_ROI",
-             "R_46_ROI",
-             "R_8Ad_ROI",
-             "R_POS1_ROI",
-             "R_POS2_ROI",
-             "R_7Pm_ROI",
-             "L_23c_ROI",
-             "R_23c_ROI",
-             "R_PreS_ROI",
-             "R_H_ROI",
-             "L_STSdp_ROI",
-             "L_STSvp_ROI",
-             "L_STSva_ROI",
-             "L_TE1m_ROI",
-             "L_TE1a_ROI",
-             "L_TPOJ1_ROI",
-             "L_8Av_ROI",
-             "L_8C_ROI",
-             "L_PHA2_ROI",
-             "L_44_ROI",
-             "L_PSL_ROI",
-             "R_STV_ROI",
-             "R_TPOJ1_ROI",
-             "R_TE1m_ROI",
-             "R_STSdp_ROI",
-             "R_STSda_ROI",
-             "R_8Av_ROI",
-             "R_8C_ROI",
-             "R_PCV_ROI",
-             "R_PHA1_ROI",
-             "R_p47r_ROI")   
+             "L_PCV_ROI")   
 
 # load labels and ensure they are numeric
 labelCoords_vertex <- read.table('labelCoords_vertex.csv', sep = ",", header = T)
 
 # get ROI indices
-indx <- sapply(yeoLbls, function(lbl) {grep(lbl, labelCoords_vertex$Label)}) 
+indx <- sapply(ROI, function(lbl) {grep(lbl, labelCoords_vertex$Label)}) 
 indx <- do.call(c, indx)
 
-# load data
+## load and prep data
 write("Loading data", stdout())
 Data <- fread(paste("./tseries/", SubjID, "_timeSeries.csv", sep = ""), header = F)
 Data <- data.matrix(Data)
@@ -189,40 +134,37 @@ Data <- data.matrix(Data)
 dimnames(Data) <- list(labelCoords_vertex$Label, seq(ncol(Data)))
 
 # select ROIs
-indx <- sapply(yeoLbls, function(lbl) {grep(lbl, rownames(Data))}) 
+indx <- sapply(ROI, function(lbl) {grep(lbl, rownames(Data))}) 
 indx <- do.call(c, indx)
 
 # reduce time series to only search space
 nVerts <- length(indx)
 tseries <- Data[indx, ]
 
-# analyze
+## analyze
+# correlate activity among all vertices, fisher transform, and filter out non-sig corrs.
 write("Correlating data", stdout())
 corrMat <- cor(t(tseries))
 transfMat <- fisherTanh(Data = corrMat, preThresh = corrThresh)
 corrMat <- transfMat$tanhZ
 
 diag(corrMat) <- 0 # avoid self-loops when creating the graph
-corrMat <- exp(corrMat) # ensure all positive while maintaining the ordinal ranks
+corrMat <- exp(corrMat) # ensure all connections are positive while maintaining the ordinal ranks
 corrMat[corrMat == 1] <- 0 # return filtered-out vertices to 0
 
 # transform network weight matrix to a graph object
 tempGraph <- graph_from_adjacency_matrix(corrMat, weighted = T, mode = "undirected")
 
 
-# run K-means as a clustering control (no seeding, this is just proving a point)
-write("Running K-Means", stdout())
-km <- kmeans(tseries, 3, iter.max = 100)$cluster
-
-
 # Run a fastgreedy modularity community detection on ROIs
+# this is usually performed as a validity check
 write("Running modularity", stdout())
 tempCommunity <- fastgreedy.community(tempGraph)
 
 
-# now SP
+# now spectral partitioning
 write("Running SP", stdout())
-tempLap <- laplacian_matrix(tempGraph, normalized=T)
+tempLap <- laplacian_matrix(tempGraph, normalized = T)
 tempEigen <- eigen(tempLap)
 eigenVals <- tempEigen$values
 eigenVecs <- tempEigen$vectors
@@ -231,13 +173,13 @@ eigenVecs <- tempEigen$vectors
 df <- data.frame(Vertex = indx,
                  eigenVal = eigenVals,
                  FV = eigenVecs[ , ncol(eigenVecs) - 1],
-                 #modularity = modularity$V1,
-                 kmeans = km)
+                 modularity = modularity$V1)
 
 # write to text files ready to be transformed to CIFTIs
+# these can be turned into CIFTI files using wb_command:
+# wb_command -cifti-convert -from-text <HCPOut output> <templace CIFTI.dscalar.nii> <new CIFTI.dscalar.nii>
 HCPOut(df, MOI = "FV", SubjID = SubjID, padding = 0)
 HCPOut(df, MOI = "modularity", SubjID = SubjID, padding = -1)
-HCPOut(df, MOI = "kmeans", SubjID = SubjID, padding = 0)
 
 # store the dtaframe just in case (ARI comparisons, for ex)
 write.csv(df, file = paste(SubjID, "commDetection.csv", sep = "_"), sep = ",")
