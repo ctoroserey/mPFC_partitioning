@@ -560,11 +560,11 @@ Yeo_labels <- c("L_25_ROI",
 # Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
 # Load the coordinates as studies in a list, because for the contrast the studies are permuted
 # Use table(unlist(list)) to get the counts in that case
-setwd('./POS')
+setwd('./metaresultsPOS')
 templist <- dir()
 studyList_sv <- lapply(templist, readr::read_csv, col_names = F, col_types = cols())
 
-setwd('../DN/')
+setwd('../metaresultsDN/')
 templist <- dir()
 studyList_DN <- lapply(templist, readr::read_csv, col_names = F, col_types = cols())
 
