@@ -77,7 +77,7 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
 
 
 # get ROI coords & index
-getCoords <- function(Labels = DMN_labels, Coords = labelCoords_parcel, TimeSeries = FALSE){
+getCoords <- function(Labels, Coords, TimeSeries = FALSE){
   # The point here is to reduce the summary dframes from community detection to show only ROIs
   # Should work for extracting any label-indexed dframe though
   # I wanted to also get the index in case I want to extract specific rows from parcel/vertex coord dframes
@@ -105,7 +105,7 @@ getCoords <- function(Labels = DMN_labels, Coords = labelCoords_parcel, TimeSeri
 
 
 # Run community detection on ROIs
-communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras = T) {
+communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras = T, indx = NA) {
   # This function relies on having the timeSeries data uploaded, and labelCoords_vertex as the row names for ROI selection
   # Extras dictates whether the community object + correlation matrix should also be extracted
   #
@@ -118,6 +118,8 @@ communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras 
   #   modularity: TRUE if you would like to also run the fastgreedy modularity community detection
   #
   #   extras: if you want to return the original and transformed correlation matrices  
+  #
+  #   indx: if the ROI data has already been selected, input the vertex index (given by getCoords) or any index you would like for a matrix axis
 
   if (ROIS != "None") {
     # To store the vertex indices corresponding to the ROIs
@@ -131,7 +133,7 @@ communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras 
     # reduce time series to only include ROIs
     nVerts <- length(indx)
     Data <- Data[indx, ]
-  }
+  } 
   
   # This used to be done with the for loop, but it was too slow. cor() speeds up the process by a lot
   corrMat <- cor(t(Data))
@@ -185,11 +187,11 @@ communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras 
   } else {
     # put summary together
     summary <- data.frame(Vertex = indx,
-                          Label = tempCommunity$names,
+                          Label = colnames(corrMat),
                           x = labelCoords_vertex[indx, "x"],
                           y = labelCoords_vertex[indx, "y"],
                           z = labelCoords_vertex[indx, "z"],
-                          Hemisphere = substring(tempCommunity$names, 1, 1),
+                          Hemisphere = substring(colnames(corrMat), 1, 1),
                           EigenVal = tempEigen$values,
                           FiedlerVec = fvec,
                           FiedlerBinary = binarized)
@@ -312,9 +314,9 @@ slidingWindow <- function(subjTS = NA, mins = 15, jump = 1) {
   jump <- 84 * jump # 84 ~ 1 min, times the number of mins that the window moves
   nJumps <- floor((TS - length(WS)) / jump) # number of jumps to be performed, based on the selected parameters
   
-  ##------- using lapply
+  # divide the data into overlapping windows
   winData <- mclapply(seq(nJumps), function(x) {subjTS[, WS + (jump * (x - 1))]})
-  commTS <- mclapply(winData, communityDetection, ROIS = "None", modularity = F, extras = F)
+  commTS <- mclapply(winData, communityDetection, ROIS = "None", modularity = F, extras = F, indx = indx)
   
   return(commTS)
   
@@ -366,7 +368,7 @@ slideCompare <- function(subjData = slideCommunities[[1]], template = NA, func =
 }
 
 
-# Ensure that all spectral communities associated with 7m (i.e. DMN) have the same label value of 1 
+# Ensure that all spectral communities associated with 7m (i.e. DN) have the same label value of 1 
 evenSpectral <- function(Data = slideCommunities[[1]][[7]]) {
   
   # Get only the values for 7m
@@ -470,14 +472,13 @@ comparePartitions <- function(Data = NA, MOI = "FiedlerBinary", Index = "VI", nS
 write('Setting up variables for future computations...', stdout())
 
 ## Choose what to analyze
-Vertex <- T # ROI-based vertex analysis
 Sliding <- T
 
 # colors to differentiate other things
 #Cols <- c("aquamarine4","#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
-Cols <- c("DMN" = "aquamarine4","Valuation" = "#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
+Cols <- c("DN" = "aquamarine4","Valuation" = "#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
 
-# Label groups for specific analyses (DMN and DEC)
+# Label groups for specific analyses (DN and DEC)
 # These come from an arbitrary division based on where Mackey & Petrides (2014) draw their line
 # This is computed below, but if we want to save time it can be loaded instead.
 #bothLbls <- as.character(read.table('bothLbls.csv', header = F)$V2)
@@ -492,8 +493,6 @@ bothLbls <- c("L_25_ROI",
               "L_s32_ROI",
               "L_RSC_ROI",
               "R_RSC_ROI",
-              "R_8Ad_ROI",
-              "R_9p_ROI",
               "R_23d_ROI",
               "R_d23ab_ROI",
               "R_31a_ROI",
@@ -508,10 +507,8 @@ bothLbls <- c("L_25_ROI",
               "R_a24_ROI",
               "R_10r_ROI",
               "R_10d_ROI",
-              "L_8Ad_ROI",
-              "L_9p_ROI",
               "L_23d_ROI",
-              "L_d23ab_RO",
+              "L_d23ab_ROI",
               "L_31a_ROI",
               "L_31pv_ROI",
               "L_31pd_ROI",
@@ -526,19 +523,27 @@ bothLbls <- c("L_25_ROI",
               "L_10d_ROI",
               "R_s32_ROI",
               "R_9a_ROI",
-              "L_p10p_ROI",
               "L_PCV_ROI")            
 
 PCC_labels <- c("_7m_",
-                    "_23d_",
-                    "_31a_",
-                    "_31pd_",
-                    "_31pv_",
-                    "_PCV_",
-                    "_POS1_",
-                    "_RSC_",
-                    "_d23ab_",
-                    "_v23ab_")
+                "_23d_",
+                "_31a_",
+                "_31pd_",
+                "_31pv_",
+                "_PCV_",
+                "_POS1_",
+                "_RSC_",
+                "_d23ab_",
+                "_v23ab_",
+                "_7m_",
+                "_23d_",
+                "_31a_",
+                "_31pd_",
+                "_31pv_",
+                "_PCV_",
+                "_POS1_",
+                "_RSC_",
+                "_v23ab_")
 
 mPFC_labels <- c("_a24_",
                "_d32_",
@@ -560,7 +565,6 @@ if (FALSE %in% (mPFC_labels %in% c(mPFC_labels, "Blah"))) {
 # Cortical surface for plotting
 labelPerVertex <- read.table('labelPerVertex.csv', header = F)
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv', sep = ",")[, 2:6]
-labelCoords_parcel <- read.csv2('labelCoords_parcel.csv', sep = ",")
 
 # Ensure that coordinates are numeric once loaded
 labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(x)))
@@ -608,10 +612,7 @@ write("Computing community detection for the ROI vertices...", stdout())
 # compute spectral partitioning and modularity
 communities <- communityDetection(Data = timeSeries, ROIS = bothLbls, modularity = T, extras = F)
 
-# Append the tSNR
-# communities$Summary$tSNR <- tSNR
-
-# Ensure that DMN is assciated with the positive values of the eigenvector
+# Ensure that DN is associated with the positive values of the Fiedler eigenvector based on 7m affiliation
 communities <- evenSpectral(communities)
 
 
@@ -633,29 +634,6 @@ tSNR <- do.call(cbind, lapply(seq_along(length(SNR_mean)), function(x) SNR_mean[
 communities$tSNR <- rowMeans(tSNR)
 
 rm(SNR_mean, SNR_sd, timeSeries_SNR_ROI)
-
-## Now compute the variance explained by the mean time series from the DMN community on each DMN community vertex
-## This should be high, since the communities are correlation-based
-
-# Get the vertices from the DMN community
-index <- communities$Vertex[communities$FiedlerBinary == 1]
-tempY <- communities$y[communities$FiedlerBinary == 1]
-tempZ <- communities$z[communities$FiedlerBinary == 1]
-
-# Select their corresponding time series, and compute the average tseries of the whole community
-DMN_commTSeries <- timeSeries[index, ] 
-DMN_commTSeries_mean <- colMeans(DMN_commTSeries)
-
-# Run a simple linear model per vertex time series
-DMN_commTSeries_models <- apply(DMN_commTSeries, 1, function(vertexTimeseries) {lm(vertexTimeseries ~ DMN_commTSeries_mean)})
-
-# Get the R-squares and T-values, and store them along with the vertex index
-Rsquared <- sapply(DMN_commTSeries_models, function(data) {summary(data)$r.squared})
-Tvalue <- sapply(DMN_commTSeries_models, function(data) {summary(data)$coefficients[2,3]})
-DMN_commVrtxvsOverallCorr <- data.frame(index, tempY, tempZ, Rsquared, Tvalue)
-colnames(DMN_commVrtxvsOverallCorr)[1] <- "Vertex"
-
-rm(index, Rsquared, Tvalue, DMN_commTSeries, DMN_commTSeries_models, DMN_commTSeries_mean)
   
 ###------- Community Detection: Day 1 vs Day 2 -----------
   
@@ -680,7 +658,7 @@ rm(timeSeries_halves)
 
 ###------- Community Detection: session ---------------
   
-write("Computing community detection for the ROI vertices, session...", stdout())
+write("Computing community detection for the ROI vertices per run...", stdout())
 
 # Modularity
 communities_sess <- mclapply(timeSeries_sess, communityDetection, ROIS = bothLbls, modularity = T, extras = F)
@@ -699,6 +677,7 @@ if (Sliding) {
   
   # Prep data
   ROI_timeSeries <- getCoords(Coords = timeSeries, Labels = bothLbls, TimeSeries = T)
+  #rownames(ROI_timeSeries$Coords) <- ROI_timeSeries$Index
   
   # Sliding window analysis for each subject (using defaults)
   slideCommunities <- slidingWindow(subjTS = ROI_timeSeries, mins = 20, jump = 1)
@@ -723,7 +702,7 @@ if (Sliding) {
                           Index = tempCompare)
 
   # Add proportion of times a node was associated with DNM to the final summary
-  communities$slidePropDMN <- rowMeans(slidingVals)
+  communities$slidePropDN <- rowMeans(slidingVals)
     
 }
 ###------- Save Data ---------------
@@ -739,9 +718,6 @@ lapply(seq_along(corHalves), function(x) {write.table(corHalves[[x]], paste(Subj
 
 # Final summary for each session
 lapply(seq_along(communities_sess), function(x) {write.csv(communities_sess[[x]], paste(SubjID, "_S", x,"_finalSummary.csv",sep=""), row.names = F)})
-
-# The variance explained by the mean DMN time series on each vertex
-write.csv(DMN_commVrtxvsOverallCorr, paste(SubjID, "_DMN_VrtxvMean.csv", sep=""), row.names = F)
 
 # Save the agreement between each slide and the overall partition
 if (Sliding) {
