@@ -3,10 +3,8 @@ title: 'Individual heterogeneity in the functional network topography of medial 
 author: "Claudio Toro-Serey^1^, Sean M. Tobyne^2^, & Joseph T. McGuire^1^"
 output:
   pdf_document: 
-    keep_tex: true
+    keep_tex: false
     highlight: haddock
-  word_document: 
-    reference_docx: Style_reference_draft.docx 
 bibliography: mPFC_paper.bib
 csl: apa.csl
 header-includes:
@@ -14,7 +12,7 @@ header-includes:
     - \usepackage[left]{lineno}
     - \linenumbers
     - \usepackage{float}
-    - \newcommand{\beginsupplement}{
+    - \newcommand{\beginsupplement}{ 
         \setcounter{table}{0}  
         \renewcommand{\thetable}{S\arabic{table}} 
         \setcounter{figure}{0} 
