@@ -1260,9 +1260,9 @@ We thank Lauren DiNicola, Daniel Reznik, Xavier Guell, and David Somers for help
 
 ## Figures
 
-```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Meta-analysis results. A: Proportion of times each ROI was reported in the valuation and DN literatures. B: Regions identified in permutation-based chi-squared tests contrasting the two literatures (see text for details)."}
+```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Meta-analysis results. A: Proportion of times each ROI was reported in the valuation and DN literatures. B: Regions identified in permutation-based chi-squared tests contrasting the two literatures (see text for details). Areas in blue represent the remaining search space."}
 # Change to inflated eventually
-include_graphics("./Images/ROIS4.png")
+include_graphics("./Images/ROIS.png")
 ```
 
 \bigskip
@@ -1313,7 +1313,7 @@ include_graphics("./Images/similarity_all.png")
 
 \bigskip
 
-``` {r Variability per subject: Fiedler vector vs prop. DN plot (Fig 4), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each individual, we produced partitions for each 20 minute sliding window (1 min shift, i.e. ~84 TRs). B: Proportion of times each vertex was affiliated with the DN community across windows (upper), and the continuous Fiedler vector map for the current subject using their full time series (bottom). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DN affiliations. Grey lines display each subject's association, while the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded. The histogram displays the frequency distribution of y-axis values.", echo=FALSE, message = FALSE}
+``` {r Variability per subject: Fiedler vector vs prop. DN plot (Fig 4), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each individual, we produced partitions for each 20 minute sliding window (84 TRs). B: Proportion of times each vertex was affiliated with the DN community across windows (upper), and the continuous Fiedler vector map for the current subject using their full time series (bottom). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DN affiliations. Grey lines display each subject's association, while the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded. The histogram displays the mean frequency distribution of y-axis values.", echo=FALSE, message = FALSE}
 # code to generate plots
 
 # # time series
@@ -1356,7 +1356,7 @@ include_graphics("./Images/thresholded.png")
 
 \bigskip
 
-``` {r Partition comparison: halves and runs (Fig. 6), fig.align="center", out.width = "100%", fig.cap = "Left: Similarity matrix for 10 example participants (2 scanning days each), showing pattern agreement across days and subjects for PCC and mPFC separately. Middle: ratio of within-subject ARI to between-subject mean ARI for all individuals across days suggests idiosyncrasies in community arrangement for both PCC and mPFC (ratios > 1, solid line), with higher subject-specificity in mPFC. Right: within-to-between subject mean ARI ratios for run-specific partitionings again show higher subject-specific organization for mPFC.", echo=FALSE, message = FALSE}
+``` {r Partition comparison: halves and runs (Fig. 6), fig.align="center", out.width = "100%", fig.cap = "Left: Similarity matrix for 10 example participants (2 scanning days each), showing pattern agreement across days and subjects for PCC and mPFC separately. The block-diagonal structure is indicative of test-retest reliability across days within an individual. Middle: ratio of within-subject ARI to between-subject mean ARI for all individuals across days suggests idiosyncrasies in community arrangement for both PCC and mPFC (ratios > 1, solid line), with higher subject-specificity in mPFC. Right: within-to-between subject mean ARI ratios for run-specific partitionings again show higher subject-specific organization for mPFC.", echo=FALSE, message = FALSE}
 ### code for plots in this fig
 
 ## similarity matrix
@@ -1407,7 +1407,7 @@ include_graphics("./Images/ratios.png")
 
 \bigskip
 
-``` {r Correlation vs community detection (Fig. 7), fig.align="center", fig.cap = "A: Correlation matrix comparing the across-day spatial stability of mPFC maps derived from seed-based functional connectivity (using a PCC seed) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector. The upper-right and lower-left quadrants show across-method agreement. B: Day 1 vs Day 2 correlation coefficients for each method, as well as between methods. Community detection through spectral partitioning provided more stable estimates, even though both methods showed good level of agreement.", echo = FALSE, message = FALSE}
+``` {r Correlation vs community detection (Fig. 7), fig.align="center", fig.cap = "A: Correlation matrix comparing the across-day spatial stability of mPFC maps derived from seed-based functional connectivity (using a PCC seed) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector, with two single-day-based maps per individual. The upper-right and lower-left quadrants show across-method agreement. B: Day 1 vs Day 2 correlation coefficients for each method, as well as between methods. Community detection through spectral partitioning provided more stable estimates, even though both methods showed good levels of agreement.", echo = FALSE, message = FALSE}
 # code to produce the plots
 
 # correlation matrix
@@ -1449,7 +1449,7 @@ include_graphics("./Images/commvscorr.png")
 
 \bigskip
 
-```{r BandB comparison (Figure 8), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between DN sub-networks A and B from Braga et al. (2019) and SP communities for two individuals. Upper: networks A and B produced by selecting seeds in TPJ, with our search space delineated by black borders. Correlation values are thresholded at 0.2. Bottom: thresholded communities (indicated by borders) show strong resemblance between the DN community and network A. The non-DN community covers sections of cortex not associated with either DN sub-network."}
+```{r BandB comparison (Figure 8), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between DN sub-networks A and B from Braga et al. (2019) and SP communities for two individuals. Panel A: networks A and B produced by selecting seeds in TPJ, with our search space delineated by black borders. Correlation values are thresholded at 0.2. Panel B: thresholded communities (indicated by borders) show strong resemblance between the DN community and network A. The non-DN community covers sections of cortex not associated with either DN sub-network."}
 
 # Change to inflated eventually
 include_graphics("./Images/braga_comparison.png")
