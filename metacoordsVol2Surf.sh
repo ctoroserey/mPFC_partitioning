@@ -8,7 +8,7 @@ echo "TRANSFORMING METANALYSIS COORDINATES INTO CORTICAL PARCELS (Glasser et al.
 
 # this should be a SV or DN directory, here: metacoordsDN or metacoordsSV
 # file name will become a directory
-filename="meta_coords/${1}" 
+filename="Meta_coords/${1}" 
 echo $filename
 
 
