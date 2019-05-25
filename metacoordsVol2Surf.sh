@@ -6,9 +6,9 @@
 
 echo "TRANSFORMING METANALYSIS COORDINATES INTO CORTICAL PARCELS (Glasser et al., 2016)"
 
+# this should be a SV or DN directory, here: metacoordsDN or metacoordsSV
 # file name will become a directory
-# read filename
-filename=$1 
+filename="meta_coords/${1}" 
 echo $filename
 
 
@@ -238,7 +238,7 @@ while IFS=$',' read -r -a label ; do
 	else
 		echo 0 >> ${dirName}_summary.csv # if parcel was not reported in the literature
   	fi
-done < $HOME/fMRI/Glasser_labels.csv
+done < $HOME/Basic_files/Glasser_labels.csv
 ############
 
 # create a label file to visualize which areas were reported in the literature
@@ -292,7 +292,7 @@ while IFS=$'\t' read -r -a label ; do
         echo 0 >> ${dirName}_lh_overlay.csv
         #echo 0 >> check.csv
     fi
-done < $HOME/fMRI/Glasser_labels_lh.csv
+done < $HOME/Basic_files/Glasser_labels_lh.csv
 
 while IFS=$'\t' read -r -a label ; do
     if [ -z "$label" ] ; then
