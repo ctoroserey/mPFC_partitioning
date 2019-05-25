@@ -561,7 +561,7 @@ Yeo_labels <- c("L_25_ROI",
 
 ## Permutation analysis
 # load parcels reported per study for each corpus
-setwd('./meta_coords/metaresultsPOS')
+setwd('./Meta_coords/metaresultsPOS')
 templist <- dir()
 studyList_sv <- lapply(templist, readr::read_csv, col_names = F, col_types = cols())
 
