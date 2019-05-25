@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+
+# IMPORTANT: THIS FUNCTION ASSUMES THAT THE TIME SERIES FOR THE SUBJECT ARE HOUSE
+# IN THE SAME DIRECTORY AS A CSV FILE, CALLED '<SUBJID>_timeSeries.csv``
 SubjID <- commandArgs(trailingOnly = TRUE)
 write(paste("Analyzing data for subject", SubjID), stdout())
 
@@ -127,7 +130,7 @@ indx <- do.call(c, indx)
 
 ## load and prep data
 write("Loading data", stdout())
-Data <- fread(paste("./tseries/", SubjID, "_timeSeries.csv", sep = ""), header = F)
+Data <- fread(paste(SubjID, "_timeSeries.csv", sep = ""), header = F)
 Data <- data.matrix(Data)
 
 # append the ROI label to each vertex
