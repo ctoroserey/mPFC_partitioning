@@ -3,7 +3,7 @@ title: 'Individual heterogeneity in the functional network topography of medial 
 author: "Claudio Toro-Serey^1^, Sean M. Tobyne^2^, & Joseph T. McGuire^1^"
 output:
   pdf_document: 
-    keep_tex: true
+    keep_tex: false
     highlight: haddock
 bibliography: mPFC_paper.bib
 csl: apa.csl
@@ -32,11 +32,14 @@ Cols <- c("aquamarine4", "#D9541A", rgb(190, 190, 190, 100, maxColorValue = 255)
 
 # In case I want to visualize stuff in the brain
 labelCoords_vertex <- read.csv2('labelCoords_vertex.csv', sep = ",")[, 2:6]
-labelCoords_vertex <- transform(labelCoords_vertex, x = as.numeric(as.character(x)), y = as.numeric(as.character(y)), z = as.numeric(as.character(z)))
+labelCoords_vertex <- transform(labelCoords_vertex, 
+                                x = as.numeric(as.character(x)), 
+                                y = as.numeric(as.character(y)), 
+                                z = as.numeric(as.character(z)))
 
 # general options
 threshMaps <- TRUE # Whether to apply subject-wise thresholds on maps or not
-permuting <- FALSE # show meta-analysis permutation progress? (SLOW)
+permute <- FALSE # show meta-analysis permutation progress? (SLOW)
 
 # Libraries used for the whole process
 library(tidyverse)
@@ -50,7 +53,7 @@ library(DescTools)
 library(knitr)
 
 
-## produce one permutation instance of the meta-analysis (so it can be fed to mclapply for quicker results)
+## produce one permutation instance of the meta-analysis (so it can be fed to mclapply for faster results)
 metaPerm <- function(list1 = studyList_sv, list2 = studyList_DN, labels = Yeo_labels, perm = 1) {
   
   # print every 100th permutation just to have a general sense of how far we are
@@ -207,8 +210,8 @@ bootstrap <- function(group = 1, statType = mean, B = 5000){
 # Create a vector ready to be used for HCP data (32k CIFTI surface)
 # The input should be the summary from community partitioning
 # Once this is created, go to the terminal and input something like this
-# wb_command -cifti-convert -from-text dataforCifti.txt 100307.MyelinMap_BC.32k_fs_LR.dscalar.nii testCifti.dscalar.nii
-# Where the myelin file here is just a templace. It can be any dscalar.nii with the right surface size
+# wb_command -cifti-convert -from-text dataforCifti.txt testSubj.dscalar.nii testCifti.dscalar.nii
+# testSubj can be found under the `Basic_files` in the repo
 HCPOut <- function(Data = DNval7mCommunities[[1]], MOI = "Membership", SubjID = "100307", padding = 0){
   
   nVertices <- 59412
@@ -556,10 +559,8 @@ Yeo_labels <- c("L_25_ROI",
               "R_9a_ROI",
               "L_PCV_ROI") 
 
-# Permutation analysis
-# Note: this doesn't care whether a region was uni or bilaterally activated. Maybe do that.
-# Load the coordinates as studies in a list, because for the contrast the studies are permuted
-# Use table(unlist(list)) to get the counts in that case
+## Permutation analysis
+# load parcels reported per study for each corpus
 setwd('./metaresultsPOS')
 templist <- dir()
 studyList_sv <- lapply(templist, readr::read_csv, col_names = F, col_types = cols())
@@ -574,7 +575,7 @@ nRegions_DN <- do.call(rbind, studyList_DN) %>% count
 nRegions_all <- left_join(nRegions_sv, nRegions_DN, by = "X1")
  
 # optional because it can take a long time to run
-if (permuting) {
+if (permute) {
   
   # reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
   nPerms <- 5000 
@@ -618,13 +619,13 @@ Figure 1 shows the proportion of times each parcel was reported for each domain,
 ### *Individual-level DN and non-DN communities*
 
 ``` {r Load Summary Data}
-# Load data
+# Load data, create a subject list, get the total n, and the number of vertices
 setwd('./Summary/')
 temp <- list.files()
 subjList <- sapply(temp, substring, first = 1, last = 6)
 Summaries <- lapply(temp, read.csv)
 nSubj <- length(Summaries)
-nVertices <- nrow(Summaries[[1]]) # in case I need the number of vertices included per brain
+nVertices <- nrow(Summaries[[1]])
 
 ```
 
@@ -636,35 +637,36 @@ Before evaluating the degree of generazibility of this topographic pattern acros
 
 ``` {r Partition comparison: all 2, echo = FALSE, message = FALSE, cache = TRUE}
 ## Community number evaluation (across and within methods)
-# ARI between methods
+# ARI between methods (membership = modularity assignment)
 RI_all_within <- comparePartitions(Data = Summaries, Index = "RI", MOI = c("FiedlerBinary", "Membership"), nSubjects = nSubj, subjNames = subjList)
 
 # Number of communities per subject for modularity
-nModularity <- sapply(Summaries, function(data) {max(data$Membership)}) # n of estimated communities by modularity
+nModularity <- sapply(Summaries, function(data) {max(data$Membership)}) 
 
 # Median size of the extra (>2) communities estimated by modularity
 modularityCounts <- lapply(Summaries, function(data) {sort(plyr::count(as.character(data$Membership))$freq, decreasing = T)})
 modularityCounts_two <- sapply(modularityCounts, function(x) {sum(x[seq(2)], na.rm = T)})
 modularityCounts_extra <- sapply(modularityCounts, function(x) {sum(x[3:4], na.rm = T)})
 
-## Across subjects
+# ARI among individuals
 # Note: the upper and lower triangles can totally be combined before plotting, instead of adding one corrplot over another. Might work on that eventually.
 RI_all_between <- comparePartitions(Data = Summaries, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
 RI_all_between_lowtri <- RI_all_between[lower.tri(RI_all_between)]
 
+# and now ARI among individuals per region (PCC or mPFC)
 posteriorIndx <- Summaries[[1]]$y < 0
 tempComm_PCC <- lapply(Summaries, "[", i = posteriorIndx, j =)
 tempComm_PFC <- lapply(Summaries, "[", i = !posteriorIndx, j =)
 RI_PFC <- comparePartitions(Data = tempComm_PFC, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
 RI_PCC <- comparePartitions(Data = tempComm_PCC, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
 
-# Let's compare stuff
+# Let's sttistically compare stuff
 testPCC <- RI_PCC[lower.tri(RI_PCC)]
 testPFC <- RI_PFC[lower.tri(RI_PFC)]
 Overall_PCCvsPFC_permTest <- permute(testPCC, testPFC, statType = mean, paired = T)
-Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) # caveat: maybe not ideal for bounded values, like RI. BUT VI yields similar results.
+Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) 
 mPFCvs0_wilcox <- wilcox.test(testPFC) # is the mPFC agreement above chance?
-mPFCvs0_ES <- DescTools::CohenD(testPFC)
+mPFCvs0_ES <- cohenD(testPFC)
 
 ```
 
@@ -676,6 +678,7 @@ Next, we examined the similarity of SP-based partitionings across individuals by
 
 ``` {r Variability per subject: Overall, echo = FALSE, message = FALSE, cache = TRUE}
 # Load files
+# these include the community assignment per window, as well as the agreement per window vs total partitioning
 setwd('./Sliding_window/')
 temp <- list.files(pattern = '*Comparisons.csv')
 SC <- lapply(temp, read.csv2)
@@ -711,14 +714,14 @@ rm(FiedlerVector, formula, Fitted_Proportion)
 We next sought to identify a set of temporally stable core nodes in each community. In order to estimate the stability of partitions over time, we performed a sliding window analysis on each subject's full time series (20 min windows shifting by 1 min). We compared the partitioning derived from each window with the partitioning computed using the entire time series (Figure 4). 
 
 ``` {r Variability per subject: PCC vs mPFC, echo = FALSE, message = FALSE, cache = TRUE}
-## Check stability for PCC and mPFC separately
-# Get the sliding values for PCC and PFC separately
+## Check variability for PCC and mPFC separately
 tempSW_PCC <- lapply(SVals, "[", i = posteriorIndx, j =)
 tempSW_PFC <- lapply(SVals, "[", i = !posteriorIndx, j =)
 
 SC_PCC <- data.frame()
 SC_PFC <- data.frame()
 
+# compare the PCC and mPFC partitionings with those produced per window
 for (subj in seq(nSubj)) {
   tempPCC <- numeric()
   tempPFC <- numeric()
@@ -737,6 +740,7 @@ for (subj in seq(nSubj)) {
   SC_PFC <- rbind(SC_PFC, dfPFC)
 }
 
+# and get descriptives for all individuals
 SC_PCC_summary <- aggregate(SC_PCC$Index, by = list(SC_PCC$SubjID), FUN = mean)
 SC_PCC_summary$SD <- aggregate(SC_PCC$Index, by = list(SC_PCC$SubjID), FUN = sd)$x
 SC_PCC_summary$Region <- rep("PCC", nSubj)
@@ -820,19 +824,20 @@ These analyses suggest that there is potential value in thresholding the Fiedler
 RI_all_between <- comparePartitions(Data = Summaries, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
 RI_all_between_lowtri <- RI_all_between[lower.tri(RI_all_between)]
 
+# ARI among subjects for each region separately
 posteriorIndx <- Summaries[[1]]$y < 0
 tempComm_PCC <- lapply(Summaries, "[", i = posteriorIndx, j =)
 tempComm_PFC <- lapply(Summaries, "[", i = !posteriorIndx, j =)
 RI_PFC <- comparePartitions(Data = tempComm_PFC, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
 RI_PCC <- comparePartitions(Data = tempComm_PCC, Index = "RI", nSubjects = length(Summaries), subjNames = subjList)
 
-# Let's compare stuff
+# Let's statistically compare stuff
 testPCC <- RI_PCC[lower.tri(RI_PCC)]
 testPFC <- RI_PFC[lower.tri(RI_PFC)]
 Overall_PCCvsPFC_permTest <- permute(testPCC, testPFC, statType = mean, paired = T)
-Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) # caveat: maybe not ideal for bounded values, like RI. BUT VI yields similar results.
+Overall_PCCvsPFC_ES <- cohenD(testPCC, testPFC) 
 
-# To get the rate of stability per vertex across subjects
+# To get the rate of stability per vertex across subjects (used for plotting)
 FB <- do.call(cbind, lapply(Summaries, "[[", "FiedlerBinary"))
 FV <- do.call(cbind, lapply(Summaries, "[[", "FiedlerVec"))
 FBS <- rowMeans(FB)
@@ -897,7 +902,7 @@ subjList_halves <- sapply(temp, substring, first=1, last=9)
 Summaries_halves <- lapply(temp, read.csv)
 
 # Before thresholding, capture within/between daily comparisons for FV vs correlation analysis (only for daily)
-# Some subjects didn't have the correct labeling scheme in one of their days (see corr vs FV below), so we're manually reverting it after visual inspection
+# Some subjects didn't have the correct labeling scheme in one of their days (see corr vs FV below), so we manually reverted it after visual inspection
 revertSubjs <- c("144226_H2", "165840_H1", "192843_H1", "303624_H1", "687163_H1", "108525_H2", "156637_H1")
 for (subj in revertSubjs) {
   indx <- grep(subj, subjList_halves)
@@ -1072,18 +1077,6 @@ if (threshMaps) {
   }
 }
 
-# # Select 10 subjects from the sample to plot
-# selectSubj <- seq(40)
-# subjList_sess_plot <- subjList_sess[selectSubj]
-# Summaries_sess_plot <- Summaries_sess[selectSubj]
-# 
-# 
-# # Across subjects (just for plotting)
-# RI_all_between_sess_plot <- comparePartitions(Data = Summaries_sess_plot, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
-# tempComm_PCC_sess <- lapply(Summaries_sess_plot, "[", i = posteriorIndx, j =)
-# tempComm_PFC_sess <- lapply(Summaries_sess_plot, "[", i = !posteriorIndx, j =)
-# RI_PFC_sess_plot <- comparePartitions(Data = tempComm_PFC_sess, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
-# RI_PCC_sess_plot <- comparePartitions(Data = tempComm_PCC_sess, Index = "RI", nSubjects = length(Summaries_sess_plot), subjNames = subjList_sess_plot)
 ```
 
 ``` {r Partition comparison: session compare all, echo = FALSE, message = FALSE, cache = TRUE}
@@ -1138,12 +1131,7 @@ RI_PCC_sess_plot <- RI_PCC_sess[bestindx, bestindx]
 Run-specific SP results could still capture a subject's unique organizational pattern to some degree, even though the overall levels of agreement decreased (PCC between subjects: mean = `r round(mean(Sess_PCCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[2]]), digits = 2)`; mPFC between subjects: mean = `r round(mean(Sess_PFCComparison[[2]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[2]]), digits = 2)`; PCC within subjects: mean = `r round(mean(Sess_PCCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PCCComparison[[1]]), digits = 2)`; mPFC within subjects: mean = `r round(mean(Sess_PFCComparison[[1]]), digits = 2)`, SD = `r round(sd(Sess_PFCComparison[[1]]), digits = 2)`). We again computed each subject's ARI ratio in order to quantify the specificity of the partitions, this time using the mean of 6 across-run (within-participant) ARI values in the numerator of the ratio (Figure 6, right). 
 
 ``` {r Partition comparison: session ratios, echo = FALSE, message = FALSE, cache = TRUE}
-## Brain storming:
-## Within-subject comparisons would be more interesting? Like, comparing the mean RI within-between per subject
-## Perhaps a more interresting idea would be to generate an index of variance within/between subject
-## These are just attempts at that are not perfect:
-
-# 1) Ratio of mean within subject sessions over between subject ones (per-subject)
+# Ratio of mean within subject sessions over between subject ones (per-subject)
 # Overall
 # Split the within-subject session RI values per subject
 temp <- ceiling(seq_along(Sess_overallComparison[[1]])/6)
@@ -1199,7 +1187,7 @@ As before, a signed rank test showed that both regions had ARI ratios significan
 unthreshComm_PFC_halves_plot <- lapply(seq_along(unthreshComm_PFC_halves_plot), function(x) cbind(unthreshComm_PFC_halves_plot[[x]], Correlation_halves_plot[[x]]))
 D1 <- unthreshComm_PFC_halves_plot
 D2 <- lapply(unthreshComm_PFC_halves_plot, function(data) transform(data, V1 = FiedlerVec)) # the comparison function can only take 1 column name for this stuff
-Data <- c(D1,D2)
+Data <- c(D1, D2)
 subjList_halves_plot <- rep(best$SubjID, each = 2)
 allHalfCombs <- comparePartitions(Data = Data, MOI = "V1", nSubjects = 40, Index = "Cor", subjNames = c(subjList_halves_plot, subjList_halves_plot))
 
@@ -1207,12 +1195,17 @@ allHalfCombs <- comparePartitions(Data = Data, MOI = "V1", nSubjects = 40, Index
 
 ``` {r Correlation vs community detection: comparison, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
 # Compare correlation with community approach on mPFC
+# correlations among methods
 tempComm <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(unthreshComm_PFC_halves[[x]]$FiedlerVec, unthreshComm_PFC_halves[[x+1]]$FiedlerVec))
 tempCor <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(Correlation_halves[[x]]$V1, Correlation_halves[[x+1]]$V1))
 tempBoth <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(unthreshComm_PFC_halves[[x]]$FiedlerVec, Correlation_halves[[x+1]]$V1))
+
+# put together in a data frame
 prepostComp <- data.frame(Community = tempComm, Correlation = tempCor, Between = tempBoth)
 prepostComp <- melt(prepostComp)
 colnames(prepostComp) <- c("Approach", "Correlation")
+
+# paired permutations and effect sizes for within-subj perm vs corr
 prepostComp_permTest <- permute(tempComm, tempCor, paired = T)
 prepostComp_ES <- cohenD(tempComm, tempCor)
 ```
@@ -1255,14 +1248,14 @@ We thank Lauren DiNicola, Daniel Reznik, Xavier Guell, and David Somers for help
 ## Figures
 
 ```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Meta-analysis results. A: Proportion of times each ROI was reported in the valuation and DN literatures. B: Regions identified in permutation-based chi-squared tests contrasting the two literatures (see text for details). Areas in blue represent the remaining search space."}
-# Change to inflated eventually
+# brain images were produced using the HCP wb_view. 
+# see the function HCPOut for details on how they were transferred from R to CIFTI
 include_graphics("./Images/ROIS.png")
 ```
 
 \bigskip
 
 ```{r Representative partitioning (Fig. 2), out.width = "50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with yellow areas denoting the DN community (as indicated by coverage of area 7m, bordered)."}
-# if you want to rescale the range of values, use scales::rescale(vecot, c(min, max))
 include_graphics("./Images/FB_FV_example.png")
 ```
 
@@ -1449,6 +1442,7 @@ include_graphics("./Images/commvscorr.png")
 include_graphics("./Images/braga_comparison.png")
 
 ```
+
 \bigskip
 
 \newpage
