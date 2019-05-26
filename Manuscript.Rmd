@@ -39,7 +39,7 @@ labelCoords_vertex <- transform(labelCoords_vertex,
 
 # general options
 threshMaps <- TRUE # Whether to apply subject-wise thresholds on maps or not
-permute <- FALSE # show meta-analysis permutation progress? (SLOW)
+Permute <- FALSE # show meta-analysis permutation progress? (SLOW)
 
 # Libraries used for the whole process
 library(tidyverse)
@@ -576,7 +576,7 @@ nRegions_DN <- do.call(rbind, studyList_DN) %>% count
 nRegions_all <- left_join(nRegions_sv, nRegions_DN, by = "X1")
  
 # optional because it can take a long time to run
-if (permute) {
+if (Permute) {
   
   # reported statistics are computed @ 5k, but it's computationally demanding to do that every time.
   nPerms <- 5000 
@@ -1214,7 +1214,7 @@ prepostComp_ES <- cohenD(tempComm, tempCor)
 
 We next explored the possible advantage of community detection relative to a more conventional seed-based functional connectivity analysis for estimating the individual-specific functional topography of mPFC. We examined whether maps generated with SP were more similar per participant across days than those computed from seed-based correlations. We generated a seed time-series by averaging all vertices in the PCC region of our search space, and calculated its correlation with the activity of each vertex in mPFC. We compared the map of correlation values in mPFC to the map of unthresholded Fiedler vector values using Spearman correlations across vertices. Pairwise spatial correlations were calculated among maps computed for each day and method from all individuals. Figure 7A shows that these pairwise comparisons resemble those from the across-day comparisons above, and suggests good alignment between methods, but particularly high agreement within subject and method.
 
-Figure 7B shows the test/re-test reliability across days for patterns derived using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher mean correlation coefficient across days than seed-based correlation (Community: mean = `r round(mean(tempComm), digits = 2)`, SD = `r round(sd(tempComm), digits = 2)`; Seed-based: mean = `r round(mean(tempCor), digits = 2)`, SD = `r round(sd(tempCor), digits = 2)`; paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", prepostComp_permTest$Pval))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair (mean = `r round(mean(tempBoth), digits = 2)`, SD = `r round(sd(tempBoth), digits = 2)`), signifying that the two approaches identified similar topographic features but also had systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies, in addition to their other advantages of being data-driven, unbiased and observer agnostic.
+Figure 7B shows the test/re-test reliability across days for patterns derived using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher mean correlation coefficient across days than seed-based correlation (Community: mean = `r round(mean(tempComm), digits = 2)`, SD = `r round(sd(tempComm), digits = 2)`; Seed-based: mean = `r round(mean(tempCor), digits = 2)`, SD = `r round(sd(tempCor), digits = 2)`; paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", round(prepostComp_permTest$Pval, digits = 3)))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair (mean = `r round(mean(tempBoth), digits = 2)`, SD = `r round(sd(tempBoth), digits = 2)`), signifying that the two approaches identified similar topographic features but also had systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies, in addition to their other advantages of being data-driven, unbiased and observer agnostic.
 
 ### *Alignment of mPFC community structure with a proposed DN sub-network organization*
 
