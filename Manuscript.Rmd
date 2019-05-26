@@ -571,8 +571,8 @@ templist <- dir()
 studyList_DN <- lapply(templist, readr::read_csv, col_names = F, col_types = cols())
 
 # raw counts for each area per literature
-nRegions_sv <- do.call(rbind, studyList_sv) %>% count
-nRegions_DN <- do.call(rbind, studyList_DN) %>% count
+nRegions_sv <- do.call(rbind, studyList_sv) %>% count(X1)
+nRegions_DN <- do.call(rbind, studyList_DN) %>% count(X1)
 nRegions_all <- left_join(nRegions_sv, nRegions_DN, by = "X1")
  
 # optional because it can take a long time to run
