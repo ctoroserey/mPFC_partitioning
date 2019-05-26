@@ -30,3 +30,13 @@ The remainder of the analyses, including the meta-analytic permutation and inter
 
 ## Try it yourself!
 
+We have put together a short script that will run both Spectral Partitioning and Modularity for a single individual's data (according to the specifications mentioned in the paper): `communityDetection.R`. While more straightforward, this script still assumes that the fMRI time series are available in a csv file, and comply with HCP surface conventions (at a density of 32K, specifically).
+
+If your data are in a 32k CIFTI format, you can use the HCP's `wb_command` utilities to create a csv file with just cortical time series.
+
+```
+wb_command -cifti-convert -to-text <subj.dtseries.nii> <temp_subj_timeSeries.csv>
+
+awk 'NR <= 59412 { print }' temp_subj_timeSeries.csv >> subj_timeSeries.csv
+```
+Then, to run `communityDetection.R`, just use `Rscript communityDetection.R <subj>` (the file and script must be in the same directory). The script will output a simple summary, as well as SP and modularity text files ready to be converted to CIFTI. You can use `vector2Cifti.sh` to transform the resulting text files to CIFTI .dscalar.nii files that can be viewed on the HCP's `wb_view`.
