@@ -22,7 +22,7 @@ If you have Docker installed, here are instructions on how to set the environmen
 docker run --rm -p 8787:8787 -e PASSWORD=mPFC -v </yourpath>/mPFC_partitioning:/home/rstudio/ ctoroserey/mpfc_partitioning:preprintenv
 ```
 
-- This will allow you to load the data from that directory, and everything produced within the Docker container will be stored locally within the mPFC_partitioning dir. Now, to load Rstudio go to your browser and type this on your URL bar: `<yourIPaddress>:8787`. Rstudio will now load, and you will see the local files loaded along with it.
+- This will allow you to load the data from that directory, and everything produced within the Docker container will be stored locally within the mPFC_partitioning dir. Now, to load Rstudio go to your browser and type this on your URL bar: `<yourIPaddress>:8787`. Rstudio will now load (user will be "rstudio" and password "mPFC"), and you will see the local files loaded along with it.
 
 - Alternatively, you can download the Docker image in a tar file (mpfc_partitioning.tar from OSF), and use `docker load --input mpfc_partitioning.tar` to access the environment.
 
