@@ -6,11 +6,11 @@ This repo contains all the scripts (and some data) for the following paper:
 The paper can be reproduced in pdf format by running `Manuscript.Rmd` in R. The markdown file is organized so that code for the analyses precedes each written section. The original analyses were run in R 3.4, but also work in R 3.5.
 
 ## Reproduce the preprint
-If you would like to actually run the file, you can download a partial version of this repo that contains the data and essential files from: [https://osf.io/4x6z8/](https://osf.io/4x6z8/). Once the directory ("mPFC_partitioning") is downloaded, you can simply run `Manuscript.Rmd`. **Note that the data are somewhat heavy, and the first run through will be slow. A cache will be produced the first time the paper file is run (this will add multiple GBs to the directory), so subsequent runs will be much faster.** 
+If you would like to actually run the file, you can download a partial version of this repo that contains the data and essential files from: [https://osf.io/4x6z8/](https://osf.io/4x6z8/). Once the directory ("mPFC_partitioning") is downloaded, you can simply run `Manuscript.Rmd` (provided all the required libraries are installed). **Note that the data are somewhat heavy, and the first run through will be slow. A cache will be produced the first time the paper file is run (this will add multiple GBs to the directory), so subsequent runs will be much faster.** 
 
 ### Docker environment
 
-Rather than manually installing the R packages I used, you can load a Docker image with the necessary dependencies to run `Manuscript.Rmd`. If you don't know what [Docker](https://www.docker.com/) is, and how you can share computing environments for reproducibility, go check it out! And take a look at [this tutorial](https://ropenscilabs.github.io/r-docker-tutorial/03-install-packages.html) for an easy way to set up your own images. 
+Rather than manually installing the R packages I used, you can load a Docker image with the necessary dependencies to run `Manuscript.Rmd`. This has the advantage of ensuring that package versions are compatible with the code we wrote. If you don't know what [Docker](https://www.docker.com/) is, and how you can share computing environments for reproducibility, go check it out! And take a look at [this tutorial](https://ropenscilabs.github.io/r-docker-tutorial/03-install-packages.html) for an easy way to set up your own images. 
 
 If you have Docker installed, here are instructions on how to set the environment up:
 
