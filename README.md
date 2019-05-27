@@ -8,7 +8,27 @@ This repo contains all the scripts (and some data) for the following paper:
 The paper can be reproduced in pdf format by running `Manuscript.Rmd` in R. The markdown file is organized so that code for the analyses precedes each written section. The original analyses were run in R 3.4, but also work in R 3.5.
 
 ## Reproduce the preprint
-If you would like to actually run the file, you can download a partial version of this repo that contains the data and essential files from: [https://osf.io/4x6z8/](https://osf.io/4x6z8/). Once the directory ("mPFC_partitioning") is downloaded, you can simply run `Manuscript.Rmd`. **Note that the data are somewhat heavy, and the first run through will be slow. A cache will be produced the first time the paper file is run (this will add multiple GBs to the directory), so subsequent runs will be much faster.** As of now you would have to install the required packages, but a Docker image is in the works so a container with the proper package versions can be built.
+If you would like to actually run the file, you can download a partial version of this repo that contains the data and essential files from: [https://osf.io/4x6z8/](https://osf.io/4x6z8/). Once the directory ("mPFC_partitioning") is downloaded, you can simply run `Manuscript.Rmd`. **Note that the data are somewhat heavy, and the first run through will be slow. A cache will be produced the first time the paper file is run (this will add multiple GBs to the directory), so subsequent runs will be much faster.** 
+
+### Docker environment
+
+Rather than manually installing the R packages I used, you can load a Docker image with the necessary dependencies to run `Manuscript.Rmd`. If you don't know what [Docker](https://www.docker.com/) is, and how you can share computing environments for reproducibility, go check it out! And take a look at [this tutorial](https://ropenscilabs.github.io/r-docker-tutorial/03-install-packages.html) for an easy way to set up your own images. 
+
+If you have Docker installed, here are instructions on how to set the environment up:
+
+- Store the directory from OSF wherever you want (I tend to leave it on the desktop to make it easier)
+
+- Run the following command, where `<yourpath>` is the path to the saved folder from OSF (this will download a ~3GB image to your machine):
+
+```
+docker run --rm -p 8787:8787 -e PASSWORD=mPFC -v </yourpath>/mPFC_partitioning:/home/rstudio/ ctoroserey/mpfc_partitioning:preprintenv
+```
+
+- This will allow you to load the data from that directory, and everything produced within the Docker container will be stored locally within the mPFC_partitioning dir. Now, to load Rstudio go to your browser and type this on your URL bar: `<yourIPaddress>:8787`. Rstudio will now load, and you will see the local files loaded along with it.
+
+- Alternatively, you can download the Docker image in a tar file (mpfc_partitioning.tar from OSF), and use `docker load --input mpfc_partitioning.tar` to access the environment.
+
+You will now be able to play with the data you downloaded from OSF, and knit the preprint pdf. Just beware that running the script can be slow, as it's tied to your local hardware's performance. Note that, for the sake of storage, this environment does not include the software to run the preprocessing or volumetric projection from the meta-analysis. It is mainly provided to allow anyone to knit the preprint and reproduce the group-level statistics reported in the paper. If you would like to test spectral partitioning, see further  below.
 
 ## Description and order of scripts
 The downloaded data are summaries of the already-run individualized partitionings, *not preprocessed HCP time series*. The repo contains the scripts we used to analyze most of the data (preprocessing not included). The order the scripts were run was:
@@ -32,7 +52,9 @@ The remainder of the analyses, including the meta-analytic permutation and inter
 
 ## Try it yourself!
 
-We have put together a short script that will run both Spectral Partitioning and Modularity for a single individual's data (according to the specifications mentioned in the paper): `communityDetection.R`. While more straightforward, this script still assumes that the fMRI time series are available in a csv file, and comply with HCP surface conventions (at a density of 32K, specifically).
+We have put together a short script that will run both Spectral Partitioning and Modularity for a single individual's data (according to the specifications mentioned in the paper): `communityDetection.R`. You'll just have to install `igraph` in R.
+
+While more straightforward, this script still assumes that the fMRI time series are available in a csv file, and comply with HCP surface conventions (at a density of 32K, specifically).
 
 If your data are in a 32k CIFTI format, you can use the HCP's `wb_command` utilities to create a csv file with just cortical time series.
 
