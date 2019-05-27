@@ -1,5 +1,3 @@
-![](https://github.com/ctoroserey/mPFC_partitioning/blob/master/Images/FB_FV_example.png "Example of Spectral Partitioning")
-
 ## General information
 This repo contains all the scripts (and some data) for the following paper: 
 
