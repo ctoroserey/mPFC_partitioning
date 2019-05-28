@@ -1,7 +1,7 @@
 ## General information
 This repo contains all the scripts (and some data) for the following paper: 
 
-**Individual heterogeneity in the functional network topography of medial prefrontal cortex (2019)**
+**Individual heterogeneity in the functional network topography of medial prefrontal cortex (2019). ([bioRxiv](https://www.biorxiv.org/content/10.1101/651117v1.article-metrics))**
 
 The paper can be reproduced in pdf format by running `Manuscript.Rmd` in R. The markdown file is organized so that code for the analyses precedes each written section. The original analyses were run in R 3.4, but also work in R 3.5.
 
