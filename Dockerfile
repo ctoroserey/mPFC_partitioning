@@ -7,4 +7,6 @@ RUN install2.r --error \
   parallel \
   corrplot \
   DescTools \
-  knitr
+  knitr \
+  igraph \
+  gridExtra
