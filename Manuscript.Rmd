@@ -1,5 +1,6 @@
 ---
 title: 'Individual heterogeneity in the functional network topography of medial prefrontal cortex'
+subtitle: 'Heterogeneity in the functional topography of mPFC'
 author: "Claudio Toro-Serey^1^, Sean M. Tobyne^2^, & Joseph T. McGuire^1^"
 output:
   pdf_document: 
@@ -429,7 +430,9 @@ Corresponding author: Claudio Toro-Serey (ctoro@bu.edu)
   
   The outline of our paper is as follows. First, we established a search space by selecting parcels from an established brain atlas [@Glasser2016] that corresponded to previously defined DN and limbic networks on the medial cortical wall [@Yeo2011]. A cortical surface-based meta-analysis of the DN and valuation literatures identified a parcel in PCC that was DN-specific at the aggregate level. We then derived a functional connectivity network of all the surface vertices within the search space for each of `r length(dir(path = './Summary'))` individual resting-state fMRI data sets from the Human Connectome Project [HCP; @VanEssen2012], and used the SP algorithm to subdivide each individual's network into DN and non-DN communities (labeled according to which community included the meta-analytically identified DN-specific parcel in PCC). Focusing on individual vertices in the search space rather than the parcels (as is typical in brain network analyses) allowed us to finely delineate the topographic extent of each community. The resulting communities varied topographically across individuals, while also appearing to follow common organizational principles. Sliding window and test-retest analyses showed that these partitionings were highly similar across scanning days within (but not between) individuals, and that individual-level idiosyncrasy was greater in mPFC. Partitionings obtained from the SP algorithm had higher test-retest reliability than did analogous results from seed-based functional connectivity. Lastly, we describe how the structure of the resulting automatically defined DN and non-DN communities both aligns with and differs from a recently proposed scheme for identifying subdivisions within the DN [@Braga2017; @Braga2019]. Our work highlights the usefulness of estimating brain effects at the individual level in mPFC and PCC, and provides a new framework and tool set for future investigations of overlap across cognitive domains.
 
-## Methods
+## Materials and Methods
+
+### *Code Accessibility*
 
 All code used in this study is openly available at [https://github.com/ctoroserey/mPFC_partitioning](https://github.com/ctoroserey/mPFC_partitioning)
 
