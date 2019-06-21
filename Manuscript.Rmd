@@ -404,7 +404,7 @@ threshFV <- function(Data, thresholdRange = c(0.01, 0.99), nthresh = 50) {
 
 2.  Graduate Program for Neuroscience, Boston University, Boston, USA
 
-Corresponding author: Claudio Toro-Serey (ctoro@bu.edu)
+Corresponding authors: Claudio Toro-Serey (ctoro@bu.edu) & Joseph T. McGuire (jtmcg@bu.edu)
 
 \newpage
 
@@ -413,6 +413,10 @@ Corresponding author: Claudio Toro-Serey (ctoro@bu.edu)
   Human medial prefrontal cortex (mPFC) and posterior cingulate cortex (PCC) are implicated in multiple cognitive functions, including subjective valuation processes and processes linked to the default network (DN). Our ability to interpret these seemingly co-localized effects is constrained by a limited understanding of the individual-level heterogeneity in mPFC/PCC functional organization. Here we used cortical surface-based meta-analysis to identify a parcel in human PCC that was preferentially implicated in DN effects relative to valuation. We then used resting-state fMRI data and a data-driven network analysis algorithm, spectral partitioning, to partition mPFC and PCC into "DN" and "non-DN" subdivisions in individual participants (n = 100 from the Human Connectome Project). The spectral partitioning algorithm efficiently identified individual-level cortical subdivisions that were reliable across test/retest sessions and varied markedly across individuals, especially in mPFC. Our results point toward a new generation of strategies for assessing whether distinct cognitive functions engage common or distinct mPFC subregions. 
 
 **Keywords:** brain networks; DN; individual differences
+
+## Significance Statement
+
+  Much attention has been given to evaluating the apparent neural overlap of various psychological domains in medial prefrontal (mPFC) and posterior cingulate cortices, but recent descriptive analyses of individualized human functional topography suggest a breaking point from group-averaging to examine this issue. Here we show that canonical default network in these regions can be subdivided at the individual level using spectral partitioning, and quantify the heterogeneity of this functional topography across many individuals for the first time. We find that the intrinsic organization of mPFC is particularly variable across individuals, but consistent within individuals over time. This work extends the notion that affirming the neural overlap of distinct behaviors in this area should be done at the individual level.
 
 \newpage
 
