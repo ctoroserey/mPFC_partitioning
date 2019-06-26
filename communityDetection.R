@@ -176,7 +176,7 @@ eigenVecs <- tempEigen$vectors
 df <- data.frame(Vertex = indx,
                  eigenVal = eigenVals,
                  FV = eigenVecs[ , ncol(eigenVecs) - 1],
-                 modularity = modularity$V1)
+                 modularity = tempCommunity$membership)
 
 # write to text files ready to be transformed to CIFTIs
 # these can be turned into CIFTI files using wb_command:
