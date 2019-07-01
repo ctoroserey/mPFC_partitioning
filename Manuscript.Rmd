@@ -629,6 +629,11 @@ We performed a coordinate-based meta-analysis to identify cortical surface parce
 
 Figure 1 shows the proportion of times each parcel was reported for each domain, as well as the significant differences between domains. The 95th percentile of the permuted chi-squared distribution was 8.87. Based on this threshold, area 7m in PCC/precuneus was the only parcel to show a preferential association with the DN bilaterally (Left: observed $\chi^2$ = 10.07, *p* = 0.029; Right: observed $\chi^2$ = 18.89, *p* < 0.001). The adjacent area v23 exhibited a similar effect, albeit only unilaterally (Right: observed $\chi^2$ = 11.51, *p* = 0.011; Left: observed $\chi^2$ = 8.25, *p* = 0.067). There appeared to be a bilateral preference toward valuation effects in mPFC area 25 (Left: observed $\chi^2$ = 12.91, *p* = 0.005; Right: observed $\chi^2$ = 12.83, *p* = 0.005); however, closer inspection suggested this effect was driven by subcortical foci centered in adjacent ventral striatum. No other parcels were preferentially implicated in valuation relative to DN. We therefore selected area 7m as an interpretable, bilateral reference point for labeling DN and non-DN communities in the analyses that follow. We note that the area labeled 7m in the parcellation used here [@Glasser2016] is different from (and located inferiorly on the medial surface to) the non-DN area 7m discussed in previous work [@AndrewsHanna2010]. 
 
+```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Meta-analysis results. A: Proportion of times each ROI was reported in the valuation and DN literatures. B: Regions identified in permutation-based chi-squared tests contrasting the two literatures (see text for details). Areas in blue represent the remainder of the search space."}
+# brain images were produced using the HCP wb_view. 
+# see the function HCPOut for details on how they were transferred from R to CIFTI
+include_graphics("./Images/ROIS.png")
+```
 
 ### *Individual-level DN and non-DN communities*
 
@@ -646,6 +651,10 @@ nVertices <- nrow(Summaries[[1]])
 Within the mPFC/PCC search space, we estimated the topography of the DN for each individual. Using each individual's full time series (approximately 4800 total TRs from four 14-min scanning runs acquired over two days), we calculated the full vertex-to-vertex correlation matrix for the `r nVertices` surface vertices in the search space. We represented each individual's correlation matrix in the form of a network, with cortical surface vertices as nodes and thresholded/transformed correlation values as edge weights. We then applied the SP community detection algorithm to partition the network into two cohesive functional communities.
 
 Figure 2 shows a representative partitioning of the search space for a single participant (100307; additional examples are presented in Supplemental Figure 1). The SP algorithm subdivides a network according to the positive versus negative values in the Fiedler vector (the eigenvector related to the second-to-lowest eigenvalue of the network's Laplacian matrix, see Methods). Since this is a data-driven approach, there is no a priori labeling for the two communities. We assigned the DN label to the community that contained the DN-specific PCC parcel from the meta-analysis (7m). We oriented each individual's Fiedler vector so positive values corresponded to the DN community [@Nenning2017], and were assigned a value of 1 in the binarized partitionings (with 0 denoting non-DN). In qualitative terms, the resulting patterns contained substantial DN coverage in posterior PCC (as dictated by our labeling strategy), with non-DN vertices in anterior PCC. The mPFC region tended to include DN vertices in its ventral-anterior and dorsal-anterior areas, with a persistent non-DN pocket between them. This non-DN section extended posteriorly into pregenual cinglate cortex (area a24). 
+
+```{r Representative partitioning (Fig. 2), out.width = "50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with red areas denoting the DN community (as indicated by coverage of area 7m, bordered)."}
+include_graphics("./Images/FB_FV_example.png")
+```
 
 Before evaluating the degree of generazibility of this topographic pattern across individuals, we examined the validity of the partitionings by comparing them to results from an alternative community detection algorithm, modularity maximization [@Clauset2004]. Modularity seeks to find the set of communities that maximizes within-community connection weights relative to a null model. Since modularity is not constrained to a predetermined number of communities, it was capable of finding more than two in our data set. We quantified the cross-method agreement in terms of the Adjusted Rand Index (ARI; see Methods), which measures the proportion of node pairs in a network that were either clustered together or separately in both partitionings, while being agnostic to labeling schemes and controlling for chance clustering. The ARI normally takes values ranging from 0 to 1, with 0 indicating chance agreement (but can take negative values if the similarity falls below chance).
 
@@ -688,6 +697,43 @@ The two clustering methods had high agreement (mean ARI = `r round(mean(RI_all_w
 
 Next, we examined the similarity of SP-based partitionings across individuals by computing the ARI between every pair of subjects, and found modestly above-chance agreement overall (mean = `r round(mean(RI_all_between_lowtri), digits = 2)`, SD = `r round(sd(RI_all_between_lowtri), digits = 2)`). Qualitative inspection of the community organization showed good alignment for PCC, whereas the pattern in mPFC was consistent but shifted topographically across subjects. To quantify this heterogeneity in mPFC, we calculated the between-subject ARI for each region separately (Figure 3). The functional topography of PCC was better aligned across individuals (mean = `r round(mean(testPCC), digits = 2)`, SD = `r round(sd(testPCC), digits = 2)`) than mPFC (mean = `r round(mean(testPFC), digits = 2)`, SD = `r round(sd(testPFC), digits = 2)`; paired permutation, *p* `r ifelse(Overall_PCCvsPFC_permTest$Pval == 0, "< 0.001", paste("=", Overall_PCCvsPFC_permTest$Pval))`; Cohen's D = `r round(Overall_PCCvsPFC_ES, digits = 2)`), although the mean ARI in mPFC still exceeded the chance value of zero (Wilcoxon signed rank test, *p* `r ifelse(mPFCvs0_wilcox$p.value == 0, "< 0.001", paste("=", mPFCvs0_wilcox$p.value))`; Cohen's D = `r round(mPFCvs0_ES, digits = 2)`). 
 
+``` {r Partitioning comparison: all (Fig. 3), fig.align="center", out.width = "50%", fig.cap = "Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. Functional topographic patterns were better aligned across individuals in PCC than mPFC.", echo=FALSE, message = FALSE}
+# code to produce the plot
+# par(xpd = T)
+# corrplot(abs(RI_PCC), # absolute for display purposes only, as it avoids the couple of negative ARIs and evens out the color bar
+#          is.corr = F, 
+#          method = "color",
+#          type = "lower", 
+#          tl.pos = "n", 
+#          tl.cex = 0.1, 
+#          cl.lim = c(0,1),
+#          cl.length = 3,
+#          #addgrid.col = "grey99",
+#          cl.pos = "r",
+#          mar = c(1,1,2,0))
+# corrplot(RI_PFC, 
+#          is.corr = F, 
+#          method = "color", 
+#          type = "upper", 
+#          tl.pos = "n", 
+#          tl.cex = 0.1,
+#          cl.pos = "n",
+#          #addgrid.col = "grey90",
+#          mar = c(1,1,2,0), 
+#          add = T)
+# segments(0.5,0.5,0.5,100.5, lwd = 2)
+# segments(0.5,0.5,100.5,0.5, lwd = 2)
+# segments(0.5,100.5,100.5,100.5, lwd = 2)
+# segments(100.5,0.5,100.5,100.5, lwd = 2)
+# mtext(expression(bold("Subject Partitions")), line = 3)
+# mtext(expression(bold("Subject Partitions")), side = 2, line = -0.8)
+# mtext(expression(bold("mPFC")), line = 2, at = par("usr")[1]+0.73*diff(par("usr")[1:2]), col = "steelblue4")
+# mtext(expression(bold("PCC")), side = 1, line = 4, at = par("usr")[1]+0.18*diff(par("usr")[1:2]), col = "steelblue4")
+
+include_graphics("./Images/similarity_all.png")
+
+```
+
 ### *Pattern variability over time*
 
 ``` {r Variability per subject: Overall, echo = FALSE, message = FALSE, cache = TRUE}
@@ -726,6 +772,39 @@ rm(FiedlerVector, formula, Fitted_Proportion)
 ```
 
 We next sought to identify a set of temporally stable core nodes in each community. In order to estimate the stability of partitions over time, we performed a sliding window analysis on each subject's full time series (20 min windows shifting by 1 min). We compared the partitioning derived from each window with the partitioning computed using the entire time series (Figure 4). 
+
+``` {r Variability per subject: Fiedler vector vs prop. DN plot (Fig 4), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each individual, we produced partitions for each 20 minute sliding window (84 TRs). B: Proportion of times each vertex was affiliated with the DN community across windows (upper), and the continuous Fiedler vector map for the current subject using their full time series (lower). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DN affiliations. Grey lines display data for each subject, and the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded. The histogram displays the mean frequency distribution of y-axis values.", echo=FALSE, message = FALSE}
+# code to generate plots
+
+# # time series
+# # this one uses the actual subject's loaded time series (not included due to space)
+# n <- 4 # n of vertices to include
+# tr <- 4800 
+# ts <- data.matrix(t1[sample(59000, n), 1:tr])
+# df <- tibble(vertex = rep(seq(n), each = tr),
+#              Time = floor(rep(seq(0, tr, length.out = tr), n)),
+#              Signal = matrix(ts, ncol = 1) + rep(seq(-1, 1, length.out = n), each = tr)) %>%
+#   ggplot(data = df, aes(Time, Signal, group = vertex, color = as.character(vertex))) +
+#     geom_line(show.legend = F, lwd = 0.2, alpha = 0.6) +
+#     theme_classic()
+# 
+# # Fiedler Vector x proportion of times a vertex was affiliated with DN
+# SC_FVvPDN_plot <- ggplot(data = allSummaries) +
+#   geom_smooth(aes(FiedlerVec, slidePropDN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
+#   geom_line(data = SC_FVvPDN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 2) +
+#   geom_vline(xintercept = c(-0.014, 0.013), linetype = "dashed", color = Cols[2]) +
+#   labs(x = "Fiedler Vector Values", y = "Proportion of DN Affiliations") +
+#   scale_y_continuous(limits = c(0,1)) +
+#   theme_classic()
+# 
+# SC_FVvPDN_plot
+#
+# # histogram on 4 C
+# hist(allPropDN)
+
+include_graphics("./Images/SW_props.png")
+
+```
 
 ``` {r Variability per subject: PCC vs mPFC, echo = FALSE, message = FALSE, cache = TRUE}
 ## Check variability for PCC and mPFC separately
@@ -831,6 +910,12 @@ rm(tempList)
 
 These analyses suggest that there is potential value in thresholding the Fiedler vector as a means to identify reliable DN and non-DN vertices on an individual subject basis. We therefore thresholded each subject's Fiedler vector to produce these refined maps. For each individual, we estimated the threshold by selecting the smallest absolute Fiedler vector value that yielded an average stability across suprathreshold nodes of 99%, for positive (mean = `r threshDescriptives[3]`, SD = `r threshDescriptives[4]`) and negative (mean = `r threshDescriptives[1]`, SD = `r threshDescriptives[2]`) values separately. Individuals without such stable nodes (n = `r nUnstable`) were not thresholded, and were included in the subsequent analyses in unthresholded form. The median proportion of retained vertices per individual was `r round(median(prcntSurvived), digits = 2)` (IQR = `r round(quantile(prcntSurvived, 0.25), digits = 2)` - `r round(quantile(prcntSurvived, 0.75), digits = 2)`). Sub-threshold vertices were set to zero in Fiedler vector maps and 0.5 in the binarized maps (so that they would not bias the calculation of averages). Figure 5A shows the thresholded partitioning for the same individual shown in Figure 2. The maps used in all subsequent analyses were thresholded by this individualized criterion. 
 
+```{r Thresholded maps (Fig 5), out.width = "50%", fig.align = "center", fig.cap= "A: Thresholded Fiedler vector map for subject 100307 (top), and its binarized form (bottom). Subthreshold values effectively formed a third community of high-variability vertices. B: Mean of the binarized maps across all participants, indicating the proportion of DN affiliations per vertex in our sample. Colors represent PCC-based labels ('DN' versus 'non-DN'), which were applied in a subsequent step following the data-driven community-detection analysis and which were necessarily well-aligned in PCC. This aggregate map shows the common organizational principle of the DN and non-DN communities, while also showing the high level of variability in mPFC."}
+
+include_graphics("./Images/thresholded.png")
+
+```
+
 ``` {r Partition comparison: all thresholded, echo = FALSE, message = FALSE, cache = TRUE}
 ## Compare partitionings
 # Across subjects
@@ -908,6 +993,55 @@ To test the possibility that the higher inter-subject variability in mPFC was dr
 ### *Test/re-test reliability across days*
 
 The relatively high inter-individual variability seen in the aggregate map could reflect at least three factors: (1) measurement noise, (2) dynamic variation in mPFC network organization, and (3) stable patterns of functional organization that differ across individuals. To arbritrate among these possibilities, we examined the test/re-test reliability of mPFC/PCC community structure across separate days of testing. Insofar as the observed variability reflects individual-specific brain organization, across-day ARI values should be consistently higher within-individual than between individuals (an example comparison for two individuals is provided in Supplemental Figure 2). Figure 6 shows pairwise comparisons among ten example subjects for PCC and mPFC separately (left).
+
+``` {r Partition comparison: halves and runs (Fig. 6), fig.align="center", out.width = "100%", fig.cap = "Left: Similarity matrix for 10 example participants (2 scanning days each), showing pattern agreement across days and subjects for PCC and mPFC separately. Color scale represents the ARI, which quantifies topographic similarity irrespective of how the communities are labeled. The block-diagonal structure is indicative of test-retest reliability across days within an individual. Middle: ratio of within-subject ARI to between-subject mean ARI for all individuals across days suggests idiosyncratic community arrangement for both PCC and mPFC (ratios > 1, solid line), with greater subject-specificity in mPFC. Right: within-to-between subject mean ARI ratios for run-specific partitionings again show greater subject-specific organization for mPFC.", echo=FALSE, message = FALSE}
+### code for plots in this fig
+
+## similarity matrix
+# corrplot(abs(RI_PCC_halves_plot), # absolute to get rid of that annoying -0.02 that messes up the limits. This is just for example.
+#          is.corr = F,     
+#          method = "color",
+#          type = "lower", 
+#          tl.pos = "n", 
+#          cl.lim = c(0,1),
+#          cl.pos = "r",
+#          addgrid.col = "grey90",
+#          cl.length = 3)
+# corrplot(RI_PFC_halves_plot, 
+#          is.corr = F, 
+#          method = "color",
+#          type = "upper", 
+#          tl.pos = "n", 
+#          cl.pos = "n", 
+#          addgrid.col = "grey90",
+#          add = T)
+#mtext(expression(bold("Subjects (Day 1 and Day 2)")), line = 1)
+#mtext(expression(bold("mPFC")), line = -0.15, at = par("usr")[1]+0.8*diff(par("usr")[1:2]), col = "steelblue4")
+#mtext(expression(bold("PCC")), side = 1, line = 0.6, at = par("usr")[1]+0.09*diff(par("usr")[1:2]), col = "steelblue4")
+
+# ## ARI for days
+# ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) +
+#   geom_boxplot(show.legend = F) +
+#   scale_fill_manual(values = Cols[seq(2)]) +
+#   ylim(0, 20) +
+#   geom_hline(yintercept = 1) +
+#   labs(y = "ARI Ratio", x = "") +
+#   theme_classic(base_size = 14)
+# 
+# ## ARI for session
+# ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) +
+#   geom_boxplot(show.legend = F) +
+#   scale_fill_manual(values = Cols[seq(2)]) +
+#   ylim(0, 20) +
+#   geom_hline(yintercept = 1) +
+#   labs(y = "ARI Ratio", x = "") +
+#   theme_classic(base_size = 14)
+
+
+include_graphics("./Images/ratios.png")
+
+
+```
 
 ``` {r Partition comparison: halves, echo = FALSE, message = FALSE, cache = TRUE}
 # Load data
@@ -1227,190 +1361,6 @@ prepostComp_ES <- cohenD(tempComm, tempCor)
 
 We next explored the possible advantage of community detection relative to a more conventional seed-based functional connectivity analysis for estimating the individual-specific functional topography of mPFC. We examined whether maps generated with SP were more similar per participant across days than those computed from seed-based correlations. We generated a seed time-series by averaging all vertices in the PCC region of our search space, and calculated its correlation with the activity of each vertex in mPFC. We compared the map of correlation values in mPFC to the map of unthresholded Fiedler vector values using Spearman correlations across vertices. Pairwise spatial correlations were calculated among maps computed for each day and method from all individuals. Figure 7A shows that these pairwise comparisons resemble those from the across-day comparisons above, and suggests good alignment between methods, but particularly high agreement within subject and method.
 
-Figure 7B shows the test/re-test reliability across days for patterns derived using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher mean correlation coefficient across days than seed-based correlation (Community: mean = `r round(mean(tempComm), digits = 2)`, SD = `r round(sd(tempComm), digits = 2)`; Seed-based: mean = `r round(mean(tempCor), digits = 2)`, SD = `r round(sd(tempCor), digits = 2)`; paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", round(prepostComp_permTest$Pval, digits = 3)))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair (mean = `r round(mean(tempBoth), digits = 2)`, SD = `r round(sd(tempBoth), digits = 2)`), signifying that the two approaches identified similar topographic features but also had systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies, in addition to their other advantages of being data-driven, unbiased and observer agnostic.
-
-### *Alignment of mPFC community structure with a proposed DN sub-network organization*
-
-The thresholded partitions we identified had conceptual and topographic similarities to DN sub-networks A and B proposed by Braga and Buckner [-@Braga2017]. We explored the relationship between the two sets of sub-regions by reproducing their seed-based connectivity approach in two of our subjects. In their work, Braga and Buckner [-@Braga2017; @Braga2019] manually selected individual vertices in dorsolateral prefrontal cortex (DLPFC) that produced two spatially anticorrelated, interdigitated networks with distinctive patterns in the temporo-parietal junction (TPJ), inferior parietal lobule (IPL), parahippocampal cortex, mPFC, and PCC. We hypothesized that if the SP communities corresponded to one or both of the previously proposed sub-networks, our partitionings should match networks A and B generated by seed-based functional connectivity in these diagnostic areas. For whole-brain functional connectomes from two individuals (100307 and 101006), we evaluated seeds in each diagnostic region that reproduced networks A and B (correlation coefficients thesholded at 0.2), and confirmed their placement based on functional connectivity patterns observed in the remaining areas. In both individuals, seeds in posterior IPL and TPJ most clearly identified networks A and B, respectively. The whole-brain seed-based functional connectivity maps for the two individuals are juxtaposed with the corresponding community detection results in Figure 8. It is worth noting that a few distinguishing features are missing due to below-threshold correlation values (e.g. network B in right PCC of 100307).
-
-Visual inspection of these networks shows high similarity between our DN community and the previously reported sub-network A. However, the non-DN community filled areas not covered by either DN-A or DN-B. This result supports the idea that the two approaches serve complementary purposes. Whereas Braga and colleagues [-@Braga2017; -@Braga2019] identified subdivisions within the DN, the present community detection approach might be better understood as partitioning DN from non-DN cortex.
-
-## Discussion
-
-A considerable amount of meta-analytic work has been dedicated to characterizing the brain activity patterns associated with psychological processes in medial prefrontal cortex (mPFC), revealing both dissociable and overlapping activation across domains [@DelaVega2016; @Kragel2018; @Hiser2018]. In particular, activation patterns associated with subjective valuation and with the default network (DN) have been suggested to be inseparable in this area, with overlap also partially extending to posterior cingulate cortex (PCC) [@Acikalin2017; @Bartra2013; @Clithero2014; @Laird2009]. This apparent neural overlap has important implications, as it has motivated theoretical proposals about ways in which these superficially dissimilar domains might involve a shared set of core cognitive processes [@Acikalin2017; @Clithero2014; @Northoff2012]. 
-
-However, the interpretation of overlap in group-level data depends on the degree to which functional organization is heterogeneous across individuals. Recent studies have shown that heteromodal brain regions have considerable variability in functional connectivity across individuals [@Mueller2013], individual-specific functional topography can be occluded in aggregative estimations [@Braga2017; @Gordon2017; @Michalka2015; @Tobyne2018], and overlap in functional activation can vanish with increases in spatial precision [@Woo2014]. These findings suggest that group-level and meta-analysis-level overlap does not necessarily imply overlap in individual brains. However, our understanding of the individual-level heterogeneity in the functional topography of mPFC has been mostly descriptive so far [@Braga2017; @Braga2019; @Gordon2017]. To affirm that DN and valuation share neural substrates in this area requires a method to reliably and precisely capture the functional topography of mPFC in isolated individuals, as well as a quantitative estimate of the degree of topographic heterogeneity across a large group of individuals.
-
-Here we address these challenges by using spectral partitioning (SP), a graph-theoretic community detection algorithm that efficiently separates a network into two [@Fiedler1975; @Higham2007; @Toker2019]. For 100 individuals, we subdivided brain regions that typically show overlap between DN and valuation effects into DN and non-DN communities. Restricting our analyses to a general mPFC/PCC search space made it appropriate to use a technique that identified a vertex-wise, binary partitioning that was sensitive to the complex topography of the brain. This contrasts with whole-brain network analyses, which need to allow for multiple sub-networks and which often use parcels that are several orders of magnitude larger than vertices as the units of analysis. Partitioning an individual's brain network through SP has a number of advantages, including identifying communities deterministically, constraining communities to contain a similar number of vertices (i.e. preventing the allocation of most vertices to a single community), providing continuous values that relate to the strength of a node's community affiliation, and the ability to diagnose the connectedness of a network through examination of its resulting eigenvalues [@chung1997; @Higham2007]. Comparisons with partitionings formed by modularity maximization, which heuristically determines the ideal number of communities [@Garcia2017], suggested the binary partitioning was appropriate.
-
-We found a generalizable pattern across individual partitionings, in which the DN community covered ventral/dorsal mPFC and posterior PCC, with the non-DN community concentrated in pregenual ACC and anterior PCC. The precise spatial positioning of this general community structure was highly heterogenous across individuals, yet stable across test/re-test evaluations within-individual. The idiosyncrasy in functional topography was particularly pronounced in mPFC, and was identified in both run-based and day-based analyses. Individual-specificity could theoretically arise from a variety of sources. For example, the functional topography of mPFC could be governed by its underlying sulcal and gyral organization, which has been shown to vary systematically across individuals [@Mackey2014; @Lopez2019]. Individual variability could also be due to shifts in functional organization that are independent of structural features [@Haxby2013; @Nenning2017], or be characterized by the pattern of functional connections with the rest of the brain [@Mars2018; @Passingham2002; @Tobyne2018]. An important goal for future work will be to assess whether the network layout in this region can be predicted on the basis of aspects of brain structure, such as sulcal morphology, myeloarchitecture [@Glasser2016], or structural connectivity [@Osher2016; @Saygin2011; @Saygin2016]. 
-
-Network-partitioning methods such as SP are data-driven, and therefore provide no labeling information about the resulting communities. We circumvented this issue by independently identifying the DN community based on its coverage of area 7m, a region in PCC that was preferentially associated with the DN relative to subjective valuation in our meta-analysis. We were able to apply labels derived from this group-level approach on the basis of the topography in PCC, where functional organization was more consistent across individuals. Because each community spanned both mPFC and PCC, the labels extended to mPFC where topography was more heterogeneous. 
-
-Our results extend previous work that described individual-specific brain organization. Several recent investigations have identified topographic heterogeneity using a different data aspect ratio than we used here [a small number of individuals and a large number of scanning sessions per individual; @Braga2017; @Braga2019; @Gordon2017]. Previous work has also shown that functional correlations among pre-defined cortical parcels are highly stable within an individual [@Gratton2018b; @Kong2018]. Here we were able to quantify the variability and stability of functional topography in a large sample at a fine, vertex-level spatial granularity, using moderately low amounts of data (down to a single 14 minute scan). The motivation to sub-divide DN also stems from recent work by Kernbach et al. [-@Kernbach2018], which identified specialized communication of parcels within DN with the rest of the brain in a large pool of individuals.
-  
-In addition to the technical advantages noted above, the SP algorithm offers analytical advantages specific to neuroscience. We found that SP outperformed a traditional seed-based correlation approach in capturing idiosyncratic functional topography. Community detection methods such as SP are stabilized by relying on  all pairwise correlations among cortical vertices (rather than correlations with an individual seed). In addition, we found we could increase the temporal stability of SP results by thresholding the underlying Fiedler vector. The magnitude of Fiedler vector values has been recently used to characterize the continuous connectivity profile of the insula with the rest of the brain, challenging the notion of discrete parcellations in that region [@Tian2018]. The combination of discrete classification and graded information yielded by SP provides additional flexibility and richness relative to some other clustering algorithms. 
-  
-The community organization of PCC and mPFC was congruent with DN sub-networks A and B proposed by Braga & Buckner [-@Braga2017; @Braga2019]. The topography of our thresholded DN community closely matched network A, whereas our non-DN community included cortical territory that was not part of either DN network. Subthreshold vertices from the DN community overlapped with DN-B vertices, suggesting that this sub-network could act as a dynamic intermediary between DN-A and other networks. Our findings therefore complement the initial identification of DN sub-networks by quantifying the systematic variability of their underlying topography in a larger group of people. Understanding the interaction of networks A (DN), B, and non-DN is an important goal for future research. These two sets of results collectively suggest that canonical DN regions can be topographically partitioned into DN and non-DN communities, and that the DN community can in turn be further divided into sub-networks A and B. 
-
-Our findings show that the functional topography of mPFC is variable across a large pool of individuals, and that the SP algorithm is a useful tool for identifying individualized topography in a data-driven way. The ability to capture an individual's functional topography without the need of group priors is clinically relevant, as it could help characterize heterogenous changes in mPFC activity in disorders such as depression and schizophrenia [@Hiser2018]. It will be beneficial for future task-based fMRI experiments to be able to characterize where task-evoked activity is situated relative to an individual's overall mPFC organization. Our work was originally motivated by the apparent spatial overlap between subjective valuation and the default network [@Acikalin2017], but additional distinctions of interest include valuation versus episodic memory functions [@Euston2012], self-referential thought and theory of mind [@Mitchell2005], and potential topographic distinctions among multiple forms of valuation [@Clithero2014; @Shenhav2019; @Smith2010]. An individualized frame of reference will enhance the ability of future studies to gauge similarities and differences among brain activity patterns associated with diverse psychological domains.
-
-\newpage
-## Acknowledgements
-
-We thank Lauren DiNicola, Daniel Reznik, Xavier Guell, and David Somers for helpful discussions, and Daniel Sussman for initial guidance on community detection and evaluation methods. This work was supported by grants from the National Science Foundation (BCS-1755757 and BCS-1625552) and the Office of Naval Research (MURI award N00014-16-1-2832 and DURIP award N00014-17-1-2304). Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
-
-\newpage
-
-## Figures
-
-```{r Meta-analysis ROIs (Fig. 1), out.width = "50%", fig.align = "center", fig.cap= "Meta-analysis results. A: Proportion of times each ROI was reported in the valuation and DN literatures. B: Regions identified in permutation-based chi-squared tests contrasting the two literatures (see text for details). Areas in blue represent the remainder of the search space."}
-# brain images were produced using the HCP wb_view. 
-# see the function HCPOut for details on how they were transferred from R to CIFTI
-include_graphics("./Images/ROIS.png")
-```
-
-\bigskip
-
-```{r Representative partitioning (Fig. 2), out.width = "50%", fig.align = "center", fig.cap = "Brain partition for an example subject (100307). Fiedler vector values (top) are mapped onto the brain surface, dividing it into positive and negative communities. The bottom brain shows the binarized Fiedler vector, with red areas denoting the DN community (as indicated by coverage of area 7m, bordered)."}
-include_graphics("./Images/FB_FV_example.png")
-```
-
-\bigskip
-
-``` {r Partitioning comparison: all (Fig. 3), fig.align="center", out.width = "50%", fig.cap = "Similarity matrix showing ARI values among all subjects for PCC (lower triangle) and mPFC (upper triangle) separately. Functional topographic patterns were better aligned across individuals in PCC than mPFC.", echo=FALSE, message = FALSE}
-# code to produce the plot
-# par(xpd = T)
-# corrplot(abs(RI_PCC), # absolute for display purposes only, as it avoids the couple of negative ARIs and evens out the color bar
-#          is.corr = F, 
-#          method = "color",
-#          type = "lower", 
-#          tl.pos = "n", 
-#          tl.cex = 0.1, 
-#          cl.lim = c(0,1),
-#          cl.length = 3,
-#          #addgrid.col = "grey99",
-#          cl.pos = "r",
-#          mar = c(1,1,2,0))
-# corrplot(RI_PFC, 
-#          is.corr = F, 
-#          method = "color", 
-#          type = "upper", 
-#          tl.pos = "n", 
-#          tl.cex = 0.1,
-#          cl.pos = "n",
-#          #addgrid.col = "grey90",
-#          mar = c(1,1,2,0), 
-#          add = T)
-# segments(0.5,0.5,0.5,100.5, lwd = 2)
-# segments(0.5,0.5,100.5,0.5, lwd = 2)
-# segments(0.5,100.5,100.5,100.5, lwd = 2)
-# segments(100.5,0.5,100.5,100.5, lwd = 2)
-# mtext(expression(bold("Subject Partitions")), line = 3)
-# mtext(expression(bold("Subject Partitions")), side = 2, line = -0.8)
-# mtext(expression(bold("mPFC")), line = 2, at = par("usr")[1]+0.73*diff(par("usr")[1:2]), col = "steelblue4")
-# mtext(expression(bold("PCC")), side = 1, line = 4, at = par("usr")[1]+0.18*diff(par("usr")[1:2]), col = "steelblue4")
-
-include_graphics("./Images/similarity_all.png")
-
-```
-
-\bigskip
-
-``` {r Variability per subject: Fiedler vector vs prop. DN plot (Fig 4), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each individual, we produced partitions for each 20 minute sliding window (84 TRs). B: Proportion of times each vertex was affiliated with the DN community across windows (upper), and the continuous Fiedler vector map for the current subject using their full time series (lower). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DN affiliations. Grey lines display data for each subject, and the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded. The histogram displays the mean frequency distribution of y-axis values.", echo=FALSE, message = FALSE}
-# code to generate plots
-
-# # time series
-# # this one uses the actual subject's loaded time series (not included due to space)
-# n <- 4 # n of vertices to include
-# tr <- 4800 
-# ts <- data.matrix(t1[sample(59000, n), 1:tr])
-# df <- tibble(vertex = rep(seq(n), each = tr),
-#              Time = floor(rep(seq(0, tr, length.out = tr), n)),
-#              Signal = matrix(ts, ncol = 1) + rep(seq(-1, 1, length.out = n), each = tr)) %>%
-#   ggplot(data = df, aes(Time, Signal, group = vertex, color = as.character(vertex))) +
-#     geom_line(show.legend = F, lwd = 0.2, alpha = 0.6) +
-#     theme_classic()
-# 
-# # Fiedler Vector x proportion of times a vertex was affiliated with DN
-# SC_FVvPDN_plot <- ggplot(data = allSummaries) +
-#   geom_smooth(aes(FiedlerVec, slidePropDN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
-#   geom_line(data = SC_FVvPDN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 2) +
-#   geom_vline(xintercept = c(-0.014, 0.013), linetype = "dashed", color = Cols[2]) +
-#   labs(x = "Fiedler Vector Values", y = "Proportion of DN Affiliations") +
-#   scale_y_continuous(limits = c(0,1)) +
-#   theme_classic()
-# 
-# SC_FVvPDN_plot
-#
-# # histogram on 4 C
-# hist(allPropDN)
-
-include_graphics("./Images/SW_props.png")
-
-```
-
-\bigskip
-
-```{r Thresholded maps (Fig 5), out.width = "50%", fig.align = "center", fig.cap= "A: Thresholded Fiedler vector map for subject 100307 (top), and its binarized form (bottom). Subthreshold values effectively formed a third community of high-variability vertices. B: Mean of the binarized maps across all participants, indicating the proportion of DN affiliations per vertex in our sample. Colors represent PCC-based labels ('DN' versus 'non-DN'), which were applied in a subsequent step following the data-driven community-detection analysis and which were necessarily well-aligned in PCC. This aggregate map shows the common organizational principle of the DN and non-DN communities, while also showing the high level of variability in mPFC."}
-
-include_graphics("./Images/thresholded.png")
-
-```
-
-\bigskip
-
-``` {r Partition comparison: halves and runs (Fig. 6), fig.align="center", out.width = "100%", fig.cap = "Left: Similarity matrix for 10 example participants (2 scanning days each), showing pattern agreement across days and subjects for PCC and mPFC separately. Color scale represents the ARI, which quantifies topographic similarity irrespective of how the communities are labeled. The block-diagonal structure is indicative of test-retest reliability across days within an individual. Middle: ratio of within-subject ARI to between-subject mean ARI for all individuals across days suggests idiosyncratic community arrangement for both PCC and mPFC (ratios > 1, solid line), with greater subject-specificity in mPFC. Right: within-to-between subject mean ARI ratios for run-specific partitionings again show greater subject-specific organization for mPFC.", echo=FALSE, message = FALSE}
-### code for plots in this fig
-
-## similarity matrix
-# corrplot(abs(RI_PCC_halves_plot), # absolute to get rid of that annoying -0.02 that messes up the limits. This is just for example.
-#          is.corr = F,     
-#          method = "color",
-#          type = "lower", 
-#          tl.pos = "n", 
-#          cl.lim = c(0,1),
-#          cl.pos = "r",
-#          addgrid.col = "grey90",
-#          cl.length = 3)
-# corrplot(RI_PFC_halves_plot, 
-#          is.corr = F, 
-#          method = "color",
-#          type = "upper", 
-#          tl.pos = "n", 
-#          cl.pos = "n", 
-#          addgrid.col = "grey90",
-#          add = T)
-#mtext(expression(bold("Subjects (Day 1 and Day 2)")), line = 1)
-#mtext(expression(bold("mPFC")), line = -0.15, at = par("usr")[1]+0.8*diff(par("usr")[1:2]), col = "steelblue4")
-#mtext(expression(bold("PCC")), side = 1, line = 0.6, at = par("usr")[1]+0.09*diff(par("usr")[1:2]), col = "steelblue4")
-
-# ## ARI for days
-# ggplot(data = Halves_RIRatios_summary, aes(Region, RI, fill = Region)) +
-#   geom_boxplot(show.legend = F) +
-#   scale_fill_manual(values = Cols[seq(2)]) +
-#   ylim(0, 20) +
-#   geom_hline(yintercept = 1) +
-#   labs(y = "ARI Ratio", x = "") +
-#   theme_classic(base_size = 14)
-# 
-# ## ARI for session
-# ggplot(data = Sess_RIRatios_summary, aes(Region, RI, fill = Region)) +
-#   geom_boxplot(show.legend = F) +
-#   scale_fill_manual(values = Cols[seq(2)]) +
-#   ylim(0, 20) +
-#   geom_hline(yintercept = 1) +
-#   labs(y = "ARI Ratio", x = "") +
-#   theme_classic(base_size = 14)
-
-
-include_graphics("./Images/ratios.png")
-
-
-```
-
-\bigskip
-
 ``` {r Correlation vs community detection (Fig. 7), fig.align="center", fig.cap = "A: Correlation matrix comparing the across-day spatial stability of mPFC maps derived from seed-based functional connectivity (using a PCC seed) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector, with two single-day-based maps per individual. The upper-right and lower-left quadrants show across-method agreement. B: Day 1 vs Day 2 within-subject correlation coefficients for each method, as well as between methods. Community detection through spectral partitioning provided more stable estimates, even though both methods showed good levels of agreement.", echo = FALSE, message = FALSE}
 # code to produce the plots
 
@@ -1451,7 +1401,13 @@ include_graphics("./Images/commvscorr.png")
 
 ```
 
-\bigskip
+Figure 7B shows the test/re-test reliability across days for patterns derived using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher mean correlation coefficient across days than seed-based correlation (Community: mean = `r round(mean(tempComm), digits = 2)`, SD = `r round(sd(tempComm), digits = 2)`; Seed-based: mean = `r round(mean(tempCor), digits = 2)`, SD = `r round(sd(tempCor), digits = 2)`; paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", round(prepostComp_permTest$Pval, digits = 3)))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair (mean = `r round(mean(tempBoth), digits = 2)`, SD = `r round(sd(tempBoth), digits = 2)`), signifying that the two approaches identified similar topographic features but also had systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies, in addition to their other advantages of being data-driven, unbiased and observer agnostic.
+
+### *Alignment of mPFC community structure with a proposed DN sub-network organization*
+
+The thresholded partitions we identified had conceptual and topographic similarities to DN sub-networks A and B proposed by Braga and Buckner [-@Braga2017]. We explored the relationship between the two sets of sub-regions by reproducing their seed-based connectivity approach in two of our subjects. In their work, Braga and Buckner [-@Braga2017; @Braga2019] manually selected individual vertices in dorsolateral prefrontal cortex (DLPFC) that produced two spatially anticorrelated, interdigitated networks with distinctive patterns in the temporo-parietal junction (TPJ), inferior parietal lobule (IPL), parahippocampal cortex, mPFC, and PCC. We hypothesized that if the SP communities corresponded to one or both of the previously proposed sub-networks, our partitionings should match networks A and B generated by seed-based functional connectivity in these diagnostic areas. For whole-brain functional connectomes from two individuals (100307 and 101006), we evaluated seeds in each diagnostic region that reproduced networks A and B (correlation coefficients thesholded at 0.2), and confirmed their placement based on functional connectivity patterns observed in the remaining areas. In both individuals, seeds in posterior IPL and TPJ most clearly identified networks A and B, respectively. The whole-brain seed-based functional connectivity maps for the two individuals are juxtaposed with the corresponding community detection results in Figure 8. It is worth noting that a few distinguishing features are missing due to below-threshold correlation values (e.g. network B in right PCC of 100307).
+
+Visual inspection of these networks shows high similarity between our DN community and the previously reported sub-network A. However, the non-DN community filled areas not covered by either DN-A or DN-B. This result supports the idea that the two approaches serve complementary purposes. Whereas Braga and colleagues [-@Braga2017; -@Braga2019] identified subdivisions within the DN, the present community detection approach might be better understood as partitioning DN from non-DN cortex.
 
 ```{r BandB comparison (Figure 8), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between DN sub-networks A and B (estimated based on descriptions from Braga et al. (2019)) and SP communities for two individuals. Panel A: Whole-brain networks A and B produced by selecting seeds in TPJ, with our community detection search space delineated by black borders. Correlation values are thresholded at 0.2. Panel B: thresholded communities (indicated by borders) show strong resemblance between the DN community and network A. The non-DN community covers sections of cortex not associated with either DN sub-network."}
 
@@ -1459,6 +1415,34 @@ include_graphics("./Images/commvscorr.png")
 include_graphics("./Images/braga_comparison.png")
 
 ```
+
+## Discussion
+
+A considerable amount of meta-analytic work has been dedicated to characterizing the brain activity patterns associated with psychological processes in medial prefrontal cortex (mPFC), revealing both dissociable and overlapping activation across domains [@DelaVega2016; @Kragel2018; @Hiser2018]. In particular, activation patterns associated with subjective valuation and with the default network (DN) have been suggested to be inseparable in this area, with overlap also partially extending to posterior cingulate cortex (PCC) [@Acikalin2017; @Bartra2013; @Clithero2014; @Laird2009]. This apparent neural overlap has important implications, as it has motivated theoretical proposals about ways in which these superficially dissimilar domains might involve a shared set of core cognitive processes [@Acikalin2017; @Clithero2014; @Northoff2012]. 
+
+However, the interpretation of overlap in group-level data depends on the degree to which functional organization is heterogeneous across individuals. Recent studies have shown that heteromodal brain regions have considerable variability in functional connectivity across individuals [@Mueller2013], individual-specific functional topography can be occluded in aggregative estimations [@Braga2017; @Gordon2017; @Michalka2015; @Tobyne2018], and overlap in functional activation can vanish with increases in spatial precision [@Woo2014]. These findings suggest that group-level and meta-analysis-level overlap does not necessarily imply overlap in individual brains. However, our understanding of the individual-level heterogeneity in the functional topography of mPFC has been mostly descriptive so far [@Braga2017; @Braga2019; @Gordon2017]. To affirm that DN and valuation share neural substrates in this area requires a method to reliably and precisely capture the functional topography of mPFC in isolated individuals, as well as a quantitative estimate of the degree of topographic heterogeneity across a large group of individuals.
+
+Here we address these challenges by using spectral partitioning (SP), a graph-theoretic community detection algorithm that efficiently separates a network into two [@Fiedler1975; @Higham2007; @Toker2019]. For 100 individuals, we subdivided brain regions that typically show overlap between DN and valuation effects into DN and non-DN communities. Restricting our analyses to a general mPFC/PCC search space made it appropriate to use a technique that identified a vertex-wise, binary partitioning that was sensitive to the complex topography of the brain. This contrasts with whole-brain network analyses, which need to allow for multiple sub-networks and which often use parcels that are several orders of magnitude larger than vertices as the units of analysis. Partitioning an individual's brain network through SP has a number of advantages, including identifying communities deterministically, constraining communities to contain a similar number of vertices (i.e. preventing the allocation of most vertices to a single community), providing continuous values that relate to the strength of a node's community affiliation, and the ability to diagnose the connectedness of a network through examination of its resulting eigenvalues [@chung1997; @Higham2007]. Comparisons with partitionings formed by modularity maximization, which heuristically determines the ideal number of communities [@Garcia2017], suggested the binary partitioning was appropriate.
+
+We found a generalizable pattern across individual partitionings, in which the DN community covered ventral/dorsal mPFC and posterior PCC, with the non-DN community concentrated in pregenual ACC and anterior PCC. The precise spatial positioning of this general community structure was highly heterogenous across individuals, yet stable across test/re-test evaluations within-individual. The idiosyncrasy in functional topography was particularly pronounced in mPFC, and was identified in both run-based and day-based analyses. Individual-specificity could theoretically arise from a variety of sources. For example, the functional topography of mPFC could be governed by its underlying sulcal and gyral organization, which has been shown to vary systematically across individuals [@Mackey2014; @Lopez2019]. Individual variability could also be due to shifts in functional organization that are independent of structural features [@Haxby2013; @Nenning2017], or be characterized by the pattern of functional connections with the rest of the brain [@Mars2018; @Passingham2002; @Tobyne2018]. An important goal for future work will be to assess whether the network layout in this region can be predicted on the basis of aspects of brain structure, such as sulcal morphology, myeloarchitecture [@Glasser2016], or structural connectivity [@Osher2016; @Saygin2011; @Saygin2016]. 
+
+Network-partitioning methods such as SP are data-driven, and therefore provide no labeling information about the resulting communities. We circumvented this issue by independently identifying the DN community based on its coverage of area 7m, a region in PCC that was preferentially associated with the DN relative to subjective valuation in our meta-analysis. We were able to apply labels derived from this group-level approach on the basis of the topography in PCC, where functional organization was more consistent across individuals. Because each community spanned both mPFC and PCC, the labels extended to mPFC where topography was more heterogeneous. 
+
+Our results extend previous work that described individual-specific brain organization. Several recent investigations have identified topographic heterogeneity using a different data aspect ratio than we used here [a small number of individuals and a large number of scanning sessions per individual; @Braga2017; @Braga2019; @Gordon2017]. Previous work has also shown that functional correlations among pre-defined cortical parcels are highly stable within an individual [@Gratton2018b; @Kong2018]. Here we were able to quantify the variability and stability of functional topography in a large sample at a fine, vertex-level spatial granularity, using moderately low amounts of data (down to a single 14 minute scan). The motivation to sub-divide DN also stems from recent work by Kernbach et al. [-@Kernbach2018], which identified specialized communication of parcels within DN with the rest of the brain in a large pool of individuals.
+  
+In addition to the technical advantages noted above, the SP algorithm offers analytical advantages specific to neuroscience. We found that SP outperformed a traditional seed-based correlation approach in capturing idiosyncratic functional topography. Community detection methods such as SP are stabilized by relying on  all pairwise correlations among cortical vertices (rather than correlations with an individual seed). In addition, we found we could increase the temporal stability of SP results by thresholding the underlying Fiedler vector. The magnitude of Fiedler vector values has been recently used to characterize the continuous connectivity profile of the insula with the rest of the brain, challenging the notion of discrete parcellations in that region [@Tian2018]. The combination of discrete classification and graded information yielded by SP provides additional flexibility and richness relative to some other clustering algorithms. 
+  
+The community organization of PCC and mPFC was congruent with DN sub-networks A and B proposed by Braga & Buckner [-@Braga2017; @Braga2019]. The topography of our thresholded DN community closely matched network A, whereas our non-DN community included cortical territory that was not part of either DN network. Subthreshold vertices from the DN community overlapped with DN-B vertices, suggesting that this sub-network could act as a dynamic intermediary between DN-A and other networks. Our findings therefore complement the initial identification of DN sub-networks by quantifying the systematic variability of their underlying topography in a larger group of people. Understanding the interaction of networks A (DN), B, and non-DN is an important goal for future research. These two sets of results collectively suggest that canonical DN regions can be topographically partitioned into DN and non-DN communities, and that the DN community can in turn be further divided into sub-networks A and B. 
+
+Our findings show that the functional topography of mPFC is variable across a large pool of individuals, and that the SP algorithm is a useful tool for identifying individualized topography in a data-driven way. The ability to capture an individual's functional topography without the need of group priors is clinically relevant, as it could help characterize heterogenous changes in mPFC activity in disorders such as depression and schizophrenia [@Hiser2018]. It will be beneficial for future task-based fMRI experiments to be able to characterize where task-evoked activity is situated relative to an individual's overall mPFC organization. Our work was originally motivated by the apparent spatial overlap between subjective valuation and the default network [@Acikalin2017], but additional distinctions of interest include valuation versus episodic memory functions [@Euston2012], self-referential thought and theory of mind [@Mitchell2005], and potential topographic distinctions among multiple forms of valuation [@Clithero2014; @Shenhav2019; @Smith2010]. An individualized frame of reference will enhance the ability of future studies to gauge similarities and differences among brain activity patterns associated with diverse psychological domains.
+
+\newpage
+## Acknowledgements
+
+We thank Lauren DiNicola, Daniel Reznik, Xavier Guell, and David Somers for helpful discussions, and Daniel Sussman for initial guidance on community detection and evaluation methods. This work was supported by grants from the National Science Foundation (BCS-1755757 and BCS-1625552) and the Office of Naval Research (MURI award N00014-16-1-2832 and DURIP award N00014-17-1-2304). Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
+
+\newpage
+
 
 \bigskip
 
