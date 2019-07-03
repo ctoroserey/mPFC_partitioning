@@ -133,6 +133,9 @@ write("Loading data", stdout())
 Data <- fread(paste(SubjID, "_timeSeries.csv", sep = ""), header = F)
 Data <- data.matrix(Data)
 
+# make sure that there is only cortical info
+if (nrow(Data) > 59412) { Data <- Data[seq(59412), ] }
+
 # append the ROI label to each vertex
 dimnames(Data) <- list(labelCoords_vertex$Label, seq(ncol(Data)))
 
