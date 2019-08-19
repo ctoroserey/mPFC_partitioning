@@ -1482,6 +1482,50 @@ include_graphics("./Images/extra_examples.png")
 
 ```{r ARI Comparison (supplemental fig 2), out.width = "50%", fig.align = "center", fig.cap = "Example of an across-day comparison using ARI for two subjects (100307 and 100408). This reflects how qualitatively similar, within-subject partitionings can have relatively small ARI values (here 0.24-0.25), and how partitionings across individuals are much closer to the chance level of zero."}
 include_graphics("./Images/ARI_comparison.png")
+
+# # the second plot (simulation), showing decay of similarity as differences increase
+# library(mcclust)
+# library(reshape2)
+# 
+# # Produce a random vector with 100 binary classifications
+# n <- 4801
+# v1 <- rbinom(n = n, size = 1, prob = 0.5)
+# 
+# # Data frame to store evaluations
+# evals <- data.frame(Diffs = seq(n),
+#                     ARI = rep(0,n),
+#                     RI = rep(0,n),
+#                     EQ = rep(0,n))
+# 
+# # Check the degree of agreement per metric for each incremental switch in affiliation
+# for (i in seq(n)) {
+#   
+#   # Switch affiliation up to the ith node
+#   ifelse(i < n, v2temp <- c((1 - v1[seq(i)]), v1[(i+1):n]), v2temp <- v1)
+#   
+#   # Evaluate
+#   evals$ARI[i] <- arandi(v1,v2temp)
+#   evals$RI[i] <- arandi(v1,v2temp, adjust = F)
+#   evals$EQ[i] <- mean(v1 == v2temp)
+#   
+# }
+# 
+# # Make the data.frame long instead of wide for ggplot
+# evals <- melt(evals[seq(n-1),], id.vars = "Diffs")
+# 
+# # And plot
+# ggplot(data = evals, aes(Diffs, value, group = variable, color = variable)) + 
+#   geom_line(size = 1.5) +
+#   labs(x = "Number of Class Differences", y = "Similarity Value") +
+#   scale_color_discrete(name = "Method") +
+#   scale_x_continuous(breaks = c(seq(0, 4000, by = 1000), 4801)) +
+#   theme(legend.position = c(0.9, 0.32),
+#         legend.key=element_blank(),
+#         panel.grid.major = element_blank(), 
+#         panel.grid.minor = element_blank(), 
+#         panel.background = element_blank(), 
+#         axis.line = element_line(colour = "black"),
+#         text = element_text(size = 22))
 ```
 
 \newpage 
