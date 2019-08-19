@@ -19,7 +19,7 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
   
   if (is.numeric(preThresh)) {
     Data[Data == 1] <- 0.999
-    Data[Data < preThresh] <- 0
+    Data[abs(Data) < preThresh] <- 0
     transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
   } else {
     # tanh
