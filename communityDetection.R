@@ -76,7 +76,7 @@ HCPOut <- function(Data = dmnval7mCommunities[[1]], MOI = "Membership", SubjID =
 }
 
 # if a minimum corr value is desired prior to clustering (otherwise set NA for p-value based thresholding)
-corrThresh <- NA
+corrThresh <- 0
 
 
 # ROIs used on the paper
