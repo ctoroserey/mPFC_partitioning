@@ -29,7 +29,7 @@ fisherTanh <- function(Data = padjMatrix, preThresh = NA){
   
   if (is.numeric(preThresh)) {
     Data[Data == 1] <- 0.999
-    Data[Data < preThresh] <- 0
+    Data[abs(Data) < preThresh] <- 0
     transformed$tanhZ <- 0.5 * log((1 + Data) / (1 - Data))
   } else {
     # tanh
@@ -105,7 +105,7 @@ getCoords <- function(Labels, Coords, TimeSeries = FALSE){
 
 
 # Run community detection on ROIs
-communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras = T, indx = NA) {
+communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras = T, indx = NA, thresh = corThresh) {
   # This function relies on having the timeSeries data uploaded, and labelCoords_vertex as the row names for ROI selection
   # Extras dictates whether the community object + correlation matrix should also be extracted
   #
@@ -145,7 +145,7 @@ communityDetection <- function(Data = NA, ROIS = "None", modularity = T, extras 
   corrMatrix <- corrMat
   
   # transform to Fisher's (think of thresholding)
-  transfMat <- fisherTanh(Data = corrMat)
+  transfMat <- fisherTanh(Data = corrMat, preThresh = thresh)
   
   # Store Fisher transformed vals for graphing
   corrMat <- transfMat$tanhZ
@@ -471,8 +471,9 @@ comparePartitions <- function(Data = NA, MOI = "FiedlerBinary", Index = "VI", nS
 ###------- Setups ---------------
 write('Setting up variables for future computations...', stdout())
 
-## Choose what to analyze
+## general setups
 Sliding <- T
+corThresh <- 0
 
 # colors to differentiate other things
 #Cols <- c("aquamarine4","#D9541A",rgb(190,190,190,100, maxColorValue = 255)) # left, right, interhemisphere
