@@ -987,7 +987,7 @@ tsnrCohen_PCC <- CohenD(as.numeric(snr_means$post_thresh[2, -1]), as.numeric(snr
 tsnrCohen_Post <- CohenD(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$post_thresh[2, -1]))
 ```
 
-To test the possibility that the higher inter-subject variability in mPFC was driven merely by lower signal quality in the retained vertices, we quantified the temporal signal to noise ratio (tSNR) for each region, both before and after thresholding. We calculated tSNR using time series that were not demeaned, but were otherwise equivalent to the data originally used. In terms of tSNR variability across vertices within each region, mPFC had overall greater spatial standard deviation both before and after thresholding (mPFC: pre-threshold mean spatial SD = 33.96, post-threshold mean spatial SD = 30.15; PCC: pre-threshold mean spatial SD = 15.28, post-threshold mean spatial SD = 14.59). However, tSNR after thresholding was significantly higher for mPFC than PCC (mPFC: mean = `r round(snr_means$overall[1, 2], digits = 2)`, SD = `r round(snr_means$overall[3, 2], digits = 2)`; PCC: mean = `r round(snr_means$overall[2, 2], digits = 2)`, SD = `r round(snr_means$overall[4, 2], digits = 2)`; permutation p-value `r ifelse(tsnrPermute_Post$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_Post$Pval))`, Cohen's D = `r round(tsnrCohen_Post[1], digits = 2)`). This reflected a significant increase in mean tSNR in mPFC as a result of the thresholding step (pre-threshold mean = `r round(snr_means$overall[1, 1], digits = 2)`, SD = `r round(snr_means$overall[3, 1], digits = 2)`; paired permutation p-value `r ifelse(tsnrPermute_mPFC$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_mPFC$Pval))`, Cohen's D = `r round(tsnrCohen_mPFC[1], digits = 2)`), whereas the mean signal quality in PCC was unchanged (pre-threshold mean = `r round(snr_means$overall[2, 1], digits = 2)`, SD = `r round(snr_means$overall[4, 1], digits = 2)`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r round(tsnrCohen_PCC[1], digits = 2)`). In short, mPFC had higher overall tSNR, albeit with greater variability across nodes. Applying the thresholding step allowed us to focus the analysis on vertices with high signal quality. 
+To test the possibility that the higher inter-subject variability in mPFC was driven merely by lower signal quality in the retained vertices, we quantified the temporal signal to noise ratio (tSNR) for each region, both before and after thresholding. We calculated tSNR using time series that were not demeaned, but were otherwise equivalent to the data originally used. A map of the mean tSNR across individuals can be found on Supplemental Figure 3. In terms of tSNR variability across vertices within each region, mPFC had overall greater spatial standard deviation both before and after thresholding (mPFC: pre-threshold mean spatial SD = 33.96, post-threshold mean spatial SD = 30.15; PCC: pre-threshold mean spatial SD = 15.28, post-threshold mean spatial SD = 14.59). However, tSNR after thresholding was significantly higher for mPFC than PCC (mPFC: mean = `r round(snr_means$overall[1, 2], digits = 2)`, SD = `r round(snr_means$overall[3, 2], digits = 2)`; PCC: mean = `r round(snr_means$overall[2, 2], digits = 2)`, SD = `r round(snr_means$overall[4, 2], digits = 2)`; permutation p-value `r ifelse(tsnrPermute_Post$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_Post$Pval))`, Cohen's D = `r round(tsnrCohen_Post[1], digits = 2)`). This reflected a significant increase in mean tSNR in mPFC as a result of the thresholding step (pre-threshold mean = `r round(snr_means$overall[1, 1], digits = 2)`, SD = `r round(snr_means$overall[3, 1], digits = 2)`; paired permutation p-value `r ifelse(tsnrPermute_mPFC$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_mPFC$Pval))`, Cohen's D = `r round(tsnrCohen_mPFC[1], digits = 2)`), whereas the mean signal quality in PCC was unchanged (pre-threshold mean = `r round(snr_means$overall[2, 1], digits = 2)`, SD = `r round(snr_means$overall[4, 1], digits = 2)`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r round(tsnrCohen_PCC[1], digits = 2)`). In short, mPFC had higher overall tSNR, albeit with greater variability across nodes. Applying the thresholding step allowed us to focus the analysis on vertices with high signal quality. 
 
 
 ### *Test/re-test reliability across days*
@@ -1526,6 +1526,39 @@ include_graphics("./Images/ARI_comparison.png")
 #         panel.background = element_blank(), 
 #         axis.line = element_line(colour = "black"),
 #         text = element_text(size = 22))
+```
+
+\bigskip
+
+```{r Extra examples (supplemental fig 3), out.width = "100%", fig.align = "center", fig.cap = "Signal quality prior to FV thresholding. Left: Surface map displaying the vertex-wise mean tSNR across individuals. Right: Mean tSNR for mPFC and PCC across individuals."}
+# To get the box plot:
+#   
+# allSnr <- list()
+# 
+# for (i in seq_along(Summaries)) {
+#   
+#   allSnr[[i]] <- Summaries[[i]] %>% 
+#                   mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
+#                   group_by(region) %>%
+#                   summarise(mtSNR = mean(tSNR))
+#                 
+# }
+# 
+# allSnr <- do.call(rbind, allSnr)
+# 
+# ggplot(data = allSnr, aes(region, mtSNR, fill = region)) + 
+#   geom_boxplot(show.legend = F) +
+#   scale_fill_manual(values = Cols[seq(2)]) +
+#   labs(x = "", y = "mean tSNR") +
+#   theme(legend.position = c(0.9, 0.32),
+#         legend.key=element_blank(),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         text = element_text(size = 22))
+
+include_graphics("./Images/tSNR.png")
 ```
 
 \newpage 
