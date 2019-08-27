@@ -584,8 +584,8 @@ templist <- dir()
 studyList_DN <- lapply(templist, readr::read_csv, col_names = F, col_types = cols())
 
 # raw counts for each area per literature
-nRegions_sv <- do.call(rbind, studyList_sv) %>% count #(X1)
-nRegions_DN <- do.call(rbind, studyList_DN) %>% count #(X1)
+nRegions_sv <- do.call(rbind, studyList_sv) %>% count(X1)
+nRegions_DN <- do.call(rbind, studyList_DN) %>% count(X1)
 nRegions_all <- left_join(nRegions_sv, nRegions_DN, by = "X1")
  
 # optional because it can take a long time to run
@@ -1530,7 +1530,7 @@ include_graphics("./Images/ARI_comparison.png")
 
 \bigskip
 
-```{r Extra examples (supplemental fig 3), out.width = "100%", fig.align = "center", fig.cap = "Signal quality prior to FV thresholding. Left: Surface map displaying the vertex-wise mean tSNR across individuals. Right: Mean tSNR for mPFC and PCC across individuals."}
+```{r tSNR (supplemental fig 3), out.width = "100%", fig.align = "center", fig.cap = "Signal quality prior to FV thresholding. Left: Surface map displaying the vertex-wise mean tSNR across individuals. Right: Mean tSNR for mPFC and PCC across individuals."}
 # To get the box plot:
 #   
 # allSnr <- list()
@@ -1560,6 +1560,36 @@ include_graphics("./Images/ARI_comparison.png")
 
 include_graphics("./Images/tSNR.png")
 ```
+
+
+```{r extra B&B checks with silhouette (supplemental fig 4), out.width = "100%", fig.align = "center", fig.cap = "Additional checks to confirm the match between our findings with Braga & Buckner (2017)."}
+# # produce the silhouette plot
+# setwd('Silhouette')
+# 
+# # load data and get the overall plus mean (+SE) silhouette scores per cluster x subject
+# files <- list.files()
+# data <- lapply(files, read_csv) %>% reduce(full_join)
+# data2 <- data %>% 
+#   group_by(Clusters) %>%
+#   summarise(mSil = mean(Silhouette),
+#             seSil = sd(Silhouette) / sqrt(length(Silhouette)))
+# 
+# # plot
+# ggplot() +
+#   geom_line(data = data, aes(Clusters, Silhouette, group = SubjID), show.legend = F, alpha = 0.09, size = 1.5) +
+#   geom_point(data = data2, aes(Clusters, mSil), show.legend = F, size = 2) +
+#   geom_errorbar(data = data2, aes(Clusters, ymin = mSil - seSil, ymax = mSil + seSil), width = 0.1, size = 1) +
+#   labs(x = "Number of Clusters", y = "Silhouette Score") +
+#   theme(legend.key = element_blank(),
+#         panel.grid.major = element_blank(), 
+#         panel.grid.minor = element_blank(), 
+#         panel.background = element_blank(), 
+#         axis.line = element_line(colour = "black"),
+#         text = element_text(size = 22))
+
+
+```
+
 
 \newpage 
 

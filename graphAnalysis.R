@@ -556,7 +556,8 @@ mPFC_labels <- c("_a24_",
                "_s32_",
                "_p24_",
                "_10d_",
-               "_25_")
+               "_25_",
+               "R_9a_ROI")
 
 # Little test to ensure that the ROIs match before running the whole thing
 if (FALSE %in% (mPFC_labels %in% c(mPFC_labels, "Blah"))) {
