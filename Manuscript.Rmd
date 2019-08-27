@@ -139,7 +139,20 @@ getCoords <- function(Labels = DN_labels, Coords = labelCoords_parcel, TimeSerie
 
 
 ## Permutation for 2 groups
-permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, paired = FALSE){
+permute <- function(group1, group2, statType = mean, nPerms = 5000, paired = FALSE, na.rm = FALSE){
+  
+  # remove NAs? in case of paired, remove the same measure in both groups 
+  # (not for independent samples, for which NAs are removed by default)
+  if (na.rm & paired) {
+    g1 <- which(is.na(group1))
+    g2 <- which(is.na(group2))
+    nas <- c(g1, g2)
+    
+    if (length(nas) > 0) {
+      group1 <- group1[-nas]
+      group2 <- group2[-nas]
+    }
+  }
   
   # prep data
   summaryPerm <- list()
@@ -148,8 +161,6 @@ permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, pair
   bigSample <- c(group1,group2)  
   
   if (paired == FALSE) {
-    
-    
     for (i in 1:nPerms){
       
       # relabel samples
@@ -158,25 +169,19 @@ permute <- function(group1 = 1, group2 = 2, statType = mean, nPerms = 5000, pair
       tempTwo <- tempBig[-seq(lOne)]
       
       # stats
-      tempDiffs <- statType(tempOne,na.rm=T) - statType(tempTwo,na.rm=T)
+      tempDiffs <- statType(tempOne, na.rm = T) - statType(tempTwo, na.rm = T)
       summaryPerm$jointDist[i] <- tempDiffs # statType(tempDiffs, na.rm = T) 
-      
     }  
-    
   } else {
-    
     for (i in 1:nPerms){
-      
       # shift labels in a pairwise fashion
       tempDiffs <- statType((-1)^rbinom(lOne,1,0.5) * (group1 - group2))
       summaryPerm$jointDist[i] <- tempDiffs
-      
     }
-    
   }
   
   # get the observed difference
-  diffs <- statType(group1,na.rm=T) - statType(group2,na.rm=T)
+  diffs <- statType(group1, na.rm=T) - statType(group2, na.rm=T)
   observedAbs <- abs(diffs) # maybe leave it as means here
   observed <- diffs
   summaryPerm$Pval <- 2 * (1 - ecdf(summaryPerm$jointDist)(observedAbs))
@@ -639,7 +644,7 @@ include_graphics("./Images/ROIS.png")
 
 ``` {r Load Summary Data}
 # Load data, create a subject list, get the total n, and the number of vertices
-setwd('./Summary/')
+setwd('Summary/')
 temp <- list.files()
 subjList <- sapply(temp, substring, first = 1, last = 6)
 Summaries <- lapply(temp, read.csv)
@@ -957,7 +962,7 @@ snr_means$pre_thresh <- lapply(Summaries, function(data) {
   data %>% 
     mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
     group_by(region) %>% 
-    dplyr::summarise(mean_tsnr = mean(tSNR)) %>%
+    dplyr::summarise(mean_tsnr = mean(tSNR, na.rm = T)) %>%
     ungroup()
 }) %>% reduce(left_join, by = "region")
 
@@ -966,20 +971,20 @@ snr_means$post_thresh <- lapply(Summaries, function(data) {
     filter(FiedlerBinary != 0.5) %>%
     mutate(region = ifelse(y > 0, "mPFC", "PCC")) %>%
     group_by(region) %>% 
-    dplyr::summarise(mean_tsnr = mean(tSNR)) %>%
+    dplyr::summarise(mean_tsnr = mean(tSNR, na.rm = T)) %>%
     ungroup()
 }) %>% reduce(left_join, by = "region")
 
 # and compute summary stats on each 
 snr_means$overall <- sapply(snr_means, function(x) {
-  c(rowMeans(x[, -1]), apply(x[, -1], 1, sd))
+  c(rowMeans(x[, -1], na.rm = T), apply(x[, -1], 1, sd, na.rm = T))
 })
 rownames(snr_means$overall) <- c("mPFC_mean", "PCC_mean", "mPFC_SD", "PCC_SD")
 
 # permutation pre vs post
-tsnrPermute_mPFC <- permute(as.numeric(snr_means$pre_thresh[1, -1]), as.numeric(snr_means$post_thresh[1, -1]), paired = T)
-tsnrPermute_PCC <- permute(as.numeric(snr_means$pre_thresh[2, -1]), as.numeric(snr_means$post_thresh[2, -1]), paired = T)
-tsnrPermute_Post <- permute(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$post_thresh[2, -1]))
+tsnrPermute_mPFC <- permute(as.numeric(snr_means$pre_thresh[1, -1]), as.numeric(snr_means$post_thresh[1, -1]), paired = T, na.rm = T)
+tsnrPermute_PCC <- permute(as.numeric(snr_means$pre_thresh[2, -1]), as.numeric(snr_means$post_thresh[2, -1]), paired = T, na.rm = T)
+tsnrPermute_Post <- permute(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$post_thresh[2, -1]), na.rm = T)
 
 # effect size pre vs post
 tsnrCohen_mPFC <- CohenD(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(snr_means$pre_thresh[1, -1]))
@@ -1240,7 +1245,7 @@ RI_PCC_sess <- comparePartitions(Data = tempComm_PCC_sess, Index = "RI", nSubjec
 ## Overall differences in mean RI between PCC and mPFC
 lowPCC_sess <- RI_PCC_sess[lower.tri(RI_PCC_sess)]
 lowPFC_sess <- RI_PFC_sess[lower.tri(RI_PFC_sess)]
-Sess_PCCvPFC_perm <- permute(lowPCC_sess, lowPFC_sess, statType = mean, paired = T)
+Sess_PCCvPFC_perm <- permute(lowPCC_sess, lowPFC_sess, statType = mean, paired = T, na.rm = T)
 Sess_PCCvPFC_ES <- cohenD(lowPCC_sess, lowPFC_sess) # caveat: maybe not ideal for bounded values, like RI. BUT VI yields similar results.
 
 
@@ -1322,7 +1327,7 @@ Sess_PCC_ratioTest <- wilcox.test(Sess_RIRatios_PCC, mu = 1, alternative = "grea
 Sess_PFC_ratioTest <- wilcox.test(Sess_RIRatios_PFC, mu = 1, alternative = "greater")
 
 # between
-Sess_mPFCvPCC_permTest <- permute(Sess_RIRatios_PFC, Sess_RIRatios_PCC, paired = T, statType = median)
+Sess_mPFCvPCC_permTest <- permute(Sess_RIRatios_PFC, Sess_RIRatios_PCC, paired = T, statType = median, na.rm = T)
 Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 ```
 
