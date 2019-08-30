@@ -1,25 +1,22 @@
 ---
-title: 'Individual heterogeneity in the functional network topography of medial prefrontal cortex'
-subtitle: 'Abbreviated Title: Heterogeneity in the functional topography of mPFC'
+title: Individual heterogeneity in the functional network topography of medial prefrontal
+  cortex
 author: "Claudio Toro-Serey^1^, Sean M. Tobyne^2^, & Joseph T. McGuire^1^"
-output:
-  pdf_document: 
-    keep_tex: false
-    highlight: haddock
-bibliography: mPFC_paper.bib
 csl: apa.csl
+output:
+  word_document: default
+  pdf_document:
+    highlight: haddock
+    keep_tex: no
 header-includes:
-    - \usepackage{setspace}\doublespacing
-    - \usepackage[left]{lineno}
-    - \linenumbers
-    - \usepackage{float}
-    - \newcommand{\beginsupplement}{ 
-        \setcounter{table}{0}  
-        \renewcommand{\thetable}{S\arabic{table}} 
-        \setcounter{figure}{0} 
-        \renewcommand{\thefigure}{S\arabic{figure}}
-      }
-
+- \usepackage{setspace}\doublespacing
+- \usepackage[left]{lineno}
+- \linenumbers
+- \usepackage{float}
+- \newcommand{\beginsupplement}{ \setcounter{table}{0} \renewcommand{\thetable}{S\arabic{table}}
+  \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}} }
+subtitle: 'Abbreviated Title: Heterogeneity in the functional topography of mPFC'
+bibliography: mPFC_paper.bib
 ---
 
 ```{r setup, include = FALSE}
@@ -1295,7 +1292,7 @@ withinSubjVals <- split(Sess_overallComparison[[1]], temp)
 betweenSubjVals <- lapply(seq(1, ncol(RI_all_between_sess), by = 4), function(x) RI_all_between_sess[-(x:(x+3)), x:(x+3)])
 
 # And get a vector of the meanWithin / meanBetween ratio per subject
-Sess_RIRatios_overall <- sapply(seq(nSubj), function(i) {mean(withinSubjVals[[i]]) / mean(betweenSubjVals[[i]])})
+Sess_RIRatios_overall <- sapply(seq(nSubj), function(i) {mean(withinSubjVals[[i]], na.rm = T) / mean(betweenSubjVals[[i]], na.rm = T)})
 
 # PCC
 temp <- ceiling(seq_along(Sess_PCCComparison[[1]])/6)
@@ -1305,7 +1302,7 @@ withinSubjVals <- split(Sess_PCCComparison[[1]], temp)
 betweenSubjVals <- lapply(seq(1, ncol(RI_PCC_sess), by = 4), function(x) RI_PCC_sess[-(x:(x+3)), x:(x+3)])
 
 # And get a vector of the meanWithin / meanBetween ratio per subject
-Sess_RIRatios_PCC <- sapply(seq(nSubj), function(i) {mean(withinSubjVals[[i]]) / mean(betweenSubjVals[[i]])})
+Sess_RIRatios_PCC <- sapply(seq(nSubj), function(i) {mean(withinSubjVals[[i]], na.rm = T) / mean(betweenSubjVals[[i]], na.rm = T)})
 
 # PFC
 temp <- ceiling(seq_along(Sess_PFCComparison[[1]])/6)
@@ -1315,7 +1312,7 @@ withinSubjVals <- split(Sess_PFCComparison[[1]], temp)
 betweenSubjVals <- lapply(seq(1, ncol(RI_PFC_sess), by = 4), function(x) RI_PFC_sess[-(x:(x+3)), x:(x+3)])
 
 # And get a vector of the meanWithin / meanBetween ratio per subject
-Sess_RIRatios_PFC <- sapply(seq(nSubj), function(i) {mean(withinSubjVals[[i]]) / mean(betweenSubjVals[[i]])})
+Sess_RIRatios_PFC <- sapply(seq(nSubj), function(i) {mean(withinSubjVals[[i]], na.rm = T) / mean(betweenSubjVals[[i]], na.rm = T)})
 
 # Summarize for plotting
 Sess_RIRatios_summary <- data.frame(Region = c(rep("PCC", nSubj), rep("mPFC", nSubj)),
@@ -1331,7 +1328,7 @@ Sess_mPFCvPCC_permTest <- permute(Sess_RIRatios_PFC, Sess_RIRatios_PCC, paired =
 Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 ```
 
-As before, a signed rank test showed that both regions had ARI ratios significantly greater than 1 (mPFC: median = `r round(median(Sess_RIRatios_PFC), digits = 2)`, IQR = `r round(quantile(Sess_RIRatios_PFC, 0.25), digits = 2)` - `r round(quantile(Sess_RIRatios_PFC, 0.75), digits = 2)`, V = `r Sess_PFC_ratioTest$statistic`, *p* `r ifelse(Sess_PFC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Sess_PFC_ratioTest$p.value))`; PCC: median = `r round(median(Sess_RIRatios_PCC), digits = 2)`, IQR = `r round(quantile(Sess_RIRatios_PCC, 0.25), digits = 2)` - `r round(quantile(Sess_RIRatios_PCC, 0.75), digits = 2)`, V = `r Sess_PCC_ratioTest$statistic`, *p* `r ifelse(Sess_PFC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Sess_PCC_ratioTest$p.value))`), and ratios for mPFC were higher than those of PCC (permutation *p* = `r ifelse(Sess_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Sess_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`). This result further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that information about such patterns can be extracted from relatively small amounts of data.
+As before, a signed rank test showed that both regions had ARI ratios significantly greater than 1 (mPFC: median = `r round(median(Sess_RIRatios_PFC), digits = 2)`, IQR = `r round(quantile(Sess_RIRatios_PFC, 0.25, na.rm = T), digits = 2)` - `r round(quantile(Sess_RIRatios_PFC, 0.75, na.rm = T), digits = 2)`, V = `r Sess_PFC_ratioTest$statistic`, *p* `r ifelse(Sess_PFC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Sess_PFC_ratioTest$p.value))`; PCC: median = `r round(median(Sess_RIRatios_PCC, na.rm = T), digits = 2)`, IQR = `r round(quantile(Sess_RIRatios_PCC, 0.25, na.rm = T), digits = 2)` - `r round(quantile(Sess_RIRatios_PCC, 0.75, na.rm = T), digits = 2)`, V = `r Sess_PCC_ratioTest$statistic`, *p* `r ifelse(Sess_PFC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Sess_PCC_ratioTest$p.value))`), and ratios for mPFC were higher than those of PCC (permutation *p* = `r ifelse(Sess_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Sess_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`). This result further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that information about such patterns can be extracted from relatively small amounts of data.
 
 ### *Correlation vs community detection in mPFC*
 
@@ -1407,6 +1404,26 @@ include_graphics("./Images/commvscorr.png")
 ```
 
 Figure 7B shows the test/re-test reliability across days for patterns derived using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher mean correlation coefficient across days than seed-based correlation (Community: mean = `r round(mean(tempComm), digits = 2)`, SD = `r round(sd(tempComm), digits = 2)`; Seed-based: mean = `r round(mean(tempCor), digits = 2)`, SD = `r round(sd(tempCor), digits = 2)`; paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", round(prepostComp_permTest$Pval, digits = 3)))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair (mean = `r round(mean(tempBoth), digits = 2)`, SD = `r round(sd(tempBoth), digits = 2)`), signifying that the two approaches identified similar topographic features but also had systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies, in addition to their other advantages of being data-driven, unbiased and observer agnostic.
+
+### *Relationship between functional organization and sulcal morphology*
+
+``` {r sulcal comparison, echo=FALSE, message = FALSE, cache = TRUE}
+# load curvature data and retain only the relevant subjects
+setwd('Curvature')
+files <- list.files(pattern = "curvature")
+curvList <- substr(files, 1, 6)
+files <- files[curvList %in% subjList]
+
+# update Summaries dfs
+curvData <- lapply(files, function(file) {read.table(file, header = F)$V1[Summaries[[1]]$Vertex]})
+for (i in seq(nSubj)) {
+  Summaries[[i]]$Curvature <- curvData[[i]]
+}
+
+# select vmPFC like Lopez-Persem
+
+
+```
 
 ### *Alignment of mPFC community structure with a proposed DN sub-network organization*
 
@@ -1567,14 +1584,14 @@ include_graphics("./Images/tSNR.png")
 ```
 
 
-```{r extra B&B checks with silhouette (supplemental fig 4), out.width = "100%", fig.align = "center", fig.cap = "Additional checks to confirm the match between our findings with Braga & Buckner (2017)."}
+```{r extra B&B checks with silhouette (supplemental fig 4), out.width = "100%", fig.align = "center", fig.cap = "Additional checks to confirm the match between our findings with Braga & Buckner (2017). *ADD KMEANS DEETS HERE*. B: K-means based silhouette scores were computed per individual to determine the appropriate number of clusters within the search space. Scores decreased as the number of clusters increased, suggesting that a bisection was the best solution. Paired permutations comparing mean scores across individuals indicated that the difference between two (mean = 0.042, SE = 0.001) and three (mean = 0.032, SE = 0.0009) cluster solutions was significant (*p* < 0.0001, Cohen's D = 0.96)"}
 # # produce the silhouette plot
 # setwd('Silhouette')
 # 
 # # load data and get the overall plus mean (+SE) silhouette scores per cluster x subject
 # files <- list.files()
 # data <- lapply(files, read_csv) %>% reduce(full_join)
-# data2 <- data %>% 
+# data2 <- data %>%
 #   group_by(Clusters) %>%
 #   summarise(mSil = mean(Silhouette),
 #             seSil = sd(Silhouette) / sqrt(length(Silhouette)))
@@ -1582,17 +1599,25 @@ include_graphics("./Images/tSNR.png")
 # # plot
 # ggplot() +
 #   geom_line(data = data, aes(Clusters, Silhouette, group = SubjID), show.legend = F, alpha = 0.09, size = 1.5) +
-#   geom_point(data = data2, aes(Clusters, mSil), show.legend = F, size = 2) +
+#   #geom_line(data = data2, aes(Clusters, mSil), show.legend = F, size = 1.2) +
 #   geom_errorbar(data = data2, aes(Clusters, ymin = mSil - seSil, ymax = mSil + seSil), width = 0.1, size = 1) +
+#   geom_point(data = data2, aes(Clusters, mSil), show.legend = F, size = 2) +
 #   labs(x = "Number of Clusters", y = "Silhouette Score") +
 #   theme(legend.key = element_blank(),
-#         panel.grid.major = element_blank(), 
-#         panel.grid.minor = element_blank(), 
-#         panel.background = element_blank(), 
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
 #         axis.line = element_line(colour = "black"),
 #         text = element_text(size = 22))
+# 
+# # paired permutation comparing the median silhouete score between 2 and 3 clusters
+# t <- data %>% 
+#   filter(Clusters == 2:3) %>% 
+#   spread(Clusters, Silhouette)
+# silhPerm <- permute(t$`2`, t$`3`, paired = T, statType = mean)
+# silhES <- cohenD(t$`2`, t$`3`)
 
-
+include_graphics("./Images/kmeansVSsp.png")
 ```
 
 
