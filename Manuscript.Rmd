@@ -1414,15 +1414,40 @@ files <- list.files(pattern = "curvature")
 curvList <- substr(files, 1, 6)
 files <- files[curvList %in% subjList]
 
-# update Summaries dfs
+# select vmPFC like Lopez-Persem
+# select bilateral parcels that cover the mask seen in fig. 4B in Lopez-Persem et al. 2019
+# the parcels surrounding sulci ROS-S and SU-ROS are: a24, p32, s32, 10r
+persemROI <- c("_25_", "_s32_", "_a24_", "_10v_", "_10r_", "_p32_")
+primarySulci <- c("L_a24_ROI", "R_a24_ROI", "L_s32_ROI", "R_s32_ROI", "L_p32_ROI", "R_p32_ROI", "L_10r_ROI", "R_10r_ROI")
+
+# update Summaries dfs, and reduce to vmPFC only
 curvData <- lapply(files, function(file) {read.table(file, header = F)$V1[Summaries[[1]]$Vertex]})
 for (i in seq(nSubj)) {
   Summaries[[i]]$Curvature <- curvData[[i]]
+  Summaries[[i]]$SubjID <- subjList[[i]]
 }
 
-# select vmPFC like Lopez-Persem
+curvVmpfc <- lapply(Summaries, getCoords, Labels = persemROI)
+curvVmpfc <- lapply(curvVmpfc, "[[", "Coords")
+
+# compute per-subject correlations between Fiedler Vector and curvature
+curvCors <- sapply(curvVmpfc, function(subj) {cor(subj$Curvature, subj$FiedlerVec)})
 
 
+# mimic the binning and averaging they did
+do.call(rbind, curvVmpfc) %>%
+  mutate(Curvature = round(Curvature, digits = 1)) %>%
+  filter(Curvature > -0.3,
+         FiedlerVec > 0.01) %>%
+  group_by(SubjID, Curvature) %>%
+  summarise(mFV = mean(FiedlerVec)) %>%
+  group_by(Curvature) %>%
+  summarise(meanFV = mean(mFV),
+            seFV = sd(mFV, na.rm = T) / sqrt(100)) %>%
+  ggplot(aes(Curvature, meanFV)) +
+    geom_point(show.legend = F, size = 1.5) +
+    geom_errorbar(aes(Curvature, ymin = meanFV - seFV, ymax = meanFV + seFV), width = 0.01, size = 1) +
+    theme_classic()
 ```
 
 ### *Alignment of mPFC community structure with a proposed DN sub-network organization*
