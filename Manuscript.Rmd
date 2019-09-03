@@ -1442,21 +1442,21 @@ for (i in seq(nSubj)) {
 # # this will plot a similar figure for a similar mask, plus a more dorsal mPFC one and PCC
 # do.call(rbind, Summaries) %>%
 #   mutate(Curvature = round(Curvature, digits = 1)) %>%
-#   filter(Curvature > -0.5,
-#          FiedlerVec > 0) %>% 
-#   group_by(SubjID, region, Curvature) %>%
+#   filter(Curvature > -0.5) %>%
+#   group_by(SubjID, region, FiedlerBinary, Curvature) %>%
 #   summarise(mFV = mean(FiedlerVec)) %>%
-#   group_by(region, Curvature) %>%
+#   group_by(region, FiedlerBinary, Curvature) %>%
 #   summarise(meanFV = mean(mFV),
 #             seFV = sd(mFV, na.rm = T) / sqrt(100)) %>%
-#   ggplot(aes(Curvature, meanFV, color = region)) +
-#     geom_line(size = 1.5) +
+#   ggplot(aes(Curvature, meanFV, color = region, linetype = as.character(FiedlerBinary))) +
+#     geom_line(size = 1.2, show.legend = F) +
 #     labs(y = "Mean Fiedler Vector Value", color = "Region") +
-#     geom_errorbar(aes(Curvature, ymin = meanFV - seFV, ymax = meanFV + seFV), width = 0.05, size = 1.5) +
-#     scale_x_continuous(breaks = c(-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8)) +
-#     geom_point(size = 3) +
+#     geom_errorbar(aes(Curvature, ymin = meanFV - seFV, ymax = meanFV + seFV), width = 0.08, size = 1.2, linetype = "solid", show.legend = F) +
+#     scale_x_continuous(breaks = c(-0.4, 0, 0.4, 0.8)) +
+#     geom_point(size = 2) +
 #     scale_color_manual(values = c("firebrick", "dodgerblue4", "gold2")) +
 #     geom_vline(xintercept = 0, linetype = "dashed") +
+#     geom_hline(yintercept = 0, linetype = "dashed") +
 #     theme(#legend.position = c(0.9, 0.32),
 #           legend.key=element_blank(),
 #           panel.grid.major = element_blank(),
@@ -1467,13 +1467,18 @@ for (i in seq(nSubj)) {
 
 
 # MIXED EFFECTS LOGISTIC ESTIMATING SULCUS FROM FV AND REGION, WORKS BUT CHANGE REFERENCE
-t <- do.call(rbind, Summaries) %>%
+sulcData <- do.call(rbind, Summaries) %>%
   mutate(Curvature = round(Curvature, digits = 1),
-         region = factor(region, levels = list("vmPFC", "residual_mPFC", "PCC"))) #%>%
+         region = factor(region, levels = list("vmPFC", "dmPFC", "PCC"))) #%>%
   #filter(abs(FiedlerVec) > 0.01)
 
-glmodel2 <- glmer(FiedlerBinary ~ Curvature * region + (1 | SubjID), data = t, family = "binomial")
+sulcGLM <- list()
+sulcGLM$vmpfc <- glmer(FiedlerBinary ~ Curvature * region + (1 | SubjID), data = sulcData, family = "binomial")
+sulcData$region <- factor(sulcData$region, levels = list("dmPFC", "vmPFC", "PCC"))
+sulcGLM$dmpfc <- glmer(FiedlerBinary ~ Curvature * region + (1 | SubjID), data = sulcData, family = "binomial")
 
+# right now it looks like vmpfc FV is negatively related to curvature, but the opposite is true for dmPFC
+lapply(sulcGLM, summary)
 
 ```
 
