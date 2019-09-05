@@ -438,7 +438,7 @@ Keywords: functional connectivity, default network, individual differences, netw
 
   In this study, we aimed to subdivide mPFC and PCC into individual-specific DN and non-DN communities, and to quantify the degree of topographic heterogeneity in the resulting community structure over time and across individuals. We did this by capitalizing on the respective strengths of meta-analysis and subject-specific analyses of brain networks. We used a data-driven network-analysis procedure to identify two communities that each spanned both mPFC and PCC in each individual participant. We found that the resulting communities had a stereotyped topographic layout within PCC (according to a label-agnostic similarity metric), whereas their layout in mPFC was variable across individuals but stable across test/re-test. We took advantage of the more consistent configuration within PCC to assign meta-analysis-derived labels to the two communities. Because our data-driven method established correspondence between PCC subregions and mPFC subregions, the labels defined in PCC could then be indexed into the more heterogeneous community structure of mPFC in each individual.
   
-  The outline of our paper is as follows. First, we established a search space by selecting parcels from an established brain atlas [@Glasser2016] that corresponded to previously defined DN and limbic networks on the medial cortical wall [@Yeo2011]. A cortical surface-based meta-analysis of the DN and valuation literatures identified a parcel in PCC that was DN-specific at the aggregate level. *We focused on the contrast between DN and valuation areas because of their notable overlap in mPFC and PCC, despite being segregable elsewhere in the brain [@Acikalin2017].* We then derived a functional connectivity network of all the surface vertices within the search space for each of `r length(dir(path = './Summary'))` individual resting-state fMRI data sets from the Human Connectome Project [HCP; @VanEssen2012], and used the SP algorithm to subdivide each individual's network into DN and non-DN communities (labeled according to which community included the meta-analytically identified DN-specific parcel in PCC). Focusing on individual vertices in the search space rather than the parcels (as is typical in brain network analyses) allowed us to finely delineate the topographic extent of each community. The resulting communities varied topographically across individuals, while also appearing to follow common organizational principles. Sliding window and test-retest analyses showed that these partitionings were highly similar across scanning days within (but not between) individuals, and that individual-level idiosyncrasy was greater in mPFC. Partitionings obtained from the SP algorithm had higher test-retest reliability than did analogous results from seed-based functional connectivity. *We found that the DN community was likely to be located within principal sulci in ventral mPFC and PCC*. Lastly, we describe how the structure of the resulting automatically defined DN and non-DN communities both aligns with and differs from a recently proposed scheme for identifying subdivisions within the DN [@Braga2017; @Braga2019]. Our work highlights the usefulness of estimating brain effects at the individual level in mPFC and PCC, provides a new framework and tool set for future investigations of overlap across cognitive domains, and motivates future re-examination of seemingly inseparable cognitive processes (such as valuation and introspective thought) in these areas.
+  The outline of our paper is as follows. First, we established a search space by selecting parcels from an established brain atlas [@Glasser2016] that corresponded to previously defined DN and limbic networks on the medial cortical wall [@Yeo2011]. A cortical surface-based meta-analysis of the DN and valuation literatures identified a parcel in PCC that was DN-specific at the aggregate level. We focused on the contrast between DN and valuation areas because of their notable overlap in mPFC and PCC, despite being segregable elsewhere in the brain [@Acikalin2017]. We then derived a functional connectivity network of all the surface vertices within the search space for each of `r length(dir(path = './Summary'))` individual resting-state fMRI data sets from the Human Connectome Project [HCP; @VanEssen2012], and used the SP algorithm to subdivide each individual's network into DN and non-DN communities (labeled according to which community included the meta-analytically identified DN-specific parcel in PCC). Focusing on individual vertices in the search space rather than the parcels (as is typical in brain network analyses) allowed us to finely delineate the topographic extent of each community. The resulting communities varied topographically across individuals, while also appearing to follow common organizational principles. Sliding window and test-retest analyses showed that these partitionings were highly similar across scanning days within (but not between) individuals, and that individual-level idiosyncrasy was greater in mPFC. Partitionings obtained from the SP algorithm had higher test-retest reliability than did analogous results from seed-based functional connectivity. *We found that the DN community was likely to be located within principal sulci in ventral mPFC and PCC*. Lastly, we describe how the structure of the resulting automatically defined DN and non-DN communities both aligns with and differs from a recently proposed scheme for identifying subdivisions within the DN [@Braga2017; @Braga2019]. Our work highlights the usefulness of estimating brain effects at the individual level in mPFC and PCC, provides a new framework and tool set for future investigations of overlap across cognitive domains, and motivates future re-examination of seemingly inseparable cognitive processes (such as valuation and introspective thought) in these areas.
 
 ## Materials and Methods
 
@@ -524,7 +524,7 @@ The two methods were expected to produce somewhat similar results, but the one d
 
 ### *Associations with sulcal morphology*
 
-We examined whether the location of the DN and non-DN communities was guided by sulcal morphology. 
+Next we asked whether the location of the DN and non-DN communities was guided by sulcal morphology. Based on previous reports of individual alignment of DN within sulci in ventral mPFC [@Lopez2019], we sub-divided our search space into three regions: vmPFC, which matched their ROI (areas 25, s32, a24, 10v, 10r, p32, and OFC); superior mPFC (sup-mPFC), encompassing the remaining dorsal areas in our mPFC space; and all of the PCC search space. We used each subject's curvature maps from the HCP (transformed to fs_LR 32k space), in which cortical depth is quantified by negative numbers for sulci and positive numbers for gyri. For each individual, we computed the correlation (Spearman) between curvature and the unthresholded Fiedler Vector values in each region and hemisphere separately (6 correlations per individual). Positive correlations meant that the DN was more likely to be contained in sulci, with non-DN housed in gyri. Finally, we collected all individual correlations for each combination of hemisphere and region, and performed a one-sample t-test on each set to determine whether correlations were significantly different than 0 in our group (6 tests total).
 
 \bigskip
 
@@ -1369,7 +1369,7 @@ As before, a signed rank test showed that both regions had ARI ratios significan
 
 ### *Correlation vs community detection in mPFC*
 
-``` {r Correlation vs community detection: compute, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Correlation vs community detection: compute, fig.align = "center", echo = FALSE, message = FALSE, cache = TRUE}
 ## Between halves analysis for correlation and communities (mPFC only)
 # Spearman to avoid issues with the differences in value ranges
 unthreshComm_PFC_halves_plot <- lapply(seq_along(unthreshComm_PFC_halves_plot), function(x) cbind(unthreshComm_PFC_halves_plot[[x]], Correlation_halves_plot[[x]]))
@@ -1381,7 +1381,7 @@ allHalfCombs <- comparePartitions(Data = Data, MOI = "V1", nSubjects = 40, Index
 
 ```
 
-``` {r Correlation vs community detection: comparison, fig.align="center", echo=FALSE, message = FALSE, cache = TRUE}
+``` {r Correlation vs community detection: comparison, fig.align = "center", echo = FALSE, message = FALSE, cache = TRUE}
 # Compare correlation with community approach on mPFC
 # correlations among methods
 tempComm <- sapply(seq(1, length(unthreshComm_PFC_halves), by = 2), function(x) cor(unthreshComm_PFC_halves[[x]]$FiedlerVec, unthreshComm_PFC_halves[[x+1]]$FiedlerVec))
@@ -1400,7 +1400,7 @@ prepostComp_ES <- cohenD(tempComm, tempCor)
 
 We next explored the possible advantage of community detection relative to a more conventional seed-based functional connectivity analysis for estimating the individual-specific functional topography of mPFC. We examined whether maps generated with SP were more similar per participant across days than those computed from seed-based correlations. We generated a seed time-series by averaging all vertices in the PCC region of our search space, and calculated its correlation with the activity of each vertex in mPFC. We compared the map of correlation values in mPFC to the map of unthresholded Fiedler vector values using Spearman correlations across vertices. Pairwise spatial correlations were calculated among maps computed for each day and method from all individuals. Figure 7A shows that these pairwise comparisons resemble those from the across-day comparisons above, and suggests good alignment between methods, but particularly high agreement within subject and method.
 
-``` {r Correlation vs community detection (Fig. 7), fig.align="center", fig.cap = "A: Correlation matrix comparing the across-day spatial stability of mPFC maps derived from seed-based functional connectivity (using a PCC seed) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector, with two single-day-based maps per individual. The upper-right and lower-left quadrants show across-method agreement. B: Day 1 vs Day 2 within-subject correlation coefficients for each method, as well as between methods. Community detection through spectral partitioning provided more stable estimates, even though both methods showed good levels of agreement.", echo = FALSE, message = FALSE}
+``` {r Correlation vs community detection (Fig. 7), fig.align = "center", fig.cap = "A: Correlation matrix comparing the across-day spatial stability of mPFC maps derived from seed-based functional connectivity (using a PCC seed) and the Fiedler vector for 10 example subjects. The top-left quadrant represents seed-based FC maps, and the bottom-right the Fiedler vector, with two single-day-based maps per individual. The upper-right and lower-left quadrants show across-method agreement. B: Day 1 vs Day 2 within-subject correlation coefficients for each method, as well as between methods. Community detection through spectral partitioning provided more stable estimates, even though both methods showed good levels of agreement.", echo = FALSE, message = FALSE}
 # code to produce the plots
 
 # correlation matrix
@@ -1444,9 +1444,16 @@ Figure 7B shows the test/re-test reliability across days for patterns derived us
 
 ### *Relationship between functional organization and sulcal morphology*
 
-``` {r sulcal comparison, echo=FALSE, message = FALSE, cache = TRUE}
+``` {r sulcal comparison, echo = FALSE, message = FALSE, cache = TRUE}
+# reload summaries, as this is done on unthresholded data
+# Load data, create a subject list, get the total n, and the number of vertices
+setwd('Summary/')
+temp <- list.files()
+subjList <- sapply(temp, substring, first = 1, last = 6)
+Summaries_curv <- lapply(temp, read.csv)
+
 # load curvature data and retain only the relevant subjects
-setwd('Curvature')
+setwd('../Curvature')
 files <- list.files(pattern = "curvature")
 curvList <- substr(files, 1, 6)
 files <- files[curvList %in% subjList]
@@ -1455,109 +1462,85 @@ files <- files[curvList %in% subjList]
 # select bilateral parcels that cover the mask seen in fig. 4B in Lopez-Persem et al. 2019
 # the parcels surrounding sulci ROS-S and SU-ROS are: a24, p32, s32, 10r
 persemROI <- c("_25_", "_s32_", "_a24_", "_10v_", "_10r_", "_p32_", "_OFC_")
-primarySulci <- c("L_a24_ROI", "R_a24_ROI", "L_s32_ROI", "R_s32_ROI", "L_p32_ROI", "R_p32_ROI", "L_10r_ROI", "R_10r_ROI")
 
-indx <- getCoords(Labels = persemROI, Coords = Summaries[[1]])$Index
+indx <- getCoords(Labels = persemROI, Coords = Summaries_curv[[1]])$Index
 vmpfc <- rep(0, nVertices)
 vmpfc[indx] <- 1
 
 # update Summaries dfs, and reduce to vmPFC only
-curvData <- lapply(files, function(file) {read.table(file, header = F)$V1[Summaries[[1]]$Vertex]})
+curvData <- lapply(files, function(file) {read.table(file, header = F)$V1[Summaries_curv[[1]]$Vertex]})
 for (i in seq(nSubj)) {
-  Summaries[[i]]$Curvature <- curvData[[i]]
-  Summaries[[i]]$SubjID <- subjList[[i]]
-  Summaries[[i]]$vmpfc <- vmpfc
-  Summaries[[i]] <- Summaries[[i]] %>% mutate(region = case_when(
+  Summaries_curv[[i]]$Curvature <- curvData[[i]]
+  Summaries_curv[[i]]$SubjID <- subjList[[i]]
+  Summaries_curv[[i]]$vmpfc <- vmpfc
+  Summaries_curv[[i]] <- Summaries_curv[[i]] %>% mutate(region = case_when(
     y < 0 ~ "PCC",
     vmpfc == 1 ~ "vmPFC",
-    TRUE ~ "dmPFC"
+    TRUE ~ "sup-mPFC"
   ),
   sulcus = ifelse(Curvature < 0, 1, 0))
 }
 
-# # mimic the binning and averaging L-P did on vmPFC
-# # this will plot a similar figure for a similar mask, plus a more dorsal mPFC one and PCC
-# do.call(rbind, Summaries) %>%
-#   mutate(Curvature = round(Curvature, digits = 1)) %>%
-#   filter(Curvature > -0.5) %>%
-#   group_by(SubjID, region, FiedlerBinary, Curvature) %>%
-#   summarise(mFV = mean(FiedlerVec)) %>%
-#   group_by(region, FiedlerBinary, Curvature) %>%
-#   summarise(meanFV = mean(mFV),
-#             seFV = sd(mFV, na.rm = T) / sqrt(100)) %>%
-#   ggplot(aes(Curvature, meanFV, color = region, linetype = as.character(FiedlerBinary))) +
-#     geom_line(size = 1.2, show.legend = F) +
-#     labs(y = "Mean Fiedler Vector Value", color = "Region") +
-#     geom_errorbar(aes(Curvature, ymin = meanFV - seFV, ymax = meanFV + seFV), width = 0.08, size = 1.2, linetype = "solid", show.legend = F) +
-#     scale_x_continuous(breaks = c(-0.4, 0, 0.4, 0.8)) +
-#     geom_point(size = 2) +
-#     scale_color_manual(values = c("firebrick", "dodgerblue4", "gold2")) +
-#     geom_vline(xintercept = 0, linetype = "dashed") +
-#     geom_hline(yintercept = 0, linetype = "dashed") +
-#     theme(#legend.position = c(0.9, 0.32),
-#           legend.key=element_blank(),
-#           panel.grid.major = element_blank(),
-#           panel.grid.minor = element_blank(),
-#           panel.background = element_blank(),
-#           axis.line = element_line(colour = "black"),
-#           text = element_text(size = 22))
 
+# correlation 
+# binned correlations
+curvCors <- do.call(rbind, Summaries_curv) %>%
+  # mutate(Curvature = round(Curvature, digits = 1)) %>%
+  # group_by(SubjID, Hemisphere, region, Curvature) %>%
+  # summarise(mFV = median(FiedlerVec, na.rm = T)) %>%
+  group_by(SubjID, Hemisphere, region) %>%
+  dplyr::summarize(cor(Curvature, FiedlerVec, method = "spearman")) %>%
+  rename(Correlation = `cor(Curvature, FiedlerVec, method = "spearman")`) 
 
-# MIXED EFFECTS LOGISTIC ESTIMATING SULCUS FROM FV AND REGION, WORKS BUT CHANGE REFERENCE
-sulcData <- do.call(rbind, Summaries) %>%
-  mutate(Curvature = round(Curvature, digits = 1),
-         region = factor(region, levels = list("vmPFC", "dmPFC", "PCC"))) #%>%
-  #filter(abs(FiedlerVec) > 0.01)
+# stats: one sample t's per hemisphere/region
+curvCors %>% group_by(region, Hemisphere) %>% 
+  summarise(TStat = t.test(Correlation)$statistic,
+            p = t.test(Correlation)$p.val,
+            Sig = p < 0.05,
+            ES = DescTools::CohenD(Correlation))
 
-sulcGLM <- list()
-sulcGLM$vmpfc <- glmer(FiedlerBinary ~ Curvature * region + (1 | SubjID), data = sulcData, family = "binomial")
-sulcData$region <- factor(sulcData$region, levels = list("dmPFC", "vmPFC", "PCC"))
-sulcGLM$dmpfc <- glmer(FiedlerBinary ~ Curvature * region + (1 | SubjID), data = sulcData, family = "binomial")
+# stats: paired t on PCC between hemispheres
+t <- curvCors %>% 
+  filter(region == "PCC") %>% 
+  spread(Hemisphere, Correlation)
 
-# right now it looks like vmpfc FV is negatively related to curvature, but the opposite is true for dmPFC
-#lapply(sulcGLM, summary)
-
-
-
-
-
-# correlation retake
-# problem: PCC is positively correlated?
-t <- do.call(rbind, Summaries) %>%
-      mutate(Curvature = round(Curvature, digits = 1)) %>%
-      filter(Curvature > -0.5) %>%
-      group_by(SubjID, Hemisphere, region, Curvature) %>%
-      summarise(mFV = median(FiedlerVec)) %>%
-      group_by(SubjID, Hemisphere, region) %>%
-      dplyr::summarize(cor(Curvature, mFV, method = "spearman")) %>%
-      rename(Correlation = `cor(Curvature, mFV, method = "spearman")`)
-
-t %>% group_by(Hemisphere, region) %>% 
-  summarise(mCor = mean(Correlation, na.rm =T), 
-            seCor = sd(Correlation, na.rm = T) / sqrt(100)) %>%
-  ggplot(aes(region, mCor, color = Hemisphere)) +
-    geom_line() +
-  geom_point(size = 2) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_errorbar(aes(region, ymin = mCor - seCor, ymax = mCor + seCor), width = 0.08, size = 1.2, linetype = "solid", show.legend = F) +
-  theme_classic()
-  
-t %>% ggplot(aes(Correlation, color = Hemisphere)) +
-        geom_density(fill = "grey", alpha = 0.1) +
-        facet_wrap(vars(region), ncol = 1) +
-        theme_classic()
+curvPCC_t <- t.test(t$L, t$R, paired = T)
+curvPCC_ES <- DescTools::CohenD(t$L, t$R)
 
 ```
+
+
+```{r Association with sulci (Fig. 8), fig.align = "center", fig.cap = "A: Correspondence between SP communities and sulcal morphology in two example individuals. Zoomed-in boxes show areas in PCC and ventral mPFC where the DN community appears to be guided by sulcal organization. This relationship is less defined in superior mPFC. The superior rostral sulcus houses the DN community, in agreement with findings by Lopez-Persem et al. (2019). B: We quantified this relationship by correlating cortical curvature with the unthresholded Fiedler values. We divided the search space into three areas (left): ventral mPFC (yellow), superior mPFC (sup-mPFC, red), and PCC (blue). Correlations on each combination of region and hemisphere per individual showed that DN (signaled by positive FV values) tends to be represented in vmPFC sulci, but is likely located in gyri within sup-dmPFC. PCC has an inversed relationship across hemispheres, with DN landing more often in left hemisphere sulci."}
+# # box plot
+# curvCors %>%  ggplot(aes(Hemisphere, Correlation, fill = region)) +
+#   geom_hline(yintercept = 0, linetype = "dashed", size = 1.2) +
+#   geom_boxplot(show.legend = F, size = 1.5) +
+#   geom_jitter(width=0.1, alpha = 0.3, show.legend = F) +
+#   scale_fill_manual(values = c("dodgerblue4", "firebrick", "gold2")) +
+#   labs(y = "Correlation") +
+#   guides(color = F) +
+#   facet_wrap(vars(region), ncol = 3) +
+#   theme(legend.position = c(0.85, 0.7),
+#         legend.key=element_blank(),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         text = element_text(size = 22))
+
+include_graphics("./Images/sulciVSfv.png")
+```
+
 
 Recent work has suggested that the location of the DN in individuals is bounded by the organization of sulcal morphology in vmPFC [@Lopez2019]. 
 
 ### *Alignment of mPFC community structure with a proposed DN sub-network organization*
 
-The thresholded partitions we identified had conceptual and topographic similarities to DN sub-networks A and B proposed by Braga and Buckner [-@Braga2017]. We explored the relationship between the two sets of sub-regions by reproducing their seed-based connectivity approach in two of our subjects. In their work, Braga and Buckner [-@Braga2017; @Braga2019] manually selected individual vertices in dorsolateral prefrontal cortex (DLPFC) that produced two spatially anticorrelated, interdigitated networks with distinctive patterns in the temporo-parietal junction (TPJ), inferior parietal lobule (IPL), parahippocampal cortex, mPFC, and PCC. We hypothesized that if the SP communities corresponded to one or both of the previously proposed sub-networks, our partitionings should match networks A and B generated by seed-based functional connectivity in these diagnostic areas. For whole-brain functional connectomes from two individuals (100307 and 101006), we evaluated seeds in each diagnostic region that reproduced networks A and B (correlation coefficients thesholded at 0.2), and confirmed their placement based on functional connectivity patterns observed in the remaining areas. In both individuals, seeds in posterior IPL and TPJ most clearly identified networks A and B, respectively. The whole-brain seed-based functional connectivity maps for the two individuals are juxtaposed with the corresponding community detection results in Figure 8. It is worth noting that a few distinguishing features are missing due to below-threshold correlation values (e.g. network B in right PCC of 100307).
+The thresholded partitions we identified had conceptual and topographic similarities to DN sub-networks A and B proposed by Braga and Buckner [-@Braga2017]. We explored the relationship between the two sets of sub-regions by reproducing their seed-based connectivity approach in two of our subjects. In their work, Braga and Buckner [-@Braga2017; @Braga2019] manually selected individual vertices in dorsolateral prefrontal cortex (DLPFC) that produced two spatially anticorrelated, interdigitated networks with distinctive patterns in the temporo-parietal junction (TPJ), inferior parietal lobule (IPL), parahippocampal cortex, mPFC, and PCC. We hypothesized that if the SP communities corresponded to one or both of the previously proposed sub-networks, our partitionings should match networks A and B generated by seed-based functional connectivity in these diagnostic areas. For whole-brain functional connectomes from two individuals (100307 and 101006), we evaluated seeds in each diagnostic region that reproduced networks A and B (correlation coefficients thesholded at 0.2), and confirmed their placement based on functional connectivity patterns observed in the remaining areas. In both individuals, seeds in posterior IPL and TPJ most clearly identified networks A and B, respectively. The whole-brain seed-based functional connectivity maps for the two individuals are juxtaposed with the corresponding community detection results in Figure 9. It is worth noting that a few distinguishing features are missing due to below-threshold correlation values (e.g. network B in right PCC of 100307).
 
 Visual inspection of these networks shows high similarity between our DN community and the previously reported sub-network A. However, the non-DN community filled areas not covered by either DN-A or DN-B. This result supports the idea that the two approaches serve complementary purposes. Whereas Braga and colleagues [-@Braga2017; -@Braga2019] identified subdivisions within the DN, the present community detection approach might be better understood as partitioning DN from non-DN cortex.
 
-```{r BandB comparison (Figure 8), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between DN sub-networks A and B (estimated based on descriptions from Braga et al. (2019)) and SP communities for two individuals. Panel A: Whole-brain networks A and B produced by selecting seeds in TPJ, with our community detection search space delineated by black borders. Correlation values are thresholded at 0.2. Panel B: thresholded communities (indicated by borders) show strong resemblance between the DN community and network A. The non-DN community covers sections of cortex not associated with either DN sub-network."}
+```{r BandB comparison (Figure 9), out.width = "100%", fig.align = "center", fig.cap= "Qualitative comparison between DN sub-networks A and B (estimated based on descriptions from Braga et al. (2019)) and SP communities for two individuals. Panel A: Whole-brain networks A and B produced by selecting seeds in TPJ, with our community detection search space delineated by black borders. Correlation values are thresholded at 0.2. Panel B: thresholded communities (indicated by borders) show strong resemblance between the DN community and network A. The non-DN community covers sections of cortex not associated with either DN sub-network."}
 
 # Change to inflated eventually
 include_graphics("./Images/braga_comparison.png")
