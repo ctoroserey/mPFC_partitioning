@@ -524,7 +524,7 @@ The two methods were expected to produce somewhat similar results, but the one d
 
 ### *Associations with sulcal morphology*
 
-Next we asked whether the location of the DN and non-DN communities was guided by sulcal morphology. Based on previous reports of individual alignment of DN within sulci in ventral mPFC [@Lopez2019], we sub-divided our search space into three regions: vmPFC, which matched their ROI (areas 25, s32, a24, 10v, 10r, p32, and OFC); superior mPFC (sup-mPFC), encompassing the remaining dorsal areas in our mPFC space; and all of the PCC search space. We used each subject's curvature maps from the HCP (transformed to fs_LR 32k space), in which cortical depth is quantified by negative numbers for sulci and positive numbers for gyri. For each individual, we computed the correlation (Spearman) between curvature and the unthresholded Fiedler Vector values in each region and hemisphere separately (6 correlations per individual). Positive correlations meant that the DN was more likely to be contained in sulci, with non-DN housed in gyri. Finally, we collected all individual correlations for each combination of hemisphere and region, and performed a one-sample t-test on each set to determine whether correlations were significantly different than 0 in our group (6 tests total).
+Next we asked whether the location of the DN and non-DN communities was guided by sulcal morphology. Based on previous reports of individual alignment of DN within sulci in ventral mPFC [@Lopez2019], we sub-divided our search space into three regions: vmPFC, which matched their ROI (areas 25, s32, a24, 10v, 10r, p32, and OFC); superior mPFC (sup-mPFC), encompassing the remaining dorsal areas in our mPFC space; and all of the PCC search space. We used each subject's curvature maps from the HCP (transformed to fs_LR 32k space), in which cortical depth is quantified by negative numbers for sulci and positive numbers for gyri. For each individual, we computed the correlation (Spearman) between curvature and the unthresholded Fiedler vector values in each region and hemisphere separately (6 correlations per individual). Positive correlations meant that the DN was more likely to be contained in sulci, with non-DN housed in gyri. Finally, we collected all individual correlations for each combination of hemisphere and region, and performed a one-sample t-test on each set to determine whether correlations were significantly different than 0 in our group (6 tests total).
 
 \bigskip
 
@@ -773,7 +773,7 @@ rm(FiedlerVector, formula, Fitted_Proportion)
 
 ```
 
-We next sought to identify a set of temporally stable core nodes in each community. In order to estimate the stability of partitions over time, we performed a sliding window analysis on each subject's full time series (20 min windows shifting by 1 min). We compared the partitioning derived from each window with the partitioning computed using the entire time series (Figure 4). 
+We next sought to estimate the variability of individual partitionings over time. We did so by performing a sliding window analysis on each subject's full time series (20 min windows shifting by 1 min). We compared the partitioning derived from each window with the partitioning computed using the entire time series (Figure 4). The significant level of sequential overlap was meant to promote highly similar partitionings among nearby windows, so that we could identify nodes that were highly variable where discrepancies occurred. This also allowed us to determine whether these variable nodes followed a specific spatial structure.
 
 ``` {r Variability per subject: Fiedler vector vs prop. DN plot (Fig 4), fig.align="center", fig.width=3, fig.height=3, fig.cap = "A: For each individual, we produced partitions for each 20 minute sliding window (84 TRs). B: Proportion of times each vertex was affiliated with the DN community across windows (upper), and the continuous Fiedler vector map for the current subject using their full time series (lower). The maps share considerable qualitative similarities in their gradients along the cortical surface. C: Relationship between the magnitude of Fiedler vector values and the proportion of DN affiliations. Grey lines display data for each subject, and the black line shows the fit from a mixed-effects logistic regression. Dashed red lines indicate the mean FV value at which maps were thresholded. The histogram displays the mean frequency distribution of y-axis values.", echo=FALSE, message = FALSE}
 # code to generate plots
@@ -791,15 +791,14 @@ We next sought to identify a set of temporally stable core nodes in each communi
 #     theme_classic()
 # 
 # # Fiedler Vector x proportion of times a vertex was affiliated with DN
-# SC_FVvPDN_plot <- ggplot(data = allSummaries) +
+# (SC_FVvPDN_plot <- ggplot(data = allSummaries) +
 #   geom_smooth(aes(FiedlerVec, slidePropDN, group = SubjID), color = "gray", fill = "gray", show.legend = F, alpha = 0.3) +
 #   geom_line(data = SC_FVvPDN_fits, aes(FiedlerVector, Fitted_Proportion), lwd = 2) +
 #   geom_vline(xintercept = c(-0.014, 0.013), linetype = "dashed", color = Cols[2]) +
 #   labs(x = "Fiedler Vector Values", y = "Proportion of DN Affiliations") +
 #   scale_y_continuous(limits = c(0,1)) +
-#   theme_classic()
+#   theme_classic())
 # 
-# SC_FVvPDN_plot
 #
 # # histogram on 4 C
 # hist(allPropDN)
@@ -854,7 +853,7 @@ SW_PCCvPFC_ES <- cohenD(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region == "PCC
 
 The mean ARI along each subject's time series was high for both PCC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="PCC"]), digits = 2)`) and mPFC (mean = `r round(mean(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`; SD = `r round(sd(SC_PCCPFC_summary$Index[SC_PCCPFC_summary$Region=="mPFC"]), digits = 2)`), with significantly higher ARI for PCC (paired permutation, *p* `r ifelse(SW_PCCvPFC_permuteTest$Pval < 0.001, "< 0.001", paste("=", SW_PCCvPFC_permuteTest$Pval))`; Cohen's D = `r round(SW_PCCvPFC_ES, digits = 2)`). A subset of nodes showed exceptionally high stability, in that they were assigned to the same community in every time window. The percentage of stable nodes ranged from 0 to `r max(prcntStable)`% across individuals (median = `r median(prcntStable)`%, IQR = `r quantile(prcntStable, 0.25)`% - `r quantile(prcntStable, 0.75)`%).
 
-We next tested whether the continuous-valued Fiedler vector (before binarization into discrete communities) carried information about the stability of individual nodes. There is precedent in the literature for the idea that the magnitude (and not just the sign) of the Fiedler vector values conveys important information about the role of each node in the network [@Gkantsidis2003; @Tian2018]. Therefore, we tested whether the magnitude of the eigenvector values was associated with the stability of nodes over time. Specifically, we estimated the proportion of DN affiliations per node as a function of Fiedler vector values, using a logistic mixed effects model (Figure 4). The model identified a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDN_modelSummary$coefficients[2,2], digits = 2)`, *p* < 0.001), signifying that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community over time.
+We next tested whether the continuous-valued Fiedler vector (before binarization into discrete communities) carried information about the stability of individual nodes. There is precedent in the literature for the idea that the magnitude (and not just the sign) of the Fiedler vector values conveys important information about the role of each node in the network [@Gkantsidis2003; @Tian2018]. Therefore, we tested whether the magnitude of the eigenvector values was associated with the stability of nodes over time. Specifically, we estimated the proportion of DN affiliations per node as a function of Fiedler vector values, using a logistic mixed effects model (Figure 4). We stress that the stability expected from our highly overlapping windows added relevance to the observed variability. The model identified a positive significant relationship between these features ($\beta$ = `r round(SC_FVvPDN_modelSummary$coefficients[2,1], digits = 2)`, SE = `r round(SC_FVvPDN_modelSummary$coefficients[2, 2], digits = 2)`, *p* < 0.001), signifying that vertices with higher absolute Fiedler vector values were more persistent in their relationship with their corresponding community over time.
 
 ``` {r Threshold values, echo = FALSE, message = FALSE}
 # Get a FV threshold for each subject based on mean vertex stability
@@ -910,7 +909,7 @@ rm(tempList)
 
 ```
 
-These analyses suggest that there is potential value in thresholding the Fiedler vector as a means to identify reliable DN and non-DN vertices on an individual subject basis. We therefore thresholded each subject's Fiedler vector to produce these refined maps. For each individual, we estimated the threshold by selecting the smallest absolute Fiedler vector value that yielded an average stability across suprathreshold nodes of 99%, for positive (mean = `r threshDescriptives[3]`, SD = `r threshDescriptives[4]`) and negative (mean = `r threshDescriptives[1]`, SD = `r threshDescriptives[2]`) values separately. Individuals without such stable nodes (n = `r nUnstable`) were not thresholded, and were included in the subsequent analyses in unthresholded form. The median proportion of retained vertices per individual was `r round(median(prcntSurvived), digits = 2)` (IQR = `r round(quantile(prcntSurvived, 0.25), digits = 2)` - `r round(quantile(prcntSurvived, 0.75), digits = 2)`). Sub-threshold vertices were set to zero in Fiedler vector maps and 0.5 in the binarized maps (so that they would not bias the calculation of averages). Figure 5A shows the thresholded partitioning for the same individual shown in Figure 2. The maps used in all subsequent analyses were thresholded by this individualized criterion. 
+These analyses suggest that there is potential value in thresholding the Fiedler vector as a means to identify reliable DN and non-DN vertices on an individual subject basis. We therefore thresholded each subject's Fiedler vector to produce these refined maps. For each individual, we estimated the threshold by selecting the empirical smallest absolute Fiedler vector value that yielded an average stability across suprathreshold nodes of 99%, for positive (mean = `r threshDescriptives[3]`, SD = `r threshDescriptives[4]`) and negative (mean = `r threshDescriptives[1]`, SD = `r threshDescriptives[2]`) values separately. Individuals without such stable nodes (n = `r nUnstable`) were not thresholded, and were included in the subsequent analyses in unthresholded form. The median proportion of retained vertices per individual was `r round(median(prcntSurvived), digits = 2)` (IQR = `r round(quantile(prcntSurvived, 0.25), digits = 2)` - `r round(quantile(prcntSurvived, 0.75), digits = 2)`). Sub-threshold vertices were set to zero in Fiedler vector maps and 0.5 in the binarized maps (so that they would not bias the calculation of averages). Figure 5A shows the thresholded partitioning for the same individual shown in Figure 2. The maps used in all subsequent analyses were thresholded by this individualized criterion. 
 
 ```{r Thresholded maps (Fig 5), out.width = "50%", fig.align = "center", fig.cap= "A: Thresholded Fiedler vector map for subject 100307 (top), and its binarized form (bottom). Subthreshold values effectively formed a third community of high-variability vertices. B: Mean of the binarized maps across all participants, indicating the proportion of DN affiliations per vertex in our sample. Colors represent PCC-based labels ('DN' versus 'non-DN'), which were applied in a subsequent step following the data-driven community-detection analysis and which were necessarily well-aligned in PCC. This aggregate map shows the common organizational principle of the DN and non-DN communities, while also showing the high level of variability in mPFC."}
 
@@ -1532,7 +1531,13 @@ include_graphics("./Images/sulciVSfv.png")
 ```
 
 
-Recent work has suggested that the location of the DN in individuals is bounded by the organization of sulcal morphology in vmPFC [@Lopez2019]. 
+Next, we asked if the idiosyncratic organization of the DN was reflected by patterns of sulcal morphology. A variety of studies have provided evidence that suclal and gyral organization can inform the location of functional effects (*PAPERS*). Among these, recent work has suggested that the location of the DN in individuals lies mostly within sulci in vmPFC [@Lopez2019]. We sought to replicate this relationship using the SP communities, as well as interrogating whether it persisted in PCC and more dorsal mPFC regions.
+
+Here you'll want to mention a number of things:
+
+- in vmpfc ROS-S contains DN, just like L-P
+- hemispheric differences in PCC
+- the papers given by rev 3
 
 ### *Alignment of mPFC community structure with a proposed DN sub-network organization*
 
