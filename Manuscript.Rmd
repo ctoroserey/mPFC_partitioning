@@ -990,7 +990,6 @@ tsnrCohen_Post <- CohenD(as.numeric(snr_means$post_thresh[1, -1]), as.numeric(sn
 
 To test the possibility that the higher inter-subject variability in mPFC was driven merely by lower signal quality in the retained vertices, we quantified the temporal signal to noise ratio (tSNR) for each region, both before and after thresholding. We calculated tSNR using time series that were not demeaned, but were otherwise equivalent to the data originally used. A map of the mean tSNR across individuals can be found on Supplemental Figure 3. In terms of tSNR variability across vertices within each region, mPFC had overall greater spatial standard deviation both before and after thresholding (mPFC: pre-threshold mean spatial SD = 33.96, post-threshold mean spatial SD = 30.15; PCC: pre-threshold mean spatial SD = 15.28, post-threshold mean spatial SD = 14.59). However, tSNR after thresholding was significantly higher for mPFC than PCC (mPFC: mean = `r round(snr_means$overall[1, 2], digits = 2)`, SD = `r round(snr_means$overall[3, 2], digits = 2)`; PCC: mean = `r round(snr_means$overall[2, 2], digits = 2)`, SD = `r round(snr_means$overall[4, 2], digits = 2)`; permutation p-value `r ifelse(tsnrPermute_Post$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_Post$Pval))`, Cohen's D = `r round(tsnrCohen_Post[1], digits = 2)`). This reflected a significant increase in mean tSNR in mPFC as a result of the thresholding step (pre-threshold mean = `r round(snr_means$overall[1, 1], digits = 2)`, SD = `r round(snr_means$overall[3, 1], digits = 2)`; paired permutation p-value `r ifelse(tsnrPermute_mPFC$Pval < 0.001, "< 0.001", paste("=", tsnrPermute_mPFC$Pval))`, Cohen's D = `r round(tsnrCohen_mPFC[1], digits = 2)`), whereas the mean signal quality in PCC was unchanged (pre-threshold mean = `r round(snr_means$overall[2, 1], digits = 2)`, SD = `r round(snr_means$overall[4, 1], digits = 2)`; paired permutation p-value = `r tsnrPermute_PCC$Pval`, Cohen's D = `r round(tsnrCohen_PCC[1], digits = 2)`). In short, mPFC had higher overall tSNR, albeit with greater variability across nodes. Applying the thresholding step allowed us to focus the analysis on vertices with high signal quality. 
 
-
 ### *Test/re-test reliability across days*
 
 The relatively high inter-individual variability seen in the aggregate map could reflect at least three factors: (1) measurement noise, (2) dynamic variation in mPFC network organization, and (3) stable patterns of functional organization that differ across individuals. To arbritrate among these possibilities, we examined the test/re-test reliability of mPFC/PCC community structure across separate days of testing. Insofar as the observed variability reflects individual-specific brain organization, across-day ARI values should be consistently higher within-individual than between individuals (an example comparison for two individuals is provided in Supplemental Figure 2). Figure 6 shows pairwise comparisons among ten example subjects for PCC and mPFC separately (left).
@@ -1367,7 +1366,7 @@ Sess_mPFCvPCC_ES <- cohenD(Sess_RIRatios_PFC, Sess_RIRatios_PCC)
 As before, a signed rank test showed that both regions had ARI ratios significantly greater than 1 (mPFC: median = `r round(median(Sess_RIRatios_PFC), digits = 2)`, IQR = `r round(quantile(Sess_RIRatios_PFC, 0.25, na.rm = T), digits = 2)` - `r round(quantile(Sess_RIRatios_PFC, 0.75, na.rm = T), digits = 2)`, V = `r Sess_PFC_ratioTest$statistic`, *p* `r ifelse(Sess_PFC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Sess_PFC_ratioTest$p.value))`; PCC: median = `r round(median(Sess_RIRatios_PCC, na.rm = T), digits = 2)`, IQR = `r round(quantile(Sess_RIRatios_PCC, 0.25, na.rm = T), digits = 2)` - `r round(quantile(Sess_RIRatios_PCC, 0.75, na.rm = T), digits = 2)`, V = `r Sess_PCC_ratioTest$statistic`, *p* `r ifelse(Sess_PFC_ratioTest$p.value < 0.001, "< 0.001", paste("=", Sess_PCC_ratioTest$p.value))`), and ratios for mPFC were higher than those of PCC (permutation *p* = `r ifelse(Sess_mPFCvPCC_permTest$Pval < 0.001, "< 0.001", paste("=", Sess_mPFCvPCC_permTest$Pval))`; Cohen's D = `r round(Sess_mPFCvPCC_ES, digits = 2)`). This result further confirms that the intrinsic functional organization of mPFC is uniquely arranged per individual, and provides evidence that information about such patterns can be extracted from relatively small amounts of data.
 
 ### *Correlation vs community detection in mPFC*
-
+
 ``` {r Correlation vs community detection: compute, fig.align = "center", echo = FALSE, message = FALSE, cache = TRUE}
 ## Between halves analysis for correlation and communities (mPFC only)
 # Spearman to avoid issues with the differences in value ranges
@@ -1493,7 +1492,9 @@ curvCors <- do.call(rbind, Summaries_curv) %>%
 
 # stats: one sample t's per hemisphere/region
 curvCors %>% group_by(region, Hemisphere) %>% 
-  summarise(TStat = t.test(Correlation)$statistic,
+  summarise(medianCor = median(Correlation),
+            seCor = sd(Correlation) / sqrt(nSubj),
+            TStat = t.test(Correlation)$statistic,
             p = t.test(Correlation)$p.val,
             Sig = p < 0.05,
             ES = DescTools::CohenD(Correlation))
