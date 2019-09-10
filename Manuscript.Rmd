@@ -4,11 +4,11 @@ title: Individual heterogeneity in the functional network topography of medial p
 author: "Claudio Toro-Serey^1^, Sean M. Tobyne^2^, & Joseph T. McGuire^1^"
 csl: apa.csl
 output:
+  word_document: #default
+    reference_docx: Style_reference_draft.docx
   pdf_document:
     highlight: haddock
     keep_tex: no
-  word_document: #default
-    reference_docx: Style_reference_draft.docx
 header-includes:
 - \usepackage{setspace}\doublespacing
 - \usepackage[left]{lineno}
@@ -16,7 +16,7 @@ header-includes:
 - \usepackage{float}
 - \newcommand{\beginsupplement}{ \setcounter{table}{0} \renewcommand{\thetable}{S\arabic{table}}
   \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}} }
-subtitle: 'Abbreviated Title: Heterogeneity in the functional topography of mPFC'
+#subtitle: 'Abbreviated Title: Heterogeneity in the functional topography of mPFC'
 bibliography: mPFC_paper.bib
 ---
 
@@ -413,7 +413,7 @@ Corresponding authors: Claudio Toro-Serey (ctoro@bu.edu) & Joseph T. McGuire (jt
 
 \bigskip
 
-## Highights:
+## Highlights:  
 
 - Medial Default Network overlaps topographically with task effects such as valuation.
 
@@ -1622,13 +1622,13 @@ searchSpace <- Summaries[[1]] %>%
 | Right           | `r sort(searchSpace$R.mPFC)` | `r sort(searchSpace$R.PCC)` |
 |                 |                              |                             |
 
-\bigskip
+\newpage
 
 ```{r Extra examples (supplemental fig 1), out.width = "100%", fig.align = "center", fig.cap = "Supplemental Figure 1. Additional examples of individualized partitionings. The first two columns show both Fiedler vector values  and binarized communities, respectively. A common organizational principle is visible, even though it shifts topographically across individuals. The organization is also evident when using Modularity (third column), even though some isolated vertices were sometimes placed in a small third community (see subject 100408). The fourth column shows Fiedler vector maps after adding adding retrosplenial cortex (a common component of canonincal DN affected by task-deactivation). The addition of this area to the search space does not alter the original results, and the region is adequately covered by the DN community."}
 include_graphics("./Images/extra_examples.png")
 ```
 
-\bigskip
+\newpage
 
 ```{r ARI Comparison (supplemental fig 2), out.width = "100%", fig.align = "center", fig.cap = "Supplemental Figure 2. A: Example of an across-day comparison using ARI for two subjects (100307 and 100408). This reflects how qualitatively similar, within-subject partitionings can have relatively small ARI values (here 0.24-0.25), and how partitionings across individuals are much closer to the chance level of zero. B: Simulated comparison between two binary partitionings. The allegiance of each node is progressively switched, and the agreement between the new vector and the original one is computed on each change. The x-axis shows the number of nodes switched. Comparing the increasingly dissimilar maps by computing the proportion of equal cluster labelings (EQ) shows the expected linear decrease in similarity. The unadjusted form of the ARI (RI) displays an exponentially decaying similarity, and increases after reaching 50% as a result of node pairs once again being grouped in the same/different clusters (making the index label-agnostic). The ARI decays more dramatically as a function of increasing dissimilarity, reaching 0 at chance levels. Low ARI values can therefore still occur when there is notable agreement between partitionings."}
 
@@ -1679,7 +1679,7 @@ include_graphics("./Images/ARI_comparison.png")
 #         text = element_text(size = 22))
 ```
 
-\bigskip
+\newpage
 
 ```{r tSNR (supplemental fig 3), out.width = "100%", fig.align = "center", fig.cap = "Supplemental Figure 3. Signal quality prior to FV thresholding. Left: Surface map displaying the vertex-wise mean tSNR across individuals. Right: Mean tSNR for mPFC and PCC across individuals."}
 # To get the box plot:
@@ -1712,13 +1712,13 @@ include_graphics("./Images/ARI_comparison.png")
 include_graphics("./Images/tSNR.png")
 ```
 
-\bigskip
+\newpage
 
 ```{r day- and run-wise brain comparisons (supplemental fig 4), out.width = "100%", fig.align = "center", fig.cap = "Supplemental Figure 4. Visual examples of idiosyncratic organization across days and runs. Left: Thresholded partitionings captured with SP are highly similar across days within individuals, but are topographically distinct across individuals. The organization estimated for each dat is also mostly indistinct from that captured using the full time series (Supplemental Figure 1). Right: Thresholded partitionings estimated using the first scanning session from day 1, and the last scanning session from day 2. As expected, the considerable reduction in the amount of data used decreased the reliability of the community localization across single scanning sessions, which were in some cases irrecoverable (e.g. subjects 100408 and 687163). Even so, the general location of DN and non-DN is still observable in many cases, and is comparable to the organization seen using larger amounts of data. This shows that even with notably noisier estimates and lower within-individual ARI values produced by working with less data, it is possible to gain information about the general location of DN and non-DN in individuals."}
 include_graphics("./Images/days_runs_examples.png")
 ```
 
-\bigskip
+\newpage
 
 ```{r extra B&B checks with silhouette (supplemental fig 5), out.width = "100%", fig.align = "center", fig.cap = "Supplemental Figure 5. Additional checks to confirm the match between our findings with Braga et al. (2019). A: DN sub-networks A and B identified through whole-brain k-means clustering are congruent with the existence of a third sub-network, which matches the non-DN SP community (top rows). Limiting k-means to two clusters within the search space aligns with results from modularity (bottom two rows). B: K-means based silhouette scores were computed per individual to determine the appropriate number of clusters within the search space (the higher the score, the better). This showed that two networks were the ideal solution."}
 # # produce the silhouette plot
@@ -1755,7 +1755,6 @@ include_graphics("./Images/days_runs_examples.png")
 
 include_graphics("./Images/kmeansVSsp.png")
 ```
-
 
 \newpage 
 
