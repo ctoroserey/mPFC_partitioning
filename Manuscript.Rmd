@@ -526,7 +526,7 @@ We then estimated the level of agreement between network partitions estimated us
 
 ### 2.8. *Seed-based Resting-state Functional Connectivity versus Community Detection*
 
-We evaluated the performance of the SP algorithm in comparison to a simpler partitioning approach based on seed-based functional connectivity. Independently for each day (2 per individual), we estimated each subject's DN partition in mPFC based on its vertex-wise functional correlations (Pearson) with the spatially averaged activity across all vertices in the PCC search space. We used the whole region to echo the approach often taken in seed-based connectivity analyses that do not rely on ROIs derived from independent analyses. We compared these seed-based maps with the unthresholded Fiedler vectors produced by SP, with the sign of the Fiedler vector oriented so the DN community was marked by positive values in every subject. We calculated three sets of across-day similarity values for each individual: 1) between the two seed-based maps; 2) between the two SP-based maps; and 3) between seed- and SP-based maps. Because the values in the maps were continuous-valued (and not categorical labels, which would be amenable to ARI), we quantified the similarity between maps in terms of the spatial Spearman correlation across vertices. These spatial correlations were meant to determine the test/re-test reliability of each approach, as well as the overall level of agreement between them. For 7 subjects, the communities produced with one of the days' data sets had split coverage of area 7m, and so our community labeling scheme for the Fiedler vector produced a sign mismatch across days. ARI is robust to such labeling issues, but the inconsistency produced strong negative correlations of the Fiedler vector across days for these individuals. Visual inspection showed that the community layout was well aligned across days, and so we matched the labeling of their partitionings based on the day that sufficiently covered area 7m. 
+We evaluated the performance of the SP algorithm in comparison to a simpler partitioning approach based on seed-based functional connectivity. Independently for each day (2 per individual), we estimated each subject's DN partition in mPFC based on its vertex-wise functional correlations (Pearson) with the spatially averaged activity across all vertices in the PCC search space. We used the whole region to echo the approach often taken in seed-based connectivity analyses that do not rely on ROIs derived from independent analyses. We compared these seed-based maps with the unthresholded Fiedler vectors produced by SP, with the sign of the Fiedler vector oriented so the DN community was marked by positive values in every subject. We calculated three sets of across-day similarity values for each individual: 1) between the two seed-based maps; 2) between the two SP-based maps; and 3) between seed- and SP-based maps. Because the values in the maps were continuous-valued (and not categorical labels, which would be amenable to ARI), we quantified the similarity between maps in terms of the spatial Spearman correlation across vertices. These spatial correlations were meant to determine the test/re-test reliability of each approach, as well as the overall level of agreement between them. For 8 subjects, the communities produced with one of the days' data sets had split coverage of area 7m, and so our community labeling scheme for the Fiedler vector produced a sign mismatch across days. ARI is robust to such labeling issues, but the inconsistency produced strong negative correlations of the Fiedler vector across days for these individuals. Visual inspection showed that the community layout was well aligned across days, and so we matched the labeling of their partitionings based on the day that sufficiently covered area 7m. 
 
 The two methods were expected to produce somewhat similar results, but the one displaying greater within-subject agreement across days should be preferred (for a discussion on the stability of functional networks see Kong et al. [-@Kong2018] and Gratton et al. [-@Gratton2018b]). We therefore compared the within-subject spatial correlation coefficients produced by each method through a paired permutation analysis. For each of the 100 individuals, we computed the difference in inter-day correlations between methods, randomized the sign of these values 5000 times, and computed the mean of these differences on each iteration. The empirical difference in means was then evaluated against this permuted distribution.
 
@@ -1059,12 +1059,12 @@ include_graphics("./Images/FIG6.png")
 # Load data
 setwd('./Summary_halves/')
 temp <- list.files(pattern = "*_finalSummary.csv")
-subjList_halves <- sapply(temp, substring, first=1, last=9)
+subjList_halves <- sapply(temp, substring, first = 1, last = 9)
 Summaries_halves <- lapply(temp, read.csv)
 
 # Before thresholding, capture within/between daily comparisons for FV vs correlation analysis (only for daily)
 # Some subjects didn't have the correct labeling scheme in one of their days (see corr vs FV below), so we manually reverted it after visual inspection
-revertSubjs <- c("144226_H2", "165840_H1", "192843_H1", "303624_H1", "687163_H1", "108525_H2", "156637_H1")
+revertSubjs <- c("102816_H2", "144226_H2", "192843_H1", "211720_H1", "303624_H1", "386250_H1", "687163_H1", "108525_H2")
 for (subj in revertSubjs) {
   indx <- grep(subj, subjList_halves)
   Summaries_halves[[indx]] <- transform(Summaries_halves[[indx]], FiedlerVec = FiedlerVec * -1)
@@ -1099,7 +1099,7 @@ if (threshMaps) {
 
 ``` {r Partition comparison: halves ratios, echo = FALSE, message = FALSE, cache = TRUE}
 ## Now compare all possible pairs of subjects (for actual reporting)
-# Compare all halves with RI
+# Compare all halves with ARI
 RI_all_between_halves <- comparePartitions(Data = Summaries_halves, Index = "RI", nSubjects = length(Summaries_halves), subjNames = subjList_halves)
 
 # Compare PCC and PFC among all subjects
@@ -1403,8 +1403,8 @@ prepostComp <- data.frame(Community = tempComm, Correlation = tempCor, Between =
 prepostComp <- melt(prepostComp)
 colnames(prepostComp) <- c("Approach", "Correlation")
 
-# paired permutations and effect sizes for within-subj perm vs corr
-prepostComp_permTest <- permute(tempComm, tempCor, paired = T)
+# paired permutations and effect sizes for within-subj perm vs corr (8 subjs reversed)
+prepostComp_permTest <- permute(tempComm, tempCor, statType = median, paired = T)
 prepostComp_ES <- cohenD(tempComm, tempCor)
 ```
 
@@ -1438,19 +1438,24 @@ We next explored the possible advantage of community detection relative to a mor
 # mtext(expression(bold("Correlation")), side = 2, line = 2, at = par("usr")[1]+0.68*diff(par("usr")[1:2]))
 # 
 # # Day 1 vs Day 2 Spatial Correlation Comparison
-# prepostComp_plot <- ggplot(data = prepostComp, aes(Approach, Correlation, fill = Approach)) +
-#   geom_boxplot(show.legend = F) +
+# ggplot(data = prepostComp, aes(Approach, Correlation, fill = Approach)) +
+#   geom_boxplot(show.legend = F, size = 1.5) +
 #   labs(x = "", y = "Correlation Coefficient") +
-#   ylim(0,1) +
-#   theme(text = element_text(size=35)) +
-#   theme_classic()
-# prepostComp_plot
+#   ylim(NA,1) +
+#   geom_hline(yintercept = 0, linetype = "dashed", size = 1.2) +
+#   theme(legend.position = c(0.85, 0.7),
+#         legend.key=element_blank(),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         text = element_text(size = 22))
 
 include_graphics("./Images/FIG7.png")
 
 ```
 
-Figure 7B shows the test/re-test reliability across days for patterns derived using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher mean correlation coefficient across days than seed-based correlation (Community: mean = `r round(mean(tempComm), digits = 2)`, SD = `r round(sd(tempComm), digits = 2)`; Seed-based: mean = `r round(mean(tempCor), digits = 2)`, SD = `r round(sd(tempCor), digits = 2)`; paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", round(prepostComp_permTest$Pval, digits = 3)))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair (mean = `r round(mean(tempBoth), digits = 2)`, SD = `r round(sd(tempBoth), digits = 2)`), signifying that the two approaches identified similar topographic features but also had systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies, in addition to their other advantages of being data-driven, unbiased and observer agnostic.
+Figure 7B shows the test/re-test reliability across days for patterns derived using community detection, seed-based correlation, and across methods (e.g. Day 1 community detection versus Day 2 seed-based correlation). While both approaches were reliable, community detection displayed a significantly higher median correlation coefficient across days than seed-based correlation (Community: median = `r round(median(tempComm), digits = 2)`, SD = `r round(sd(tempComm), digits = 2)`; Seed-based: median = `r round(mean(tempCor), digits = 2)`, SD = `r round(sd(tempCor), digits = 2)`; paired permutation *p* `r ifelse(prepostComp_permTest$Pval < 0.001, "< 0.001", paste("=", round(prepostComp_permTest$Pval, digits = 3)))`; Cohen's D = `r round(prepostComp_ES, digits = 2)`). Agreement across methods was fair (median = `r round(median(tempBoth), digits = 2)`, SD = `r round(sd(tempBoth), digits = 2)`), signifying that the two approaches identified similar topographic features but also had systematic differences. These findings suggest that graph-theoretic community detection algorithms are advantageous for detecting stable functional topologies, in addition to their other advantages of being data-driven, unbiased and observer agnostic.
 
 ### 3.7. *Relationship between functional organization and sulcal morphology*
 
