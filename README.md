@@ -10,7 +10,7 @@ If you would like to actually run the file, you can download a partial version o
 
 ### Docker environment
 
-Rather than manually installing the R packages I used, you can load a Docker image with the necessary dependencies to run `Manuscript.Rmd`. This has the advantage of ensuring that package versions are compatible with the code we wrote. If you don't know what [Docker](https://www.docker.com/) is, and how you can share computing environments for reproducibility, go check it out! And take a look at [this tutorial](https://ropenscilabs.github.io/r-docker-tutorial/03-install-packages.html) for an easy way to set up your own images. 
+Rather than manually installing the R packages I used, you can load a Docker image with the necessary dependencies to run `Manuscript.Rmd`. This has the advantage of ensuring that package versions are compatible with the code we wrote. If you don't know what [Docker](https://www.docker.com/) is, and how you can share computing environments for reproducibility, go check it out! And take a look at [this tutorial](https://ropenscilabs.github.io/r-docker-tutorial/) for an easy way to set up your own images. 
 
 If you have Docker installed, here are instructions on how to set the environment up:
 
